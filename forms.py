@@ -1,0 +1,6 @@
+# DogTrackerV2/forms.py
+from flask_wtf import FlaskForm
+# from wtforms import StringField, SubmitField, ...
+# from wtforms.validators import DataRequired, Length, ...
+
+# Forms will be defined here later

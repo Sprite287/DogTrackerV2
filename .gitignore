@@ -1,0 +1,6 @@
+# ... (previous content) ...
+instance/
+.env
+*.db # Also good to ignore specific db files if needed
+*.db-journal # SQLite journal files
+# ... (rest of previous content) ...

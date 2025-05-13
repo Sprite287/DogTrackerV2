@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Select Rescue{% endblock %}
+
+{% block header_title %}Select Rescue{% endblock %}
+
+{% block content %}
+    <article>
+        <header>
+            <h2>Please Select Your Rescue</h2>
+        </header>
+        {% if rescues %}
+            <ul>
+                {% for rescue in rescues %}
+                    <li><a href="{{ url_for('set_rescue', rescue_id=rescue.id) }}">{{ rescue.name }}</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No rescues have been set up yet.</p>
+            <small>Please contact the administrator.</small>
+        {% endif %}
+    </article>
+{% endblock %}

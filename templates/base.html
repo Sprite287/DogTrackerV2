@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dog Tracker V2{% endblock %}{% if current_rescue %} - {{ current_rescue.name }}{% endif %}</title>
+    {# Pico CSS CDN Link #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css">
+    {# Your Custom CSS (optional, for overrides/additions) #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {# HTMX Script #}
+    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHCphiIYUNLkOPNnAjt" crossorigin="anonymous"></script>
+    {% block head_scripts %}{% endblock %}
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>{% block header_title %}Dog Tracker V2{% if current_rescue %} <small>({{ current_rescue.name }})</small>{% endif %}{% endblock %}</strong></li>
+            </ul>
+            {# Main Navigation - Only show if a rescue is selected #}
+            {% if current_rescue %}
+            <ul>
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                {# Add other links later e.g., Dogs List #}
+                {# <li><a href="{{ url_for('list_dogs') }}">Dogs</a></li> #}
+                {# <li><a href="{{ url_for('reminders') }}">Reminders</a></li> #}
+            </ul>
+            {% else %}
+             <ul><li>Please select a rescue.</li></ul>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="container">
+        {# Flash Messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flashes" style="margin-top: 1rem; margin-bottom: 1rem;">
+                {% for category, message in messages %}
+                    {# Pico uses role="alert" for styling by default #}
+                    <div role="alert" {% if category == 'error' or category == 'danger' %} style="background-color: var(--pico-form-element-invalid-active-border-color); color: var(--pico-color-white);" {% endif %}>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {# Main Content #}
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="container" style="margin-top: 2rem; text-align: center; color: var(--pico-muted-color);">
+        <small>&copy; {{ now.year if now else '2025' }} Dog Tracker V2</small>
+    </footer>
+
+    {% block body_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block header_title %}Welcome to {{ rescue.name }}{% endblock %}
+
+{% block content %}
+    <article>
+        <header>
+            <h2>Welcome, {{ rescue.name }}!</h2>
+        </header>
+        <p>Click below to enter your dashboard.</p>
+        <footer>
+            <a href="{{ url_for('home') }}" role="button">Enter Dashboard</a>
+        </footer>
+    </article>
+{% endblock %}
