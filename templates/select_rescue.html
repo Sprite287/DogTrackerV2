@@ -1,3 +1,5 @@
+{# In templates/select_rescue.html #}
+
 {% extends "base.html" %}
 
 {% block title %}Select Rescue{% endblock %}
@@ -11,8 +13,8 @@
         </header>
         {% if rescues %}
             <ul>
-                {% for rescue in rescues %}
-                    <li><a href="{{ url_for('set_rescue', rescue_id=rescue.id) }}">{{ rescue.name }}</a></li>
+                {% for rescue_item in rescues %} {# Changed loop variable to avoid conflict if 'rescue' is a global context var #}
+                    <li><a href="{{ url_for('set_rescue', rescue_id=rescue_item.id) }}">{{ rescue_item.name }}</a></li>
                 {% endfor %}
             </ul>
         {% else %}

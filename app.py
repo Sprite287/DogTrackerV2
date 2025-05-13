@@ -72,9 +72,12 @@ def create_app(config_name=None):
 
     @app.route('/select_rescue')
     def select_rescue():
-        # Clear session just in case before selection
-        # session.pop('selected_rescue_id', None) # Optional: force re-selection
+        print("\n--- DEBUG: Entering /select_rescue route ---") # Add this
         rescues = Rescue.query.order_by(Rescue.name).all()
+        print(f"--- DEBUG: Fetched {len(rescues)} rescues from DB. ---") # Add this
+        for r_debug in rescues:
+            print(f"  DEBUG FROM ROUTE -> Name: {r_debug.name}, ID: {r_debug.id}") # Add this
+        print("--- DEBUG: About to render select_rescue.html ---\n") # Add this
         return render_template('select_rescue.html', rescues=rescues)
 
 
