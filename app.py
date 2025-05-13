@@ -9,7 +9,7 @@ from functools import wraps # For decorator
 
 # Import configurations and db instance
 from config import config_by_name
-from models import db, Rescue # Import db and initial models
+from models import db, Rescue, Dog # Import db and initial models
 
 # Initialize extensions
 migrate = Migrate()
@@ -77,19 +77,17 @@ def create_app(config_name=None):
         rescues = Rescue.query.order_by(Rescue.name).all()
         return render_template('select_rescue.html', rescues=rescues)
 
-    @app.route('/set_rescue/<uuid_string:rescue_id>') # Use converter for basic format check
+
+    @app.route('/set_rescue/<uuid:rescue_id>') # <-- Use 'uuid' here
     def set_rescue(rescue_id):
-        # Convert string UUID from URL back to hex string if needed (converter handles format)
-        rescue_id_hex = str(rescue_id) # Get the hex string
+        # rescue_id will now be a Python UUID object
+        rescue_id_hex = str(rescue_id) # Convert the UUID object to its hex string representation
         rescue = db.session.get(Rescue, rescue_id_hex)
         if rescue:
             session['selected_rescue_id'] = rescue_id_hex
-            # Optionally store name too, prevents DB hit on every request for welcome msg?
-            # session['selected_rescue_name'] = rescue.name
             return redirect(url_for('welcome'))
         else:
-            # Invalid rescue ID provided in URL
-            abort(404) # Or flash message and redirect
+            abort(404)
 
     @app.route('/home')
     @rescue_required # Protect this route

@@ -6,4 +6,4 @@ Flask-WTF>=1.0
 python-dotenv>=0.19
 SQLAlchemy>=1.4
 alembic>=1.7
-# Add waitress or gunicorn later if needed
+psycopg2-binary
