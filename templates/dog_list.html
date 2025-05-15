@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Dogs{% endblock %}
+
+{% block header_title %}Manage Dogs for {{ rescue.name }}{% endblock %}
+
+{% block content %}
+    <article id="form-display-area">
+        {# Button to toggle Add Dog form visibility - show if no other form/action is active #}
+        {% if not current_action and not show_confirm_delete_for_dog_id %}
+            <a href="{{ url_for('manage_dogs', action='show_add_form') }}" role="button" class="outline">Add New Dog</a>
+        {% endif %}
+        {# Form display area - shows Add/Edit Dog form, Add Medicine, or Edit Dog with Medicines form #}
+        {% if form_to_display and not show_confirm_delete_for_dog_id %}
+            {% if current_action == 'show_add_form' or current_action == 'show_edit_form' %}
+                {# Standard Add/Edit Dog form rendering (name, approx_age) #}
+                <form method="POST" action="{{ current_form_action_url }}">
+                    {{ form_to_display.csrf_token }}
+                    <fieldset>
+                        <legend>{{ form_legend }}</legend>
+                        <label for="name">
+                            {{ form_to_display.name.label }}
+                            {{ form_to_display.name(class_="input", placeholder="Enter dog's name") }}
+                            {% if form_to_display.name.errors %}
+                                <small class="error" style="color: var(--pico-form-element-invalid-active-border-color);">{{ form_to_display.name.errors[0] }}</small>
+                            {% endif %}
+                        </label>
+                        <label for="approx_age">
+                            {{ form_to_display.approx_age.label }}
+                            {{ form_to_display.approx_age(class_="input", placeholder="e.g., 2 years, 5 months") }}
+                            {% if form_to_display.approx_age.errors %}
+                                <small class="error" style="color: var(--pico-form-element-invalid-active-border-color);">{{ form_to_display.approx_age.errors[0] }}</small>
+                            {% endif %}
+                        </label>
+                        {# Assuming EditDogForm primarily uses these fields from AddDogForm #}
+                        {# If EditDogForm has more unique fields, this section might need its own partial #}
+                    </fieldset>
+                    <button type="submit">{{ form_to_display.submit.label.text }}</button>
+                    <a href="{{ url_for('manage_dogs') }}" role="button" class="secondary">Cancel</a>
+                </form>
+            {% elif current_action == 'show_add_medicine_form' %}
+                {% include 'partials/_add_medicine_form.html' %}
+            {% elif current_action == 'show_edit_dog_medicines_form' %}
+                {% include 'partials/_edit_dog_with_medicines_form.html' %}
+            {% endif %}
+        {% endif %}
+        {# Area for delete confirmation will be loaded here by HTMX if show_confirm_delete_for_dog_id is set by the route serving the partial #}
+        {% if show_confirm_delete_for_dog_id %}
+            {# This block will be targeted by HTMX to load the partial,
+               or the route serving the partial can render it directly here.
+               For now, the partial is loaded via a separate HTMX call triggered by the delete button. #}
+        {% endif %}
+    </article>
+    <article>
+        <header>
+            <h2>Current Dogs ({{ dogs|length }})</h2>
+        </header>
+        {% if dogs %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Approx. Age</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dog in dogs %}
+                        <tr>
+                            <td>{{ dog.name }}</td>
+                            <td>{{ dog.approx_age if dog.approx_age else 'N/A' }}</td>
+                            <td style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem;">
+                                <a href="{{ url_for('manage_dogs', action='show_edit_form', dog_id=dog.id) }}"
+                                   role="button"
+                                   class="outline"
+                                   style="width: 100%; margin-bottom: 0.25rem; text-align: center;">Edit Dog Details</a>
+
+                                <a href="{{ url_for('manage_dogs', action='show_edit_dog_medicines_form', dog_id=dog.id) }}"
+                                   role="button"
+                                   class="outline"
+                                   style="width: 100%; margin-bottom: 0.25rem; text-align: center;">Edit Dog & Meds</a>
+
+                                <a href="{{ url_for('manage_dogs', action='show_add_medicine_form', dog_id=dog.id) }}"
+                                   role="button"
+                                   class="outline"
+                                   style="width: 100%; margin-bottom: 0.25rem; text-align: center;">Add Medicine</a>
+
+                                <button hx-get="{{ url_for('confirm_delete_dog', dog_id=dog.id) }}"
+                                        hx-target="#form-display-area"
+                                        hx-swap="innerHTML"
+                                        class="outline"
+                                        style="color: var(--pico-form-element-invalid-active-border-color); border-color: var(--pico-form-element-invalid-active-border-color); width: 100%; margin: 0; text-align: center;">
+                                    Delete Dog
+                                </button>
+                            </td>
+                        </tr>
+                        {# Row to display medicines for the current dog #}
+                        <tr>
+                            <td colspan="3" style="padding-top: 0.1rem; padding-bottom: 0.5rem;">
+                                {% if dog.medicines.count() > 0 %}
+                                    <details style="margin-bottom: 0; font-size: 0.9em;">
+                                        <summary role="button" class="outline secondary" style="padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; font-weight: normal;">View Medicines ({{ dog.medicines.count() }})</summary>
+                                        <ul style="list-style-type: none; padding-left: 0.5rem; margin-top: 0.25rem;">
+                                            {% for med in dog.medicines %}
+                                            <li style="border-left: 3px solid var(--pico-primary-focus); padding-left: 0.5rem; margin-bottom: 0.5rem;">
+                                                <strong>{{ med.name }}</strong> ({{ med.dosage }}, {{ med.frequency }})
+                                                <br>
+                                                <small>
+                                                    {% if med.start_date %}Started: {{ med.start_date.strftime('%b %d, %Y') }}{% endif %}
+                                                    {% if med.end_date %}{% if med.start_date %} | {% endif %}Ends: {{ med.end_date.strftime('%b %d, %Y') }}{% endif %}
+                                                </small>
+                                                {% if med.notes %}
+                                                    <br><small><em>Notes: {{ med.notes|truncate(100, True) }}</em></small>
+                                                {% endif %}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </details>
+                                {% else %}
+                                    <p style="font-size: 0.9em; margin-bottom: 0; margin-top: 0.25rem; padding-left: 0.5rem;"><em>No medicines recorded.</em></p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {# Optional: visual separator between dog entries if not using table borders effectively #}
+                        {% if not loop.last %}
+                        <tr>
+                           <td colspan="3" style="border-bottom: 1px dashed var(--pico-muted-border-color); padding:0;"></td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No dogs have been added for {{ rescue.name }} yet.</p>
+        {% endif %}
+    </article>
+{% endblock %}
+

@@ -1,0 +1,75 @@
+{# filepath: k:\\DogTrackerV2\\templates\\partials\\_add_medicine_form.html #}
+{% if form_to_display is defined and form_to_display is not none and dog_for_form_id is defined and dog_for_form_id %}
+<article class="form-container">
+    <header>
+        {# Use dog_being_edited which should be in context from parent dog_list.html #}
+        <h3>Add Medicine for {{ dog_being_edited.name if dog_being_edited else 'Dog (Error: dog_being_edited not found)' }}</h3>
+    </header>
+    <form method="POST" action="{{ url_for('add_medicine', dog_id=dog_for_form_id) }}">
+        {{ form_to_display.hidden_tag() if form_to_display.hidden_tag else '' }} {# Includes CSRF token #}
+        
+        <fieldset>
+            <legend>New Medicine Details</legend>
+            <div class="form-group">
+                {{ form_to_display.name.label }}
+                {{ form_to_display.name(class="form-control") }}
+                {% if form_to_display.name.errors %}
+                    <ul class="errors">{% for error in form_to_display.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.dosage.label }}
+                {{ form_to_display.dosage(class="form-control") }}
+                {% if form_to_display.dosage.errors %}
+                    <ul class="errors">{% for error in form_to_display.dosage.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.frequency.label }}
+                {{ form_to_display.frequency(class="form-control") }}
+                {% if form_to_display.frequency.errors %}
+                    <ul class="errors">{% for error in form_to_display.frequency.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.start_date.label }}
+                {{ form_to_display.start_date(class="form-control") }}
+                {% if form_to_display.start_date.errors %}
+                    <ul class="errors">{% for error in form_to_display.start_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.end_date.label }}
+                {{ form_to_display.end_date(class="form-control") }}
+                {% if form_to_display.end_date.errors %}
+                    <ul class="errors">{% for error in form_to_display.end_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.notes.label }}
+                {{ form_to_display.notes(class="form-control", rows=3) }}
+                {% if form_to_display.notes.errors %}
+                    <ul class="errors">{% for error in form_to_display.notes.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </fieldset>
+        
+        <div class="form-actions">
+            {{ form_to_display.submit(class="button primary") if form_to_display.submit else '<button type="submit" class="button primary">Save Medicine</button>' }}
+            <a href="{{ url_for('manage_dogs', dog_id=dog_for_form_id, action='view', _anchor='dog-' + dog_for_form_id|string + '-details') }}" class="button secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% else %}
+<p>Error: Debug Info:<br>
+    form_to_display is defined: {{ form_to_display is defined }}.<br>
+    form_to_display is not none: {{ form_to_display is not none }}.<br>
+    form_to_display value: {{ form_to_display }}.<br>
+    dog_for_form_id is defined: {{ dog_for_form_id is defined }}.<br>
+    dog_for_form_id is truthy: {{ True if dog_for_form_id else False }}.<br>
+    dog_for_form_id value: {{ dog_for_form_id }}.<br>
+    dog_being_edited is defined: {{ dog_being_edited is defined }}.<br>
+    dog_being_edited value: {{ dog_being_edited }}.<br>
+    (Original error: Form or dog ID not provided for adding medicine)
+</p>
+{% endif %}

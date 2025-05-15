@@ -1,8 +1,8 @@
-"""Initial models: Rescue and Dog
+"""Initial schema with Rescue and Dog models
 
-Revision ID: 5c3ee115132e
+Revision ID: 4e30a4e16d95
 Revises: 
-Create Date: 2025-05-12 19:52:34.733889
+Create Date: 2025-05-12 22:24:56.491023
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5c3ee115132e'
+revision = '4e30a4e16d95'
 down_revision = None
 branch_labels = None
 depends_on = None

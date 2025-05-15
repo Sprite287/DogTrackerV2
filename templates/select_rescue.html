@@ -13,8 +13,11 @@
         </header>
         {% if rescues %}
             <ul>
-                {% for rescue_item in rescues %} {# Changed loop variable to avoid conflict if 'rescue' is a global context var #}
-                    <li><a href="{{ url_for('set_rescue', rescue_id=rescue_item.id) }}">{{ rescue_item.name }}</a></li>
+                {% for rescue_item in rescues %}
+                    {# This is the line that needs to change: #}
+                    {# V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V #}
+                    <li><a href="{{ url_for('set_rescue', rescue_id_str=rescue_item.id) }}">{{ rescue_item.name }}</a></li>
+                    {# ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ #}
                 {% endfor %}
             </ul>
         {% else %}

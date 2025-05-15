@@ -7,9 +7,14 @@
     {# Pico CSS CDN Link #}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css">
     {# Your Custom CSS (optional, for overrides/additions) #}
+    {# Ensure this path is correct and the file exists in your static/css folder #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {# HTMX Script #}
-    <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHCphiIYUNLkOPNnAjt" crossorigin="anonymous"></script>
+
+    {# HTMX Script - MODIFIED: Updated with the correct integrity hash from your latest console error and crossorigin attribute #}
+    <script src="https://unpkg.com/htmx.org@2.0.0"
+            integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw="
+            crossorigin="anonymous"></script>
+
     {% block head_scripts %}{% endblock %}
 </head>
 <body>
@@ -22,8 +27,7 @@
             {% if current_rescue %}
             <ul>
                 <li><a href="{{ url_for('home') }}">Home</a></li>
-                {# Add other links later e.g., Dogs List #}
-                {# <li><a href="{{ url_for('list_dogs') }}">Dogs</a></li> #}
+                <li><a href="{{ url_for('manage_dogs') }}">Dogs</a></li>
                 {# <li><a href="{{ url_for('reminders') }}">Reminders</a></li> #}
             </ul>
             {% else %}
@@ -38,7 +42,6 @@
             {% if messages %}
                 <div class="flashes" style="margin-top: 1rem; margin-bottom: 1rem;">
                 {% for category, message in messages %}
-                    {# Pico uses role="alert" for styling by default #}
                     <div role="alert" {% if category == 'error' or category == 'danger' %} style="background-color: var(--pico-form-element-invalid-active-border-color); color: var(--pico-color-white);" {% endif %}>
                         {{ message }}
                     </div>

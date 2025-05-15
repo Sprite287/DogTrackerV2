@@ -1,0 +1,106 @@
+{# filepath: k:\\DogTrackerV2\\templates\\partials\\_edit_dog_with_medicines_form.html #}
+{% if form_to_display is defined and form_to_display is not none and dog_for_form_id is defined and dog_for_form_id %}
+<article class="form-container">
+    <header>
+        <h3>Edit {{ dog_being_edited.name if dog_being_edited else 'Dog (Error: dog_being_edited not found)' }} and Medicines</h3>
+    </header>
+    <form method="POST" action="{{ url_for('edit_dog_with_medicines', dog_id=dog_for_form_id) }}">
+        {{ form_to_display.hidden_tag() if form_to_display.hidden_tag else '' }} {# Includes CSRF token #}
+
+        <fieldset>
+            <legend>Dog Details</legend>
+            <div class="form-group">
+                {{ form_to_display.name.label }}
+                {{ form_to_display.name(class="form-control") }}
+                {% if form_to_display.name.errors %}
+                    <ul class="errors">{% for error in form_to_display.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form_to_display.approx_age.label }}
+                {{ form_to_display.approx_age(class="form-control") }}
+                {% if form_to_display.approx_age.errors %}
+                    <ul class="errors">{% for error in form_to_display.approx_age.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Medicines</legend>
+            <div id="medicine-fields-list">
+                {% for med_form in form_to_display.medicines %}
+                <div class="medicine-entry" id="medicine-{{ loop.index0 }}">
+                    {{ med_form.hidden_tag() if med_form.hidden_tag else '' }}
+                    {{ med_form.id }} {# Hidden field for medicine ID #}
+                    <h4>Medicine {{ loop.index }}</h4>
+                    <div class="form-group">
+                        {{ med_form.name.label }}
+                        {{ med_form.name(class="form-control") }}
+                        {% if med_form.name.errors %}
+                            <ul class="errors">{% for error in med_form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        {{ med_form.dosage.label }}
+                        {{ med_form.dosage(class="form-control") }}
+                        {% if med_form.dosage.errors %}
+                            <ul class="errors">{% for error in med_form.dosage.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        {{ med_form.frequency.label }}
+                        {{ med_form.frequency(class="form-control") }}
+                        {% if med_form.frequency.errors %}
+                            <ul class="errors">{% for error in med_form.frequency.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        {{ med_form.start_date.label }}
+                        {{ med_form.start_date(class="form-control") }}
+                        {% if med_form.start_date.errors %}
+                            <ul class="errors">{% for error in med_form.start_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        {{ med_form.end_date.label }}
+                        {{ med_form.end_date(class="form-control") }}
+                        {% if med_form.end_date.errors %}
+                            <ul class="errors">{% for error in med_form.end_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        {{ med_form.notes.label }}
+                        {{ med_form.notes(class="form-control", rows=2) }}
+                        {% if med_form.notes.errors %}
+                            <ul class="errors">{% for error in med_form.notes.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    <div class="form-group checkbox-group">
+                        {{ med_form.delete.label(class="checkbox-label") }}
+                        {{ med_form.delete(class="checkbox-input") }}
+                    </div>
+                    <hr>
+                </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="form-actions">
+            {{ form_to_display.submit(class="button primary") if form_to_display.submit else '<button type="submit" class="button primary">Save Changes</button>' }}
+            <a href="{{ url_for('manage_dogs', dog_id=dog_for_form_id, action='view', _anchor='dog-' + dog_for_form_id|string + '-details') }}" class="button secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% else %}
+<p>Error: Debug Info (Partial: _edit_dog_with_medicines_form.html):<br>
+    form_to_display is defined: {{ form_to_display is defined }}.<br>
+    form_to_display is not none: {{ form_to_display is not none }}.<br>
+    form_to_display value: {{ form_to_display }}.<br>
+    dog_for_form_id is defined: {{ dog_for_form_id is defined }}.<br>
+    dog_for_form_id is truthy: {{ True if dog_for_form_id else False }}.<br>
+    dog_for_form_id value: {{ dog_for_form_id }}.<br>
+    dog_being_edited is defined: {{ dog_being_edited is defined }}.<br>
+    dog_being_edited value: {{ dog_being_edited }}.<br>
+    (Original error: Form or dog ID not provided for editing dog and medicines.)
+</p>
+{% endif %}

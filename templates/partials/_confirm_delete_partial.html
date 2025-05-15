@@ -1,0 +1,16 @@
+{# _confirm_delete_partial.html #}
+<article class="confirmation-dialog">
+    <header>
+        Confirm Deletion
+    </header>
+    <p>Are you sure you want to delete {{ item_type }} '<strong>{{ item_name }}</strong>'?</p>
+    <p><small>This action cannot be undone.</small></p>
+    <footer>
+        <form method="POST" action="{{ confirm_action_url }}" style="display: inline;">
+            {# Add CSRF token if your POST route expects it #}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="button error">Confirm Delete</button>
+        </form>
+        <button hx-get="{{ cancel_url }}" hx-target="#form-display-area" hx-swap="innerHTML" class="button secondary">Cancel</button>
+    </footer>
+</article>
