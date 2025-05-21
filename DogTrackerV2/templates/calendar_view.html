@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointments Calendar - DogTrackerV2{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Appointments Calendar</h1>
+        <!-- Future: Add filters or buttons here, e.g., for different views or new appointment -->
+    </div>
+
+    {# Display Grouped Upcoming Reminders as Accordion #}
+    {% if grouped_reminders %}
+        <div id="upcoming-reminders-section" class="mb-4">
+            <h2>Upcoming Reminders (Next 7 Days)</h2>
+            <div class="accordion" id="remindersAccordion">
+                {% for group_name, reminders_in_group in grouped_reminders.items() %}
+                    {% if reminders_in_group %}
+                        {% set loop_index = loop.index %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
+                                <button class="accordion-button {{ '' if loop.first else 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
+                                    {{ group_name }} <span class="badge bg-secondary ms-2">{{ reminders_in_group|length }}</span>
+                                </button>
+                            </h2>
+                            <div id="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" class="accordion-collapse collapse {{ 'show' if loop.first else '' }}" aria-labelledby="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" data-bs-parent="#remindersAccordion">
+                                <div class="accordion-body p-0">
+                                    <ul class="list-group list-group-flush">
+                                        {% for reminder in reminders_in_group %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center" id="reminder-{{ reminder.id }}">
+                                                <span>
+                                                    {{ reminder.message }}
+                                                    <small class="text-muted d-block">Due: {{ reminder.due_datetime.strftime('%a, %b %d, %Y @ %I:%M %p UTC') }}</small>
+                                                    {% if reminder.dog %}
+                                                    <small class="text-muted d-block">Dog: <a href="{{ url_for('dog_details', dog_id=reminder.dog.id) }}">{{ reminder.dog.name }}</a></small>
+                                                    {% endif %}
+                                                </span>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-success" 
+                                                            hx-post="{{ url_for('acknowledge_reminder', reminder_id=reminder.id) }}" 
+                                                            hx-target="#reminder-{{ reminder.id }}" 
+                                                            hx-swap="outerHTML">Acknowledge</button>
+                                                    <button class="btn btn-sm btn-outline-secondary" 
+                                                            hx-post="{{ url_for('dismiss_reminder', reminder_id=reminder.id) }}" 
+                                                            hx-target="#reminder-{{ reminder.id }}" 
+                                                            hx-swap="outerHTML">Dismiss</button>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            No upcoming reminders in the next 7 days.
+        </div>
+    {% endif %}
+    
+    <div id="calendar" style="min-height: 600px;">
+        <!-- Calendar will be rendered here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} {# Include scripts from base.html if any #}
+<script>
+    console.log("Calendar_view.html script block executing.");
+    console.log("Type of FullCalendar before DOMContentLoaded:", typeof FullCalendar);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOMContentLoaded fired in calendar_view.html.");
+        console.log("Type of FullCalendar inside DOMContentLoaded:", typeof FullCalendar);
+
+        if (typeof FullCalendar !== 'undefined' && FullCalendar.Calendar) {
+            var calendarEl = document.getElementById('calendar');
+            if (calendarEl) {
+                try {
+                    var calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'dayGridMonth',
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                        },
+                        events: "{{ url_for('calendar_events_api') }}",
+                        editable: false, 
+                        selectable: false, 
+                        eventClick: function(info) {
+                            info.jsEvent.preventDefault(); 
+                            if (info.event.url) {
+                                window.open(info.event.url, "_self"); 
+                            }
+                        },
+                        eventDidMount: function(info) {
+                            if (info.event.extendedProps && (info.event.extendedProps.description || info.event.extendedProps.dog_name || info.event.extendedProps.medicine_name)) { 
+                                var popoverContent = '';
+                                if(info.event.extendedProps.dog_name) popoverContent += `<strong>Dog:</strong> ${info.event.extendedProps.dog_name}<br>`;
+                                if(info.event.extendedProps.eventType === 'appointment' && info.event.extendedProps.appointment_type) popoverContent += `<strong>Type:</strong> ${info.event.extendedProps.appointment_type}<br>`;
+                                if(info.event.extendedProps.eventType === 'medicine_start' && info.event.extendedProps.medicine_name) popoverContent += `<strong>Medicine:</strong> ${info.event.extendedProps.medicine_name}<br>`;
+                                if(info.event.extendedProps.status) popoverContent += `<strong>Status:</strong> ${info.event.extendedProps.status}<br>`;
+                                if(info.event.extendedProps.description) popoverContent += `<strong>Notes:</strong> ${info.event.extendedProps.description || 'None'}`;
+                                if(info.event.extendedProps.eventType === 'medicine_start' && info.event.extendedProps.dosage) popoverContent += `<strong>Dosage:</strong> ${info.event.extendedProps.dosage} ${info.event.extendedProps.unit || ''}<br>`;
+                                
+                                if (popoverContent) { 
+                                    info.el.setAttribute('data-bs-toggle', 'popover');
+                                    info.el.setAttribute('data-bs-trigger', 'hover focus');
+                                    info.el.setAttribute('data-bs-html', 'true');
+                                    info.el.setAttribute('data-bs-title', info.event.title);
+                                    info.el.setAttribute('data-bs-content', popoverContent);
+                                    new bootstrap.Popover(info.el); 
+                                }
+                            }
+                        }
+                    });
+                    calendar.render();
+                    console.log("FullCalendar initialized and rendered.");
+                } catch (e) {
+                    console.error("Error initializing FullCalendar:", e);
+                }
+            } else {
+                console.error("Calendar element #calendar not found.");
+            }
+        } else {
+            console.error("FullCalendar object or FullCalendar.Calendar constructor is not defined when trying to initialize.");
+        }
+    });
+</script>
+{% endblock %} 

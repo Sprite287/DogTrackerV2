@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.table th, .table td {
+  vertical-align: middle;
+  padding: 0.75rem;
+}
+.table th {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+</style>
+<div class="container mt-4">
+  <a href="/" class="btn btn-secondary mb-3">&larr; Back to Dog List</a>
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="mb-0">{{ dog.name }}</h3>
+      <button class="btn btn-primary btn-lg ms-auto" data-bs-toggle="modal" data-bs-target="#editDogModal"
+        data-dog-id="{{ dog.id }}"
+        data-dog-name="{{ dog.name }}"
+        data-dog-status="{{ dog.adoption_status or '' }}"
+        data-dog-age="{{ dog.age or '' }}"
+        data-dog-breed="{{ dog.breed or '' }}"
+        data-dog-intake-date="{{ dog.intake_date or '' }}"
+        data-dog-microchip-id="{{ dog.microchip_id or '' }}"
+        data-dog-notes="{{ dog.notes or '' }}"
+        data-dog-medical-info="{{ dog.medical_info or '' }}"
+        onclick="fillEditDogModal(this)">Edit</button>
+    </div>
+    <div class="card-body">
+      <p><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
+      <p><strong>Age:</strong> {{ dog.age or 'N/A' }}</p>
+      <p><strong>Breed:</strong> {{ dog.breed or 'N/A' }}</p>
+      <p><strong>Intake Date:</strong> {{ dog.intake_date or 'N/A' }}</p>
+      <p><strong>Microchip/ID:</strong> {{ dog.microchip_id or 'N/A' }}</p>
+      <p><strong>Notes:</strong> {{ dog.notes or 'N/A' }}</p>
+      <p><strong>Medical Info:</strong> {{ dog.medical_info or 'N/A' }}</p>
+    </div>
+  </div>
+
+  <!-- Appointments Section -->
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Appointments</h4>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAppointmentModal" data-dog-id="{{ dog.id }}">Add Appointment</button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        {% include 'partials/appointments_list.html' %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Medicines Section -->
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Medicines</h4>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMedicineModal" data-dog-id="{{ dog.id }}">Add Medicine</button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" id="medicines-list">
+        {% include 'partials/medicines_list.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Move modal include to the end of the file -->
+{% include 'partials/add_edit_modal.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+/* eslint-disable */
+window.appointmentTypes = {{ appointment_types|tojson|safe }};
+window.medicinePresets = {{ medicine_presets|tojson|safe }};
+
+function cleanupModalArtifacts() {
+  // Attempt to hide any Bootstrap modal that has the .show class
+  const openModalEl = document.querySelector('.modal.show');
+  if (openModalEl) {
+    const modalInstance = bootstrap.Modal.getInstance(openModalEl);
+    if (modalInstance) {
+      modalInstance.hide(); // Gracefully hide if instance exists
+    } else {
+      // If no instance (e.g., HTMX removed it but .show remains), remove .show directly
+      openModalEl.classList.remove('show');
+    }
+  }
+
+  // Unconditionally remove backdrops and body classes/styles that block scrolling.
+  // This is crucial because the .hide() above might be asynchronous or might not
+  // fully complete if HTMX is also aggressively managing the DOM.
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+}
+
+// Hook into Bootstrap modal hidden event for normal closures.
+// This serves as a redundant cleanup if Bootstrap closes the modal normally.
+document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
+
+// Hook into HTMX lifecycle. htmx:afterSettle is good as it fires after swaps are done.
+document.body.addEventListener('htmx:afterSettle', function(event) {
+    // We want this to run after ANY relevant htmx swap that might leave a modal open.
+    cleanupModalArtifacts();
+
+    // Previous attempts to re-initialize Bootstrap modals were not fully reliable.
+    // We no longer need htmx.process or modal instance disposal here because 
+    // we will use a manual, delegated event listener for .js-edit-trigger buttons.
+});
+
+// Delegated event listener for manually showing modals
+document.body.addEventListener('click', function(event) {
+  if (event.target.matches('.js-edit-trigger')) {
+    event.preventDefault();
+    const targetSelector = event.target.getAttribute('data-bs-target');
+    if (targetSelector) {
+      const modalElement = document.querySelector(targetSelector);
+      if (modalElement) {
+        // Get existing instance or create a new one
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalInstance.show();
+      }
+    }
+  }
+});
+
+// document.body.addEventListener('htmx:beforeCleanup', cleanupModalArtifacts);
+</script>
+{% endblock %} 
