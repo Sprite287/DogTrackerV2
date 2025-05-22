@@ -64,7 +64,10 @@ class MedicinePreset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=True)  # null = global preset
     name = db.Column(db.String(120), nullable=False)
-    default_unit = db.Column(db.String(20))
+    category = db.Column(db.String(100), nullable=True) # Added: e.g., Antibiotic, NSAID, Parasite Control
+    default_dosage_instructions = db.Column(db.Text, nullable=True) # Added: General dosing info/guidelines
+    suggested_units = db.Column(db.String(255), nullable=True) # Added: Comma-separated like 'mg,ml,tablet'
+    default_unit = db.Column(db.String(20), nullable=True) # Changed: Made nullable
     notes = db.Column(db.Text)
     medicines = relationship('DogMedicine', backref='preset', lazy=True)
 
@@ -75,8 +78,9 @@ class DogMedicine(db.Model):
     medicine_id = db.Column(db.Integer, db.ForeignKey('medicine_preset.id'), nullable=True)  # null if custom
     custom_name = db.Column(db.String(120))
     dosage = db.Column(db.String(50))
-    unit = db.Column(db.String(20))
-    frequency = db.Column(db.String(20))  # daily, weekly, monthly, as_needed, every_x_days, custom_text
+    unit = db.Column(db.String(50), nullable=False)
+    form = db.Column(db.String(100), nullable=True)  # e.g., "Tablet (Oral)", "Injectable (Solution)"
+    frequency = db.Column(db.String(100), nullable=False)
     frequency_value = db.Column(db.Integer)  # for every_x_days
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)

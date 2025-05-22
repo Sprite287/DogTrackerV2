@@ -62,12 +62,111 @@ adopter_notes_pool = [
     'Moved to a farm after adoption.'
 ]
 appointment_type_names = ['Vet Visit', 'Vaccination', 'Grooming', 'Adoption', 'General', 'Medication Start']
-medicine_presets = [
-    {'name': 'Heartgard', 'default_unit': 'tablet', 'notes': 'Monthly heartworm prevention.'},
-    {'name': 'NexGard', 'default_unit': 'tablet', 'notes': 'Monthly flea/tick prevention.'},
-    {'name': 'Doxycycline', 'default_unit': 'mg', 'notes': 'Antibiotic.'},
-    {'name': 'Rimadyl', 'default_unit': 'mg', 'notes': 'Pain relief.'},
-    {'name': 'Prednisone', 'default_unit': 'mg', 'notes': 'Steroid.'}
+# This list is now for rescue-specific example presets if any are still desired.
+# For the main, common medicines, we'll use the global_medicine_presets_data below.
+example_rescue_medicine_presets = [
+    {'name': 'RescueSpecial Dewormer', 'default_unit': 'ml', 'category': 'Parasite Control - Dewormer', 'suggested_units': 'ml,cc', 'notes': 'Special dewormer for this rescue.'},
+    {'name': 'RescueComfort NSAID', 'default_unit': 'tablet', 'category': 'Anti-inflammatory & Pain Relief - NSAID', 'suggested_units': 'tablet,chewable', 'notes': 'Rescue-formulated pain relief.'}
+]
+
+global_medicine_presets_data = [
+    # Parasite Control
+    {
+        "name": "Fenbendazole (Panacur)",
+        "category": "Parasite Control - Dewormer",
+        "default_dosage_instructions": "Typically administered for 3-5 consecutive days. Dosage varies by weight. Consult vet.",
+        "suggested_units": "mg,ml,packet,g",
+        "notes": "Broad-spectrum dewormer for various intestinal worms."
+    },
+    {
+        "name": "Praziquantel",
+        "category": "Parasite Control - Dewormer",
+        "default_dosage_instructions": "Specific for tapeworms. Dosage based on weight. May be given with or without food.",
+        "suggested_units": "mg,tablet",
+        "notes": "Often combined with other dewormers."
+    },
+    {
+        "name": "Afoxolaner (NexGard)",
+        "category": "Parasite Control - Flea & Tick",
+        "default_dosage_instructions": "Administer orally once a month. Chewable tablet, give with or without food.",
+        "suggested_units": "chew,tablet",
+        "notes": "Kills fleas and ticks. Prescription required."
+    },
+    {
+        "name": "Ivermectin (Heartgard Plus)",
+        "category": "Parasite Control - Heartworm",
+        "default_dosage_instructions": "Administer orally once a month. Ensure dog chews tablet.",
+        "suggested_units": "chew,tablet",
+        "notes": "Prevents heartworm disease, treats and controls roundworms and hookworms. Prescription required."
+    },
+    # Antibiotics
+    {
+        "name": "Amoxicillin/Clavulanate (Clavamox)",
+        "category": "Antibiotic",
+        "default_dosage_instructions": "Typically given twice daily. Dosage based on weight and infection type. Give with food to reduce GI upset.",
+        "suggested_units": "mg,ml,tablet",
+        "notes": "Broad-spectrum antibiotic for various bacterial infections."
+    },
+    {
+        "name": "Doxycycline",
+        "category": "Antibiotic",
+        "default_dosage_instructions": "Typically given once or twice daily. Dosage varies. Can cause GI upset; give with food if needed. Avoid with dairy/antacids.",
+        "suggested_units": "mg,tablet,capsule",
+        "notes": "Used for various bacterial infections, including tick-borne diseases."
+    },
+    # Anti-inflammatory & Pain Relief
+    {
+        "name": "Carprofen (Rimadyl)",
+        "category": "Anti-inflammatory & Pain Relief - NSAID",
+        "default_dosage_instructions": "Typically given once or twice daily. Dosage based on weight. Administer with food. Monitor for side effects.",
+        "suggested_units": "mg,tablet,caplet,chewable",
+        "notes": "Non-steroidal anti-inflammatory drug for pain and inflammation. Prescription required."
+    },
+    {
+        "name": "Meloxicam (Metacam)",
+        "category": "Anti-inflammatory & Pain Relief - NSAID",
+        "default_dosage_instructions": "Typically given once daily. Oral suspension or tablets. Administer with food.",
+        "suggested_units": "mg,ml,tablet",
+        "notes": "NSAID for pain and inflammation, often used for arthritis. Prescription required."
+    },
+    {
+        "name": "Gabapentin",
+        "category": "Anti-inflammatory & Pain Relief / Behavioral",
+        "default_dosage_instructions": "Dosage and frequency vary widely based on use (pain, anxiety, seizures). Consult vet.",
+        "suggested_units": "mg,capsule,tablet,ml",
+        "notes": "Used for chronic pain, nerve pain, seizures, and anxiety/sedation."
+    },
+    # Gastrointestinal Support
+    {
+        "name": "Maropitant (Cerenia)",
+        "category": "Gastrointestinal Support",
+        "default_dosage_instructions": "Once daily for vomiting. Tablets or injectable. Dosage by weight.",
+        "suggested_units": "mg,tablet,ml",
+        "notes": "Anti-nausea and anti-vomiting medication. Prescription required."
+    },
+    {
+        "name": "Probiotics (FortiFlora)",
+        "category": "Gastrointestinal Support",
+        "default_dosage_instructions": "Typically one packet daily mixed with food.",
+        "suggested_units": "packet,sachet,scoop",
+        "notes": "Nutritional supplement to support intestinal health."
+    },
+    # Allergy & Skin
+    {
+        "name": "Diphenhydramine (Benadryl)",
+        "category": "Allergy & Skin",
+        "default_dosage_instructions": "Typical dose 1mg per pound of body weight, 2-3 times daily. Confirm with vet. Can cause drowsiness.",
+        "suggested_units": "mg,tablet,capsule,ml",
+        "notes": "Antihistamine for allergic reactions, itching. OTC, but vet guidance recommended for dosage."
+    },
+    # Behavioral Support
+    {
+        "name": "Trazodone",
+        "category": "Behavioral Support",
+        "default_dosage_instructions": "Used for anxiety or sedation. Dosage varies greatly. Given as needed or regularly.",
+        "suggested_units": "mg,tablet",
+        "notes": "Often used for situational anxiety (vet visits, thunderstorms). Prescription required."
+    }
 ]
 
 # Helper functions
@@ -133,14 +232,56 @@ def seed_appointment_types(rescues):
     db.session.commit()
     return types
 
-def seed_medicine_presets(rescues):
-    presets = []
-    for rescue in rescues:
-        for preset in medicine_presets:
-            m = MedicinePreset(rescue_id=rescue.id, name=preset['name'], default_unit=preset['default_unit'], notes=preset['notes'])
+def seed_global_medicine_presets():
+    print("Seeding global medicine presets...")
+    presets_created = []
+    for preset_data in global_medicine_presets_data:
+        existing_preset = MedicinePreset.query.filter_by(name=preset_data['name'], rescue_id=None).first()
+        if not existing_preset:
+            m = MedicinePreset(
+                rescue_id=None, # Global
+                name=preset_data['name'],
+                category=preset_data.get('category'),
+                default_dosage_instructions=preset_data.get('default_dosage_instructions'),
+                suggested_units=preset_data.get('suggested_units'),
+                default_unit=preset_data.get('default_unit'), # Keep if still provided, though suggested_units is preferred
+                notes=preset_data.get('notes')
+            )
             db.session.add(m)
-            presets.append(m)
+            presets_created.append(m)
+            print(f"  Created global preset: {m.name}")
+        else:
+            print(f"  Global preset '{preset_data['name']}' already exists. Skipping.")
     db.session.commit()
+    print(f"Finished seeding global medicine presets. {len(presets_created)} created.")
+    return presets_created
+
+def seed_rescue_specific_medicine_presets(rescues):
+    print("Seeding rescue-specific example medicine presets...")
+    presets = []
+    # Using the renamed 'example_rescue_medicine_presets' list
+    for rescue in rescues:
+        for preset_data in example_rescue_medicine_presets: # iterate over the example list
+            # Check if this preset already exists for this rescue
+            existing_preset = MedicinePreset.query.filter_by(rescue_id=rescue.id, name=preset_data['name']).first()
+            if not existing_preset:
+                m = MedicinePreset(
+                    rescue_id=rescue.id,
+                    name=preset_data['name'],
+                    category=preset_data.get('category'),
+                    default_dosage_instructions=preset_data.get('default_dosage_instructions'),
+                    suggested_units=preset_data.get('suggested_units'),
+                    default_unit=preset_data.get('default_unit'),
+                    notes=preset_data.get('notes')
+                )
+                db.session.add(m)
+                presets.append(m)
+                print(f"  Created rescue-specific preset '{m.name}' for rescue '{rescue.name}'")
+            else:
+                print(f"  Rescue-specific preset '{preset_data['name']}' for rescue '{rescue.name}' already exists. Skipping.")
+
+    db.session.commit()
+    print(f"Finished seeding rescue-specific medicine presets. {len(presets)} created.")
     return presets
 
 def seed_dogs(rescues):
@@ -429,7 +570,8 @@ def main():
         ("Rescues", get_or_create_rescues),
         ("Users", seed_users),
         ("Appointment Types", seed_appointment_types),
-        ("Medicine Presets", seed_medicine_presets),
+        ("Global Medicine Presets", seed_global_medicine_presets),
+        ("Rescue-Specific Medicine Presets", seed_rescue_specific_medicine_presets),
         ("Dogs", seed_dogs),
         ("Appointments", seed_appointments),
         ("Medicines", seed_medicines),
@@ -449,7 +591,7 @@ def main():
         
         # Execute selected seeding functions
         with app.app_context():
-            rescues, users, appointment_types_list, medicine_presets_list, dogs_list, appointments_list, medicines_list = [], [], [], [], [], [], []
+            rescues, users, appointment_types_list, global_presets, rescue_specific_presets, dogs_list, appointments_list, medicines_list = [], [], [], [], [], [], []
             for i, (name, func) in enumerate(options):
                 if i in selected_options_indices:
                     print(f"\nSeeding {name}...")
@@ -461,9 +603,11 @@ def main():
                     elif name == "Appointment Types":
                         if not rescues: rescues = Rescue.query.all()
                         appointment_types_list = func(rescues)
-                    elif name == "Medicine Presets":
+                    elif name == "Global Medicine Presets":
+                        global_presets = func()
+                    elif name == "Rescue-Specific Medicine Presets":
                         if not rescues: rescues = Rescue.query.all()
-                        medicine_presets_list = func(rescues)
+                        rescue_specific_presets = func(rescues)
                     elif name == "Dogs":
                         if not rescues: rescues = Rescue.query.all()
                         dogs_list = func(rescues)
@@ -474,10 +618,11 @@ def main():
                         appointments_list = func(dogs_list, appointment_types_list, users)
                     elif name == "Medicines":
                         if not dogs_list: dogs_list = Dog.query.all()
-                        if not medicine_presets_list: medicine_presets_list = MedicinePreset.query.all()
+                        if not global_presets: global_presets = MedicinePreset.query.filter_by(rescue_id=None).all()
+                        if not rescue_specific_presets: rescue_specific_presets = MedicinePreset.query.filter_by(rescue_id=rescues[0].id).all()
                         if not users: users = User.query.all()
                         if not appointment_types_list: appointment_types_list = AppointmentType.query.all()
-                        medicines_list = func(dogs_list, medicine_presets_list, users, appointment_types_list)
+                        medicines_list = func(dogs_list, global_presets + rescue_specific_presets, users, appointment_types_list)
                     elif name == "Reminders": # Ensure this gets updated arguments if seed_reminders changes
                         if not users: users = User.query.all()
                         # This part needs careful handling of what appointments_list and medicines_list are
@@ -513,7 +658,7 @@ def main():
 
     with app.app_context():
         # Initialize lists/variables to store results from seeding functions for explicit passing
-        s_rescues, s_users, s_appointment_types, s_medicine_presets, s_dogs, s_appointments, s_medicines = None, None, None, None, None, None, None
+        s_rescues, s_users, s_appointment_types, s_global_presets, s_rescue_specific_presets, s_dogs, s_appointments, s_medicines = None, None, None, None, None, None, None, None
         
         # If seeding everything, ensure fixed order for dependencies
         # The `options` list already defines a sensible order.
@@ -539,11 +684,13 @@ def main():
                     print("Warning: Rescues not available from previous seeding step, querying DB for Appointment Types seeding.")
                     s_rescues = Rescue.query.all()
                 s_appointment_types = func(s_rescues)
-            elif name == "Medicine Presets":
+            elif name == "Global Medicine Presets":
+                s_global_presets = func()
+            elif name == "Rescue-Specific Medicine Presets":
                 if s_rescues is None:
-                    print("Warning: Rescues not available from previous seeding step, querying DB for Medicine Presets seeding.")
+                    print("Warning: Rescues not available from previous seeding step, querying DB for Rescue-Specific Medicine Presets seeding.")
                     s_rescues = Rescue.query.all()
-                s_medicine_presets = func(s_rescues)
+                s_rescue_specific_presets = func(s_rescues)
             elif name == "Dogs":
                 if s_rescues is None:
                     print("Warning: Rescues not available from previous seeding step, querying DB for Dogs seeding.")
@@ -556,10 +703,11 @@ def main():
                 s_appointments = func(s_dogs, s_appointment_types, s_users)
             elif name == "Medicines":
                 if s_dogs is None: s_dogs = Dog.query.all()
-                if s_medicine_presets is None: s_medicine_presets = MedicinePreset.query.all()
+                if s_global_presets is None: s_global_presets = MedicinePreset.query.filter_by(rescue_id=None).all()
+                if s_rescue_specific_presets is None: s_rescue_specific_presets = MedicinePreset.query.filter_by(rescue_id=s_rescues[0].id).all()
                 if s_users is None: s_users = User.query.all()
                 if s_appointment_types is None: s_appointment_types = AppointmentType.query.all()
-                s_medicines = func(s_dogs, s_medicine_presets, s_users, s_appointment_types)
+                s_medicines = func(s_dogs, s_global_presets + s_rescue_specific_presets, s_users, s_appointment_types)
             elif name == "Reminders": # This function currently does a 'pass'
                 if s_users is None: s_users = User.query.all()
                 if s_appointments is None: s_appointments = Appointment.query.all() # Get all if not seeded in this run

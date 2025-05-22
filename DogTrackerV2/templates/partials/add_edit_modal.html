@@ -110,12 +110,42 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <div id="addMedicineModalError" class="modal-error-display"></div>
           <div class="mb-3">
             <label for="addMedPreset" class="form-label">Medicine</label>
             <select class="form-select" id="addMedPreset" name="med_preset_id">
-              {% for med in medicine_presets %}
-                <option value="{{ med.id }}">{{ med.name }}</option>
+              <option value="" selected>Select a medicine...</option>
+              {% for category, presets_in_category in medicine_presets_categorized.items() %}
+                <optgroup label="{{ category }}">
+                  {% for med_preset in presets_in_category %}
+                    <option value="{{ med_preset.id }}" 
+                            data-suggested-units="{{ med_preset.suggested_units or '' }}" 
+                            data-dosage-instructions="{{ med_preset.default_dosage_instructions or '' }}">
+                      {{ med_preset.name }}
+                    </option>
+                  {% endfor %}
+                </optgroup>
               {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="addMedDosageInstructionsDisplay" style="font-style: italic; color: #555;">
+            <!-- Dosage instructions will be shown here by JS -->
+          </div>
+          <div class="mb-3">
+            <label for="addMedForm" class="form-label">Form</label>
+            <select class="form-select" id="addMedForm" name="med_form">
+              <option value="">Select form...</option>
+              <option value="Tablet (Oral)">Tablet (Oral)</option>
+              <option value="Capsule (Oral)">Capsule (Oral)</option>
+              <option value="Liquid (Oral)">Liquid (Oral)</option>
+              <option value="Chewable (Oral)">Chewable (Oral)</option>
+              <option value="Injectable (Solution)">Injectable (Solution)</option>
+              <option value="Topical (Cream/Ointment)">Topical (Cream/Ointment)</option>
+              <option value="Topical (Spot-On)">Topical (Spot-On)</option>
+              <option value="Shampoo / Wash">Shampoo / Wash</option>
+              <option value="Powder / Granules">Powder / Granules</option>
+              <option value="Paste">Paste</option>
+              <option value="Transdermal Gel">Transdermal Gel</option>
             </select>
           </div>
           <div class="mb-3">
@@ -124,16 +154,38 @@
           </div>
           <div class="mb-3">
             <label for="addMedUnit" class="form-label">Unit</label>
-            <input type="text" class="form-control" id="addMedUnit" name="med_unit">
+            <select class="form-select" id="addMedUnit" name="med_unit">
+              <option value="">Select unit...</option>
+              <option value="mg">mg (milligram)</option>
+              <option value="mcg">mcg (microgram)</option>
+              <option value="g">g (gram)</option>
+              <option value="mL">mL (milliliter)</option>
+              <option value="cc">cc (cubic centimeter)</option>
+              <option value="IU">IU (International Units)</option>
+              <option value="Units">Units (e.g., Insulin)</option>
+              <option value="%">% (percent)</option>
+              <option value="Tablet(s)">Tablet(s)</option>
+              <option value="Capsule(s)">Capsule(s)</option>
+              <option value="Dose(s)">Dose(s)</option>
+              <option value="Pouch(es)">Pouch(es)</option>
+              <option value="Vial(s)">Vial(s)</option>
+            </select>
           </div>
           <div class="mb-3">
             <label for="addMedFrequency" class="form-label">Frequency</label>
             <select class="form-select" id="addMedFrequency" name="med_frequency">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="as_needed">As Needed</option>
-              <option value="every_x_days">Every X Days</option>
+              <option value="SID">Once daily (SID)</option>
+              <option value="BID">Twice daily (BID)</option>
+              <option value="TID">Three times daily (TID)</option>
+              <option value="QID">Four times daily (QID)</option>
+              <option value="Every 8 hours">Every 8 hours</option>
+              <option value="Every 12 hours">Every 12 hours</option>
+              <option value="PRN">As needed (PRN)</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Bi-weekly">Bi-weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Every 3 days">Every 3 days</option>
+              <option value="Every other day">Every other day</option>
             </select>
           </div>
           <div class="mb-3">
@@ -170,16 +222,50 @@
 <div class="modal fade" id="editMedicineModal" tabindex="-1" aria-labelledby="editMedicineModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" hx-post="" hx-target="#medicines-list" hx-swap="outerHTML" hx-trigger="submit" action="">
+      <form method="POST" hx-post="" hx-target="#medicines-list" hx-swap="outerHTML" action="">
         <input type="hidden" id="editMedId" name="medicine_id" value="">
         <div class="modal-header">
           <h5 class="modal-title" id="editMedicineModalLabel">Edit Medicine</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <div id="editMedicineModalError" class="modal-error-display"></div>
           <div class="mb-3">
             <label for="editMedPreset" class="form-label">Medicine</label>
-            <select class="form-select" id="editMedPreset" name="med_preset_id"></select>
+            <select class="form-select" id="editMedPreset" name="med_preset_id">
+              <option value="" selected>Select a medicine...</option>
+              {% for category, presets_in_category in medicine_presets_categorized.items() %}
+                <optgroup label="{{ category }}">
+                  {% for med_preset in presets_in_category %}
+                    <option value="{{ med_preset.id }}" 
+                            data-suggested-units="{{ med_preset.suggested_units or '' }}" 
+                            data-dosage-instructions="{{ med_preset.default_dosage_instructions or '' }}">
+                      {{ med_preset.name }}
+                    </option>
+                  {% endfor %}
+                </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="editMedDosageInstructionsDisplay" style="font-style: italic; color: #555;">
+            <!-- Dosage instructions will be shown here by JS -->
+          </div>
+          <div class="mb-3">
+            <label for="editMedForm" class="form-label">Form</label>
+            <select class="form-select" id="editMedForm" name="med_form">
+              <option value="">Select form...</option>
+              <option value="Tablet (Oral)">Tablet (Oral)</option>
+              <option value="Capsule (Oral)">Capsule (Oral)</option>
+              <option value="Liquid (Oral)">Liquid (Oral)</option>
+              <option value="Chewable (Oral)">Chewable (Oral)</option>
+              <option value="Injectable (Solution)">Injectable (Solution)</option>
+              <option value="Topical (Cream/Ointment)">Topical (Cream/Ointment)</option>
+              <option value="Topical (Spot-On)">Topical (Spot-On)</option>
+              <option value="Shampoo / Wash">Shampoo / Wash</option>
+              <option value="Powder / Granules">Powder / Granules</option>
+              <option value="Paste">Paste</option>
+              <option value="Transdermal Gel">Transdermal Gel</option>
+            </select>
           </div>
           <div class="mb-3">
             <label for="editMedDosage" class="form-label">Dosage</label>
@@ -187,16 +273,38 @@
           </div>
           <div class="mb-3">
             <label for="editMedUnit" class="form-label">Unit</label>
-            <input type="text" class="form-control" id="editMedUnit" name="med_unit">
+            <select class="form-select" id="editMedUnit" name="med_unit">
+              <option value="">Select unit...</option>
+              <option value="mg">mg (milligram)</option>
+              <option value="mcg">mcg (microgram)</option>
+              <option value="g">g (gram)</option>
+              <option value="mL">mL (milliliter)</option>
+              <option value="cc">cc (cubic centimeter)</option>
+              <option value="IU">IU (International Units)</option>
+              <option value="Units">Units (e.g., Insulin)</option>
+              <option value="%">% (percent)</option>
+              <option value="Tablet(s)">Tablet(s)</option>
+              <option value="Capsule(s)">Capsule(s)</option>
+              <option value="Dose(s)">Dose(s)</option>
+              <option value="Pouch(es)">Pouch(es)</option>
+              <option value="Vial(s)">Vial(s)</option>
+            </select>
           </div>
           <div class="mb-3">
             <label for="editMedFrequency" class="form-label">Frequency</label>
             <select class="form-select" id="editMedFrequency" name="med_frequency">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="as_needed">As Needed</option>
-              <option value="every_x_days">Every X Days</option>
+              <option value="SID">Once daily (SID)</option>
+              <option value="BID">Twice daily (BID)</option>
+              <option value="TID">Three times daily (TID)</option>
+              <option value="QID">Four times daily (QID)</option>
+              <option value="Every 8 hours">Every 8 hours</option>
+              <option value="Every 12 hours">Every 12 hours</option>
+              <option value="PRN">As needed (PRN)</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Bi-weekly">Bi-weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Every 3 days">Every 3 days</option>
+              <option value="Every other day">Every other day</option>
             </select>
           </div>
           <div class="mb-3">

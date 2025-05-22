@@ -139,11 +139,53 @@ def test_edit():
 @app.route('/dog/<int:dog_id>')
 def dog_details(dog_id):
     dog = Dog.query.get_or_404(dog_id)
-    appointment_types = AppointmentType.query.filter_by(rescue_id=dog.rescue_id).all()
-    medicine_presets = MedicinePreset.query.filter((MedicinePreset.rescue_id == dog.rescue_id) | (MedicinePreset.rescue_id == None)).all()
-    appointment_types_json = [{"id": t.id, "name": t.name} for t in appointment_types]
-    medicine_presets_json = [{"id": m.id, "name": m.name} for m in medicine_presets]
-    return render_template('dog_details.html', dog=dog, appointment_types=appointment_types_json, medicine_presets=medicine_presets_json)
+
+    # Fetch and prepare appointment types ensuring unique names, sorted
+    appointment_types_db = AppointmentType.query.filter_by(rescue_id=dog.rescue_id).order_by(AppointmentType.name).all()
+    unique_appointment_types_dict = {}
+    for t in appointment_types_db:
+        if t.name not in unique_appointment_types_dict: # Keep first encountered based on initial sort
+            unique_appointment_types_dict[t.name] = {"id": t.id, "name": t.name}
+    appointment_types_json = sorted(list(unique_appointment_types_dict.values()), key=lambda x: x['name'])
+
+    # Fetch and prepare medicine presets, grouped by category, and sorted
+    all_medicine_presets_db = MedicinePreset.query.filter(
+        (MedicinePreset.rescue_id == dog.rescue_id) | (MedicinePreset.rescue_id == None)
+    ).order_by(MedicinePreset.category, MedicinePreset.name).all()
+
+    categorized_medicine_presets = defaultdict(list)
+    # Prioritize rescue-specific if names clash, then by original sort order (category, name)
+    # This step also dedupes based on name across global/rescue-specific
+    temp_deduped_presets_by_name = {}
+    rescue_specific_presets = [p for p in all_medicine_presets_db if p.rescue_id == dog.rescue_id]
+    global_presets = [p for p in all_medicine_presets_db if p.rescue_id == None]
+
+    for preset in rescue_specific_presets:
+        temp_deduped_presets_by_name[preset.name] = preset
+    for preset in global_presets:
+        if preset.name not in temp_deduped_presets_by_name:
+            temp_deduped_presets_by_name[preset.name] = preset
+    
+    # Now group the deduped and prioritized list by category
+    final_sorted_presets = sorted(temp_deduped_presets_by_name.values(), key=lambda p: (p.category or "Uncategorized", p.name))
+
+    for preset in final_sorted_presets:
+        category_name = preset.category if preset.category else "Uncategorized"
+        categorized_medicine_presets[category_name].append({
+            "id": preset.id,
+            "name": preset.name,
+            "suggested_units": preset.suggested_units, # Comma-separated string
+            "default_dosage_instructions": preset.default_dosage_instructions
+        })
+    
+    # Sort the categories themselves for ordered display in the template
+    # Convert defaultdict to dict for easier iteration in Jinja if preferred, and sort by category name
+    sorted_categorized_medicine_presets = dict(sorted(categorized_medicine_presets.items()))
+
+    return render_template('dog_details.html', 
+                           dog=dog, 
+                           appointment_types=appointment_types_json, 
+                           medicine_presets_categorized=sorted_categorized_medicine_presets)
 
 @app.cli.command('list-routes')
 def list_routes():
@@ -395,49 +437,73 @@ def add_medicine(dog_id):
     med_preset_id_str = request.form.get('med_preset_id')
     med_dosage = request.form.get('med_dosage')
     med_unit = request.form.get('med_unit')
+    med_form = request.form.get('med_form')
     med_frequency = request.form.get('med_frequency')
     med_start_date_str = request.form.get('med_start_date')
     med_end_date_str = request.form.get('med_end_date')
     med_status = request.form.get('med_status')
     med_notes = request.form.get('med_notes')
 
+    error_message = None
     start_date = None
     end_date = None
-    if med_start_date_str:
+
+    if not med_start_date_str:
+        error_message = 'Start Date is required.'
+    else:
         try:
             start_date = datetime.strptime(med_start_date_str, '%Y-%m-%d').date()
         except ValueError:
-            return 'Invalid start date format.', 400
-    else:
-        return 'Start Date is required.', 400
-
-    if med_end_date_str:
+            error_message = 'Invalid start date format.'
+    
+    if not error_message and med_end_date_str:
         try:
             end_date = datetime.strptime(med_end_date_str, '%Y-%m-%d').date()
         except ValueError:
-            return 'Invalid end date format.', 400
+            error_message = 'Invalid end date format.'
 
-    if not med_preset_id_str:
-        return 'Medicine preset is required.', 400
-    if not med_dosage:
-        return 'Dosage is required.', 400
-    if not med_unit:
-        return 'Unit is required.', 400
-    if not med_frequency:
-        return 'Frequency is required.', 400
-    if not med_status:
-        return 'Status is required.', 400
+    if not error_message and not med_preset_id_str:
+        error_message = 'Medicine preset is required.'
+    if not error_message and not med_dosage:
+        error_message = 'Dosage is required.'
+    if not error_message and not med_unit:
+        error_message = 'Unit is required.'
+    if not error_message and not med_frequency:
+        error_message = 'Frequency is required.'
+    if not error_message and not med_status:
+        error_message = 'Status is required.'
+
+    if error_message:
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 200
+        response.headers['HX-Retarget'] = '#addMedicineModalError'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
     
     temp_user_id = get_first_user_id()
     if temp_user_id is None:
+        # This case is a more systemic issue, flash message and redirect might be okay
+        # or could also be an HTMX response if the whole page context allows for it.
+        # For now, keeping flash for this rarer case.
         flash('Cannot add medicine: No users found in the system.', 'danger')
+        # If HTMX request, perhaps return an OOB flash message instead of full redirect render
+        if request.headers.get('HX-Request'):
+             # Simplified: just trigger an alert for now if HX, actual OOB flash more complex
+            alert_resp = make_response('') # Empty response, HX-Trigger does the work
+            alert_resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Cannot add medicine: No users found.", "category": "danger"}})
+            return alert_resp, 200 # 200 so HTMX processes the trigger, not an error
         return redirect(url_for('dog_details', dog_id=dog_id))
 
     final_preset_id = None
     try:
         final_preset_id = int(med_preset_id_str)
     except ValueError:
-        return 'Invalid Medicine Preset ID.', 400
+        error_message = 'Invalid Medicine Preset ID.' 
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 200
+        response.headers['HX-Retarget'] = '#addMedicineModalError'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
 
     med = DogMedicine(
         dog_id=dog.id,
@@ -446,6 +512,7 @@ def add_medicine(dog_id):
         custom_name=None, # Explicitly None
         dosage=med_dosage,
         unit=med_unit,
+        form=med_form,
         frequency=med_frequency,
         start_date=start_date,
         end_date=end_date,
@@ -502,44 +569,50 @@ def edit_medicine(dog_id, medicine_id):
 
     # Get data from form
     med_preset_id_str = request.form.get('med_preset_id')
-    # med_custom_name = request.form.get('med_custom_name') # Custom name is not directly edited this way, it's part of preset logic or if preset is null
     med_dosage = request.form.get('med_dosage')
     med_unit = request.form.get('med_unit')
+    med_form = request.form.get('med_form')
     med_frequency = request.form.get('med_frequency')
     med_start_date_str = request.form.get('med_start_date')
     med_end_date_str = request.form.get('med_end_date')
     med_status = request.form.get('med_status')
     med_notes = request.form.get('med_notes')
 
-    # Parse and validate dates
+    error_message = None
     start_date = None
-    if med_start_date_str:
+    end_date = None
+
+    if not med_start_date_str:
+        error_message = 'Start Date is required.'
+    else:
         try:
             start_date = datetime.strptime(med_start_date_str, '%Y-%m-%d').date()
         except ValueError:
-            # Consider returning a proper error response for HTMX if this were a modal form
-            return 'Invalid start date format.', 400 
-    else:
-        return 'Start Date is required.', 400 # Or handle via HTMX error partial
-
-    end_date = None
-    if med_end_date_str:
+            error_message = 'Invalid start date format.'
+    
+    if not error_message and med_end_date_str:
         try:
             end_date = datetime.strptime(med_end_date_str, '%Y-%m-%d').date()
         except ValueError:
-            return 'Invalid end date format.', 400
+            error_message = 'Invalid end date format.'
 
-    # Validate other required fields
-    if not med_preset_id_str: # Assuming preset is chosen, custom_name is off the table for edit via this form
-        return 'Medicine preset is required.', 400
-    if not med_dosage:
-        return 'Dosage is required.', 400
-    if not med_unit:
-        return 'Unit is required.', 400
-    if not med_frequency:
-        return 'Frequency is required.', 400
-    if not med_status:
-        return 'Status is required.', 400
+    if not error_message and not med_preset_id_str:
+        error_message = 'Medicine preset is required.'
+    if not error_message and not med_dosage:
+        error_message = 'Dosage is required.'
+    if not error_message and not med_unit:
+        error_message = 'Unit is required.'
+    if not error_message and not med_frequency:
+        error_message = 'Frequency is required.'
+    if not error_message and not med_status:
+        error_message = 'Status is required.'
+
+    if error_message:
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 200 # Keep 200 for HTMX to process swap
+        response.headers['HX-Retarget'] = '#editMedicineModalError'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
 
     temp_user_id = get_first_user_id()
     if temp_user_id is None:
@@ -553,6 +626,7 @@ def edit_medicine(dog_id, medicine_id):
                            # For now, aligning with add_medicine where custom_name is set to None if preset is used.
     med.dosage = med_dosage
     med.unit = med_unit
+    med.form = med_form
     med.frequency = med_frequency
     med.start_date = start_date
     med.end_date = end_date
@@ -634,6 +708,7 @@ def api_get_medicine(medicine_id):
         'medicine_id': med.medicine_id,
         'dosage': med.dosage,
         'unit': med.unit,
+        'form': med.form,
         'frequency': med.frequency,
         'start_date': med.start_date.isoformat() if med.start_date else '',
         'end_date': med.end_date.isoformat() if med.end_date else '',

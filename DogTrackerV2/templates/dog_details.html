@@ -73,45 +73,48 @@
 <script type="text/javascript">
 /* eslint-disable */
 window.appointmentTypes = {{ appointment_types|tojson|safe }};
-window.medicinePresets = {{ medicine_presets|tojson|safe }};
+{# The following line was causing an error because 'medicine_presets' is no longer passed. #}
+{# It has been replaced by 'medicine_presets_categorized'. #}
+{# window.medicinePresets = {{ medicine_presets|tojson|safe }}; #}
 
 function cleanupModalArtifacts() {
-  // Attempt to hide any Bootstrap modal that has the .show class
   const openModalEl = document.querySelector('.modal.show');
   if (openModalEl) {
     const modalInstance = bootstrap.Modal.getInstance(openModalEl);
     if (modalInstance) {
-      modalInstance.hide(); // Gracefully hide if instance exists
+      modalInstance.hide();
     } else {
-      // If no instance (e.g., HTMX removed it but .show remains), remove .show directly
       openModalEl.classList.remove('show');
     }
   }
-
-  // Unconditionally remove backdrops and body classes/styles that block scrolling.
-  // This is crucial because the .hide() above might be asynchronous or might not
-  // fully complete if HTMX is also aggressively managing the DOM.
   document.body.classList.remove('modal-open');
   document.body.style.overflow = '';
   document.body.style.paddingRight = '';
   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 }
 
-// Hook into Bootstrap modal hidden event for normal closures.
-// This serves as a redundant cleanup if Bootstrap closes the modal normally.
 document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
 
-// Hook into HTMX lifecycle. htmx:afterSettle is good as it fires after swaps are done.
 document.body.addEventListener('htmx:afterSettle', function(event) {
-    // We want this to run after ANY relevant htmx swap that might leave a modal open.
-    cleanupModalArtifacts();
+    // Only run cleanup if the target of the swap wasn't an error display
+    // area within one of our known modals. This prevents closing the modal
+    // when an error message is intentionally displayed inside it.
+    const errorTargets = ['#addAppointmentModalError', '#addMedicineModalError', '#editAppointmentModalError', '#editMedicineModalError']; 
+    // Add other error display IDs if you have more modals with this pattern
+    
+    let isErrorTargetSwap = false;
+    if (event.detail.target) {
+        const targetId = event.detail.target.id;
+        if (targetId && errorTargets.some(errorId => errorId === '#' + targetId)) {
+            isErrorTargetSwap = true;
+        }
+    }
 
-    // Previous attempts to re-initialize Bootstrap modals were not fully reliable.
-    // We no longer need htmx.process or modal instance disposal here because 
-    // we will use a manual, delegated event listener for .js-edit-trigger buttons.
+    if (!isErrorTargetSwap) {
+        cleanupModalArtifacts();
+    }
 });
 
-// Delegated event listener for manually showing modals
 document.body.addEventListener('click', function(event) {
   if (event.target.matches('.js-edit-trigger')) {
     event.preventDefault();
@@ -119,7 +122,6 @@ document.body.addEventListener('click', function(event) {
     if (targetSelector) {
       const modalElement = document.querySelector(targetSelector);
       if (modalElement) {
-        // Get existing instance or create a new one
         const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
         modalInstance.show();
       }
@@ -127,6 +129,153 @@ document.body.addEventListener('click', function(event) {
   }
 });
 
-// document.body.addEventListener('htmx:beforeCleanup', cleanupModalArtifacts);
+// ----- NEW JAVASCRIPT FOR MEDICINE FORM DYNAMICS -----
+
+function updateMedicineFormElements(presetSelectElement, unitContainerId, dosageInstructionsDisplayId, unitInputName, unitInputId) {
+    const selectedOption = presetSelectElement.options[presetSelectElement.selectedIndex];
+    const dosageInstructionsDisplay = document.getElementById(dosageInstructionsDisplayId);
+
+    if (!selectedOption || !selectedOption.value) {
+        if(dosageInstructionsDisplay) dosageInstructionsDisplay.innerHTML = '&nbsp;';
+        return;
+    }
+
+    const dosageInstructions = selectedOption.dataset.dosageInstructions;
+
+    if(dosageInstructionsDisplay) {
+        dosageInstructionsDisplay.textContent = dosageInstructions || '';
+        if (!dosageInstructionsDisplay.textContent) dosageInstructionsDisplay.innerHTML = '&nbsp;';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addMedPresetSelect = document.getElementById('addMedPreset');
+    if (addMedPresetSelect) {
+        addMedPresetSelect.addEventListener('change', function() {
+            updateMedicineFormElements(this, '', 'addMedDosageInstructionsDisplay', '', '');
+        });
+        if(addMedPresetSelect.value) {
+             updateMedicineFormElements(addMedPresetSelect, '', 'addMedDosageInstructionsDisplay', '', '');
+        }
+    }
+
+    const editMedPresetSelect = document.getElementById('editMedPreset');
+    if (editMedPresetSelect) {
+        editMedPresetSelect.addEventListener('change', function() {
+            updateMedicineFormElements(this, '', 'editMedDosageInstructionsDisplay', '', '');
+        });
+    }
+
+    // Reset Add Medicine Modal form when it's about to be shown
+    const addMedicineModalElement = document.getElementById('addMedicineModal');
+    if (addMedicineModalElement) {
+        addMedicineModalElement.addEventListener('show.bs.modal', function () {
+            const form = this.querySelector('form');
+            if (form) {
+                form.reset(); // Reset all form fields to their defaults
+            }
+            
+            const errorDisplay = this.querySelector('#addMedicineModalError');
+            if (errorDisplay) {
+                errorDisplay.innerHTML = '';
+            }
+
+            const medPresetSelect = this.querySelector('#addMedPreset');
+            if (medPresetSelect) {
+                medPresetSelect.value = ''; 
+                updateMedicineFormElements(medPresetSelect, '', 'addMedDosageInstructionsDisplay', '', '');
+            }
+        });
+    }
+
+    // Populate Edit Medicine Modal when it's about to be shown
+    const editMedicineModalElement = document.getElementById('editMedicineModal');
+    if (editMedicineModalElement) {
+        editMedicineModalElement.addEventListener('show.bs.modal', async function (event) {
+            const button = event.relatedTarget; 
+            if (!button) return;
+
+            // Reset form and clear errors first
+            const form = this.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+            const errorDisplayModal = this.querySelector('#editMedicineModalError');
+            if (errorDisplayModal) {
+                errorDisplayModal.innerHTML = '';
+            }
+            // Reset dynamic fields (dosage instructions, unit input) to default state
+            const medPresetSelect = this.querySelector('#editMedPreset');
+            if (medPresetSelect) {
+                medPresetSelect.value = ''; // Ensure it's reset before populating
+                updateMedicineFormElements(medPresetSelect, '', 'editMedDosageInstructionsDisplay', '', '');
+            }
+
+            const medicineId = button.dataset.medicineId;
+            const dogId = button.dataset.dogId; 
+            
+            if (!form || !medicineId || !dogId) {
+                if(errorDisplayModal) errorDisplayModal.textContent = 'Error: Could not initialize form.';
+                return;
+            }
+
+            const actionUrl = `/dog/${dogId}/medicine/edit/${medicineId}`;
+            form.setAttribute('action', actionUrl);
+            form.setAttribute('hx-post', actionUrl);
+            
+            // Force HTMX to process the form again after we've set the attributes
+            if (typeof htmx !== 'undefined') {
+                htmx.process(form);
+            }
+            
+            try {
+                const response = await fetch(`/api/medicine/${medicineId}`);
+                if (!response.ok) {
+                    const errorDisplay = this.querySelector('#editMedicineModalError'); 
+                    if(errorDisplay) errorDisplay.textContent = 'Could not load medicine details.';
+                    return;
+                }
+                const medDetails = await response.json();
+
+                form.querySelector('#editMedId').value = medDetails.id;
+                
+                if (medPresetSelect) {
+                    medPresetSelect.value = medDetails.medicine_id; // Set the value AFTER options are confirmed to be there
+                } else {
+                    console.error('#editMedPreset dropdown NOT FOUND');
+                }
+                
+                form.querySelector('#editMedDosage').value = medDetails.dosage || '';
+                form.querySelector('#editMedFrequency').value = medDetails.frequency || 'SID';
+                form.querySelector('#editMedStart').value = medDetails.start_date || '';
+                form.querySelector('#editMedEnd').value = medDetails.end_date || '';
+                form.querySelector('#editMedStatus').value = medDetails.status || 'active';
+                form.querySelector('#editMedNotes').value = medDetails.notes || '';
+                
+                // Set the form field if it exists
+                const formField = form.querySelector('#editMedForm');
+                if (formField) {
+                    formField.value = medDetails.form || '';
+                }
+
+                updateMedicineFormElements(medPresetSelect, '', 'editMedDosageInstructionsDisplay', '', '');
+                
+                // Now set the unit value directly on the select element
+                const unitField = form.querySelector('#editMedUnit');
+                if (unitField) {
+                    unitField.value = medDetails.unit || '';
+                }
+
+            } catch (error) {
+                console.error('Error fetching or populating medicine details:', error);
+                const errorDisplay = this.querySelector('#editMedicineModalError');
+                if(errorDisplay) errorDisplay.textContent = 'Error loading medicine data.';
+            }
+        });
+    }
+});
+
+// ----- END OF NEW JAVASCRIPT -----
+
 </script>
 {% endblock %} 
