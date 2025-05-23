@@ -211,70 +211,133 @@ This project is being developed in phases. Below is the current status:
 
 ---
 
-### **Phase 3: Calendar Integration & Reminder System (COMPLETED)**
+### **Phase 3: Enhanced Medicine Management System & Calendar Integration (COMPLETED)**
 
-*   **Objective:** Develop a visual calendar, a robust reminder generation system, and the interface for users to see and manage these reminders, including integrating appointments and medicine schedules into a unified calendar view.
+*   **Objective:** Transform the basic medicine management system into a professional-grade veterinary medicine tracker with categorized organization, standardized units, medication forms, and comprehensive error handling. Also implement calendar integration and reminder systems.
 *   **Key Deliverables:**
-    *   **1. Core Reminder System (COMPLETED):**
-        *   **1.1. Reminder Model & Migrations:**
-            *   Defined a new, robust `Reminder` model (`id`, `message`, `due_datetime`, `status`, `reminder_type`, `dog_id`, `user_id`, `appointment_id`, `dog_medicine_id`, `created_at`, `updated_at`). (DONE)
-            *   Established relationships to `Dog`, `User`, `Appointment`, and `DogMedicine`. (DONE)
-            *   Successfully generated and applied database migrations, resolving initial issues with `NOT NULL` constraints (e.g., using `DROP TABLE IF EXISTS reminder CASCADE;` in migrations). (DONE)
-        *   **1.2. Reminder Generation Logic (`DogTrackerV2/app.py`):**
-            *   Implemented automatic `Reminder` creation in `add_appointment` and `edit_appointment` for appointment info, 24-hour prior, and 1-hour prior warnings. (DONE)
-            *   `edit_appointment` correctly deletes old appointment reminders. (DONE)
-            *   Implemented automatic `Reminder` creation in `add_medicine` and `edit_medicine` for medicine start dates. (DONE)
-            *   `edit_medicine` correctly deletes old medicine reminders. (DONE)
-            *   Resolved `IntegrityError` for UI-triggered operations with a `get_first_user_id()` helper function for `created_by` and `user_id` fields. (DONE)
-    *   **2. Reminder Display & Interaction (COMPLETED):**
-        *   **2.1. Consolidated Calendar & Reminders View:**
-            *   Removed separate `/reminders` route and `reminders_page.html`. (DONE)
-            *   `/calendar` route (`calendar_view` function) now fetches and groups pending reminders (Vet Reminders, Medication Reminders, Other Reminders) for the next 7 days. (DONE)
-        *   **2.2. Interactive Reminder Management:**
-            *   Integrated "Acknowledge" and "Dismiss" buttons for reminders on `calendar_view.html` using HTMX. (DONE)
-            *   Endpoints `/reminder/<id>/acknowledge` and `/reminder/<id>/dismiss` update reminder status and UI. (DONE)
-        *   **2.3. Navigation Update:**
-            *   Single "Calendar & Reminders" navigation link in `base.html` pointing to `/calendar`. (DONE)
-    *   **3. Calendar Implementation (COMPLETED):**
-        *   **3.1. FullCalendar Integration:**
-            *   Successfully added FullCalendar library (v6.1.11) via CDN to `base.html`. (DONE)
-            *   Resolved initial JavaScript errors (e.g., "FullCalendar is not defined" by using `index.global.min.js`). (DONE)
-        *   **3.2. Calendar View & API:**
-            *   Created `/calendar` route and `DogTrackerV2/templates/calendar_view.html`. (DONE)
-            *   Established and then refactored the API endpoint `/api/calendar/events` to fetch `DogMedicine` data directly and merge it with `Appointment` data, eliminating "shadow appointments." (DONE)
-    *   **4. Data Seeding & Utility Updates (COMPLETED):**
-        *   **4.1. `populate_dogs.py` Enhancements:**
-            *   Added `clear_data()` function. (DONE)
-            *   Updated `main()` with `--clear` and `--seed` arguments. (DONE)
-            *   `seed_appointments` and `seed_medicines` directly create associated `Reminder` instances. (DONE)
-            *   Updated `populate_dogs.py` to stop creating "shadow appointments" for medicines, aligning with the refactored calendar API. (DONE)
-            *   Ensured `created_by` for seeded data uses valid user IDs. (DONE)
-    *   **5. Polish & Refinements (COMPLETED):**
-        *   **5.1. UI Enhancements:**
-            *   Added `favicon.ico` and linked in `base.html`. (DONE)
+    *   **1. Medicine Management Enhancements (COMPLETED):**
+        *   **1.1. Database Schema Improvements:**
+            *   Enhanced `MedicinePreset` model with `category`, `default_dosage_instructions`, and `suggested_units` fields. (DONE)
+            *   Added `form` field to `DogMedicine` model for medication types (Tablet, Liquid, Injectable, etc.). (DONE)
+            *   Successfully resolved multiple database migration challenges including Flask app detection, "multiple heads" conflicts, and duplicate table errors. (DONE)
+            *   Updated `populate_dogs.py` with comprehensive `global_medicine_presets_data` containing detailed medicine information organized by categories. (DONE)
+        *   **1.2. Categorized Medicine Organization:**
+            *   Implemented medicine preset categorization (Heartworm Prevention, Flea & Tick Prevention, Antibiotics, Pain Management, etc.). (DONE)
+            *   Modified `dog_details` route to group medicine presets by category as `medicine_presets_categorized`. (DONE)
+            *   Updated dropdowns to use `<optgroup>` structure for organized display of medicine categories. (DONE)
+            *   Resolved duplicate entries in dropdowns by ensuring unique names and prioritizing rescue-specific presets over global ones. (DONE)
+        *   **1.3. Standardized Medicine Management System:**
+            *   **Form Field**: Added comprehensive medication form dropdown (Tablet (Oral), Capsule (Oral), Liquid (Oral), Injectable (Solution), Topical, etc.). (DONE)
+            *   **Standardized Units**: Replaced dynamic unit system with standardized dropdown (mg, mL, IU, tablets, capsules, doses, etc.). (DONE)
+            *   **Veterinary Terminology**: Enhanced frequency dropdown with proper veterinary terms (SID, BID, TID, QID, Every 8 hours, PRN, etc.). (DONE)
+            *   Updated medicine list display to include Form column for better organization. (DONE)
+            *   Changed default frequency from 'daily' to 'SID' for veterinary consistency. (DONE)
+    *   **2. Advanced UI/UX and Error Handling (COMPLETED):**
+        *   **2.1. Dynamic Form Enhancement:**
+            *   Added `data-suggested-units` and `data-dosage-instructions` attributes to medicine preset options. (DONE)
+            *   Implemented `updateMedicineFormElements` JavaScript function for dynamic dosage instructions display. (DONE)
+            *   Resolved Jinja/JavaScript conflict causing `TypeError: Object of type Undefined is not JSON serializable`. (DONE)
+        *   **2.2. Comprehensive Error Handling:**
+            *   Added error display functionality to both Add and Edit Medicine modals with dedicated error divs. (DONE)
+            *   Modified routes to return HTML partial (`partials/modal_form_error.html`) with proper HTMX headers for in-modal error display. (DONE)
+            *   Fixed modal closing issues by modifying `htmx:afterSettle` listener to exclude error target swaps. (DONE)
+            *   Added form reset functionality on `show.bs.modal` event to clear previous data and errors. (DONE)
+        *   **2.3. Edit Medicine Modal Critical Fix:**
+            *   Discovered and resolved critical issue where `partials/medicines_list.html` generated individual modals instead of using shared modal. (DONE)
+            *   Fixed obsolete `medicine_presets` variable usage, updating to use `medicine_presets_categorized`. (DONE)
+            *   Implemented proper edit button functionality with shared `#editMedicineModal` and correct data attributes. (DONE)
+            *   Added crucial `htmx.process(form)` call to re-process forms after setting dynamic attributes. (DONE)
+    *   **3. Calendar Integration & Reminder System (COMPLETED):**
+        *   **3.1. Core Reminder System:**
+            *   Defined robust `Reminder` model with relationships to `Dog`, `User`, `Appointment`, and `DogMedicine`. (DONE)
+            *   Implemented automatic reminder generation for appointments (info, 24-hour prior, 1-hour prior) and medicine start dates. (DONE)
+            *   Resolved `IntegrityError` issues with `get_first_user_id()` helper function. (DONE)
+        *   **3.2. Calendar Implementation:**
+            *   Successfully integrated FullCalendar library (v6.1.11) with proper JavaScript configuration. (DONE)
+            *   Created `/calendar` route with grouped reminder display (Vet Reminders, Medication Reminders, Other Reminders). (DONE)
+            *   Implemented `/api/calendar/events` endpoint merging appointments and medicine schedules. (DONE)
+            *   Added interactive "Acknowledge" and "Dismiss" functionality for reminders using HTMX. (DONE)
+        *   **3.3. Data Management:**
+            *   Enhanced `populate_dogs.py` with comprehensive data seeding and clearing functionality. (DONE)
+            *   Eliminated "shadow appointments" for medicines, streamlining data structure. (DONE)
+    *   **4. Technical Achievements (COMPLETED):**
+        *   **4.1. HTMX Form Handling:**
+            *   Resolved complex HTMX form submission issues with proper error targeting and reswapping. (DONE)
+            *   Fixed modal behavior to prevent unwanted closures during error states. (DONE)
+            *   Implemented proper form processing for dynamically updated content. (DONE)
+        *   **4.2. JavaScript Optimization:**
+            *   Simplified JavaScript codebase by removing complex dynamic unit system. (DONE)
+            *   Retained dosage instructions functionality while standardizing unit management. (DONE)
+            *   Fixed all JavaScript execution timing issues with proper event handling. (DONE)
 
 ---
 
-### **New Phase 4: Dashboard, Reporting & User-Rescue Link (PLANNED)**
+### **Phase 4: Dashboard & Reporting (COMPLETED)**
 
-*   **Objective:** Implement the central user dashboard, associated reporting, and solidify user-rescue data links, leveraging the reminder system from Phase 3.
+*   **Objective:** Implement the central user dashboard showing overdue and today's reminders, leveraging the reminder system from Phase 3.
 *   **Key Deliverables:**
-    *   **Refine and Confirm User-Rescue Link:** Ensure the `User` model has a robust and populated link to the `Rescue` model (e.g., `user.rescue_id`). This is foundational for personalization and multi-tenancy.
-    *   **Central Home Page / Dashboard (Primary Deliverable):**
-        *   Develop a new primary landing page for authenticated users.
-        *   Display a summary of all overdue scheduled items (e.g., appointments, medication doses), sourced from the reminder system.
-        *   Display a summary of all scheduled items due "today" (e.g., appointments, medication doses), sourced from the reminder system.
-    *   **Reporting/Analytics (Basic, Supporting Dashboard):**
-        *   Develop simple server-side queries to gather statistics relevant to the dashboard and overall operations.
-        *   Display basic reports/stats on the new dashboard or a dedicated section, for example:
-            *   Number of dogs by adoption status.
-            *   List of upcoming appointments across all dogs for the next X days.
-            *   List of active medications needing refills (based on end dates, if applicable).
-    *   **Usability Testing:** Conduct informal usability tests for the new dashboard and related functionalities.
+    *   **Central Dashboard as New Landing Page:**
+        *   Developed new primary landing page (`/dashboard`) for authenticated users, replacing dog list as main entry point. (DONE)
+        *   Root route (`/`) now redirects to dashboard with separate `/dogs` route for dog list access. (DONE)
+        *   Updated navigation with "Home" link and proper routing structure. (DONE)
+    *   **Overdue Items Management:**
+        *   Red-highlighted section showing all overdue reminders (`due_datetime < now`) with count badges. (DONE)
+        *   Organized by reminder type using Bootstrap accordion layout (Medication, Appointment Info, etc.). (DONE)
+        *   Auto-expands first overdue section for immediate attention. (DONE)
+        *   Shows precise overdue timing (X days, X hours overdue). (DONE)
+    *   **Today's Schedule:**
+        *   Blue-highlighted section displaying today's pending reminders with count badges. (DONE)
+        *   Same accordion organization by type for consistency. (DONE)
+        *   Shows due times for today's items. (DONE)
+    *   **User Interaction & HTMX Integration:**
+        *   "Done" and "Dismiss" buttons on each reminder (changed from "Ack" for user-friendliness). (DONE)
+        *   HTMX-powered smooth removal without page refresh. (DONE)
+        *   Proper reminder status management (acknowledged, dismissed). (DONE)
+    *   **Quick Actions Section:**
+        *   Three action cards providing navigation to: Add New Dog, View Calendar, View Dog List. (DONE)
+        *   Maintains easy access to existing functionality. (DONE)
+    *   **Technical Achievements:**
+        *   Resolved Jinja2 template variable scoping issues with loop-based counting. (DONE)
+        *   Fixed template caching problems with development configurations (`TEMPLATES_AUTO_RELOAD`). (DONE)
+        *   Successfully integrated with existing reminder system from Phase 3. (DONE)
 
 ---
 
-### **New Phase 5: Multi-Tenancy & Security (PLANNED)**
+### **Phase 5: Dog History & Details Enhancement (PLANNED)**
+
+*   **Objective:** Create comprehensive dog history tracking and enhance the dog details page with complete activity timeline and improved organization.
+*   **Key Deliverables:**
+    *   **Comprehensive Dog History Timeline:**
+        *   Develop chronological timeline view of all dog-related activities and events.
+        *   Include all appointments (past, present, future) with status tracking.
+        *   Include all medications (start/end dates, status changes, dosage modifications).
+        *   Include all reminders (acknowledged, dismissed, pending) with timestamps.
+        *   Include intake date, status changes, and major updates.
+        *   Include notes and significant events in dog's care history.
+    *   **Enhanced Dog Details Page:**
+        *   Redesign dog details page with improved organization and navigation.
+        *   Implement tabbed interface: Overview, Appointments, Medications, History.
+        *   Add quick statistics section (total appointments, active medications, care duration).
+        *   Maintain existing CRUD functionality while improving layout and usability.
+    *   **History Filtering & Search:**
+        *   Implement date range filtering for history timeline.
+        *   Add activity type filtering (appointments, medications, reminders, status changes).
+        *   Include status-based filtering (completed, pending, active, etc.).
+        *   Add search functionality for specific events or notes.
+    *   **Export & Reporting Features:**
+        *   Generate PDF medical history reports for veterinary visits.
+        *   Create appointment summary reports with customizable date ranges.
+        *   Develop medication log exports for treatment tracking.
+        *   Include printable care summaries for adoption processes.
+    *   **Timeline Visualization:**
+        *   Create visual timeline component showing care progression.
+        *   Use color coding for different activity types and urgency levels.
+        *   Implement responsive design for mobile and tablet viewing.
+        *   Add interactive elements for timeline navigation and filtering.
+
+---
+
+### **Phase 6: Multi-Tenancy & Security (PLANNED)**
 
 *   **Objective:** Adapt the application to support multiple independent rescue organizations and implement robust security measures.
 *   **Key Deliverables:**
@@ -299,7 +362,7 @@ This project is being developed in phases. Below is the current status:
 
 ---
 
-### **New Phase 6: UI/UX Polish & Finalization (PLANNED)**
+### **Phase 7: UI/UX Polish & Finalization (PLANNED)**
 
 *   **Objective:** Refine the user interface and user experience for a polished, professional, and highly usable application.
 *   **Key Deliverables:**
@@ -330,7 +393,7 @@ This project is being developed in phases. Below is the current status:
 
 ---
 
-### **New Phase 7: System Testing & Stabilization (PLANNED)**
+### **Phase 8: System Testing & Stabilization (PLANNED)**
 
 *   **Objective:** Conduct comprehensive testing of the application to ensure stability, identify and fix bugs, and verify all features before preparing for deployment.
 *   **Key Deliverables:**
@@ -342,7 +405,7 @@ This project is being developed in phases. Below is the current status:
 
 ---
 
-### **New Phase 8: Deployment Preparation & Launch (PLANNED)**
+### **Phase 9: Deployment Preparation & Launch (PLANNED)**
 
 *   **Objective:** Prepare the application for a production environment and deploy it.
 *   **Key Deliverables:**
@@ -360,14 +423,19 @@ This project is being developed in phases. Below is the current status:
     *   **Testing:** Perform final end-to-end testing in a staging environment that mirrors production as closely as possible.
     *   **Deployment:** Deploy to the chosen hosting platform (e.g., Heroku, AWS, DigitalOcean, PythonAnywhere).
 
-## 5. Current Standing
+## 5. Current Status
 
-*   **We have successfully COMPLETED Phase 1 and Phase 2.**
-*   The application has a solid foundation with working CRUD operations for Dogs, Appointments, and Medicines.
-*   HTMX is effectively used for dynamic UI updates, providing a smooth user experience for these core features.
-*   Modal interactions (opening, closing, scroll restoration) are stable.
-*   Server-side validation is in place, though the display of in-modal error messages has been deferred to the Polish phase.
-*   **We are now ready to begin Phase 3: Advanced Features**, starting with either "Reminders/Calendar Integration" or "Basic Reporting/Analytics."
+*   **We have successfully COMPLETED Phases 1, 2, 3, and 4.**
+*   The application has evolved from a basic dog rescue management system to a comprehensive rescue management platform with:
+    *   Professional-grade veterinary medicine tracking with categorized organization
+    *   Advanced calendar integration with automated reminder generation  
+    *   Central dashboard showing overdue and today's critical items
+    *   Sophisticated HTMX-powered user interface with comprehensive error handling
+*   **Phase 4 Achievement Highlights:**
+    *   **Central Dashboard**: New landing page prioritizing urgent overdue items and today's schedule
+    *   **User-Friendly Interface**: Improved button labeling and intuitive navigation
+    *   **Technical Excellence**: Resolved template caching and Jinja2 scoping issues
+*   **We are now ready to begin Phase 5: Dog History & Details Enhancement**, focusing on comprehensive dog history tracking and enhanced details page organization.
 
 ## 6. Future Considerations / Potential Enhancements Beyond Current Phases
 

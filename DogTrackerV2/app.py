@@ -13,6 +13,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
 
+# Development settings to prevent caching issues
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 db.init_app(app)
 migrate.init_app(app, db)
 
@@ -24,6 +28,35 @@ def get_first_user_id():
     print("WARNING: No users found in the database. 'created_by' fields will be None.")
     return None # Or raise an error, or handle as per application requirements
 
+def group_reminders_by_type(reminders_query):
+    """Group reminders by their type for dashboard display."""
+    from collections import defaultdict
+    
+    # Define group order preference
+    group_order = ["Vet Visit", "Vaccination", "Grooming", "Medication", "General Appointment", "Other Reminder"]
+    
+    grouped = defaultdict(list)
+    for reminder in reminders_query:
+        group_name = "Other Reminder" # Default
+        if reminder.appointment:
+            if reminder.appointment.type:
+                group_name = reminder.appointment.type.name
+            else:
+                group_name = "General Appointment"
+        elif reminder.dog_medicine_id:
+            group_name = "Medication"
+        elif reminder.reminder_type: # Fallback to reminder_type if not appt/med
+             # Capitalize and replace underscores for better display
+            group_name = reminder.reminder_type.replace('_', ' ').title()
+
+        grouped[group_name].append(reminder)
+    
+    # Order the groups according to group_order, then alphabetically for others
+    ordered_grouped = {group: grouped[group] for group in group_order if group in grouped}
+    other_groups = {k: v for k, v in sorted(grouped.items()) if k not in ordered_grouped}
+    ordered_grouped.update(other_groups)
+    return ordered_grouped
+
 def render_dog_cards():
     dogs = Dog.query.order_by(Dog.name.asc()).all()
     return render_template('dog_cards.html', dogs=dogs)
@@ -32,7 +65,11 @@ def render_alert(message, category='success'):
     return render_template_string('<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" hx-swap-oob="true">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>', message=message, category=category)
 
 @app.route('/')
-def index():
+def home_redirect():
+    return redirect(url_for('dashboard'))
+
+@app.route('/dogs')
+def dog_list_page():
     dogs = Dog.query.order_by(Dog.name.asc()).all()
     return render_template('index.html', dogs=dogs)
 
@@ -916,6 +953,66 @@ def calendar_events_api():
     except Exception as e:
         print(f"Error in calendar_events_api: {e}")
         return jsonify({"error": str(e), "message": "Failed to load calendar events."}), 500
+
+# --- Dashboard Route ---
+@app.route('/dashboard')
+def dashboard():
+    """Main dashboard page showing overdue items and today's schedule."""
+    from datetime import date
+    
+    now = datetime.utcnow()
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_end = today_start + timedelta(days=1)
+    
+    print("=== DASHBOARD ROUTE CALLED ===")
+    print(f"Current time (UTC): {now}")
+    print(f"Today range: {today_start} to {today_end}")
+    
+    # Get current user (first available user for now)
+    current_user = User.query.first()
+    
+    # Fetch overdue reminders (due_datetime < now and status = 'pending')
+    overdue_reminders = Reminder.query.options(
+        db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+        db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+        db.joinedload(Reminder.dog)
+    ).filter(
+        Reminder.status == 'pending',
+        Reminder.due_datetime < now
+    ).order_by(Reminder.due_datetime.asc()).all()
+    
+    print(f"DEBUG: Fetched {len(overdue_reminders)} overdue reminders from DB.")
+    
+    # Fetch today's reminders (due_datetime within today and status = 'pending')
+    today_reminders = Reminder.query.options(
+        db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+        db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+        db.joinedload(Reminder.dog)
+    ).filter(
+        Reminder.status == 'pending',
+        Reminder.due_datetime >= today_start,
+        Reminder.due_datetime < today_end
+    ).order_by(Reminder.due_datetime.asc()).all()
+    
+    print(f"DEBUG: Fetched {len(today_reminders)} today's reminders from DB.")
+    
+    # Group reminders by type
+    grouped_overdue_reminders = group_reminders_by_type(overdue_reminders)
+    grouped_today_reminders = group_reminders_by_type(today_reminders)
+    
+    # Debug the grouped results
+    overdue_counts = {k: len(v) for k, v in grouped_overdue_reminders.items()}
+    today_counts = {k: len(v) for k, v in grouped_today_reminders.items()}
+    print(f"DEBUG: Grouped overdue reminders: {overdue_counts}")
+    print(f"DEBUG: Grouped today's reminders: {today_counts}")
+    
+    print("DEBUG: About to render template with reminder data")
+    
+    return render_template('dashboard.html',
+                           current_user=current_user,
+                           grouped_overdue_reminders=grouped_overdue_reminders,
+                           grouped_today_reminders=grouped_today_reminders,
+                           now=now)
 
 if __name__ == '__main__':
     print('--- ROUTES REGISTERED ---')

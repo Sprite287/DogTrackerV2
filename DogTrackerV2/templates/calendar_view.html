@@ -39,7 +39,7 @@
                                                     <button class="btn btn-sm btn-outline-success" 
                                                             hx-post="{{ url_for('acknowledge_reminder', reminder_id=reminder.id) }}" 
                                                             hx-target="#reminder-{{ reminder.id }}" 
-                                                            hx-swap="outerHTML">Acknowledge</button>
+                                                            hx-swap="outerHTML">Done</button>
                                                     <button class="btn btn-sm btn-outline-secondary" 
                                                             hx-post="{{ url_for('dismiss_reminder', reminder_id=reminder.id) }}" 
                                                             hx-target="#reminder-{{ reminder.id }}" 
