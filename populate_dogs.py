@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
-from DogTrackerV2.app import app
-from DogTrackerV2.models import db, Dog, Appointment, Rescue, User, AppointmentType, MedicinePreset, DogMedicine, Reminder, DogMedicineHistory
+from app import app
+from models import db, Dog, Appointment, Rescue, User, AppointmentType, MedicinePreset, DogMedicine, Reminder, DogMedicineHistory, DogNote
 from datetime import datetime, timedelta, timezone, date
 import random
 import sys
@@ -284,6 +284,48 @@ def seed_rescue_specific_medicine_presets(rescues):
     print(f"Finished seeding rescue-specific medicine presets. {len(presets)} created.")
     return presets
 
+def seed_dog_notes(dogs, users):
+    print("Seeding dog notes...")
+    if not users:
+        print("Warning: No users available to assign as note creators. Skipping dog note seeding.")
+        return
+    if not dogs:
+        print("Warning: No dogs available to create notes for. Skipping dog note seeding.")
+        return
+
+    note_categories = [
+        'Medical Observation', 'Behavioral Note', 'Training Update',
+        'Foster Update', 'Adoption Process', 'General Care', 'Staff Communication'
+    ]
+    sample_note_texts = [
+        "Observed limping on the left hind leg after playtime.",
+        "Showed excellent recall during the training session today.",
+        "Ate all food and seems to be settling in well with the foster family.",
+        "Potential adopter visit scheduled for next week.",
+        "Administered flea treatment as per schedule.",
+        "Responded positively to new enrichment toy.",
+        "Needs a follow-up vet visit for dental check.",
+        "Barked excessively when left alone for a short period.",
+        "Successfully learned the 'sit' and 'stay' commands.",
+        "Foster reports dog is very affectionate and good with their children."
+    ]
+    notes_created_count = 0
+    for dog in dogs:
+        num_notes_to_add = random.randint(1, 3) # Add 1 to 3 notes per dog
+        for _ in range(num_notes_to_add):
+            note = DogNote(
+                dog_id=dog.id,
+                rescue_id=dog.rescue_id,
+                user_id=random.choice(users).id,
+                timestamp=datetime.now(timezone.utc) - timedelta(days=random.randint(0, 30), hours=random.randint(0,23)), # Random past timestamp
+                note_text=random.choice(sample_note_texts),
+                category=random.choice(note_categories)
+            )
+            db.session.add(note)
+            notes_created_count += 1
+    db.session.commit()
+    print(f"Finished seeding dog notes. {notes_created_count} notes created.")
+
 def seed_dogs(rescues):
     microchip_ids = set()
     dogs = []
@@ -438,7 +480,7 @@ def seed_medicines(dogs, medicine_presets, users, appointment_types):
                 medicine_id=preset.id,
                 custom_name=None,
                 dosage=str(random.randint(1, 3)),
-                unit=preset.default_unit,
+                unit=preset.default_unit or 'mg',
                 frequency='daily',
                 frequency_value=None,
                 start_date=start_date_val,
@@ -530,6 +572,7 @@ def clear_data():
     # Clear data in an order that respects foreign key constraints (children before parents)
     models_to_clear_in_order = [
         Reminder, 
+        DogNote,
         DogMedicineHistory,
         DogMedicine, 
         Appointment, 
@@ -575,6 +618,7 @@ def main():
         ("Dogs", seed_dogs),
         ("Appointments", seed_appointments),
         ("Medicines", seed_medicines),
+        ("Dog Notes", seed_dog_notes),
         ("Reminders", seed_reminders)
     ]
 
@@ -591,7 +635,7 @@ def main():
         
         # Execute selected seeding functions
         with app.app_context():
-            rescues, users, appointment_types_list, global_presets, rescue_specific_presets, dogs_list, appointments_list, medicines_list = [], [], [], [], [], [], []
+            rescues, users, appointment_types_list, global_presets, rescue_specific_presets, dogs_list, appointments_list, medicines_list, dog_notes_list = [], [], [], [], [], [], [], [], []
             for i, (name, func) in enumerate(options):
                 if i in selected_options_indices:
                     print(f"\nSeeding {name}...")
@@ -623,6 +667,10 @@ def main():
                         if not users: users = User.query.all()
                         if not appointment_types_list: appointment_types_list = AppointmentType.query.all()
                         medicines_list = func(dogs_list, global_presets + rescue_specific_presets, users, appointment_types_list)
+                    elif name == "Dog Notes":
+                        if not dogs_list: dogs_list = Dog.query.all()
+                        if not users: users = User.query.all()
+                        dog_notes_list = func(dogs_list, users)
                     elif name == "Reminders": # Ensure this gets updated arguments if seed_reminders changes
                         if not users: users = User.query.all()
                         # This part needs careful handling of what appointments_list and medicines_list are

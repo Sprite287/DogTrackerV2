@@ -60,7 +60,7 @@ The system features robust CRUD (Create, Read, Update, Delete) functionalities f
     ```env
     DATABASE_URL="postgresql://doguser:dogpassword@localhost:5432/dogtracker"
     SECRET_KEY="a_very_secret_random_key_for_sessions"
-    FLASK_APP="DogTrackerV2.app:app" # Or your app entry point
+    FLASK_APP="app" # Or your app entry point
     FLASK_DEBUG="True" # For development
     ```
     *   **`DATABASE_URL`**: Update with your PostgreSQL connection details (user, password, host, port, database name).
@@ -111,31 +111,29 @@ The system features robust CRUD (Create, Read, Update, Delete) functionalities f
 
 ```
 DogTrackerV2/
-├── DogTrackerV2/             # Main application package
-│   ├── static/               # Static files (CSS, JS images - if any beyond CDN)
-│   │   └── dog_details.js    # (Currently unused/commented out from base)
-│   ├── templates/            # Jinja2 templates
-│   │   ├── partials/         # Reusable template snippets (modals, lists)
-│   │   │   ├── add_edit_modal.html
-│   │   │   ├── appointments_list.html
-│   │   │   ├── medicines_list.html
-│   │   │   └── modal_form_error.html
-│   │   ├── base.html         # Base layout template
-│   │   ├── index.html        # Dog listing page
-│   │   └── dog_details.html  # Individual dog details, appointments, medicines
-│   ├── __init__.py           # Application factory (if used) or app initialization
-│   ├── app.py                # Main Flask application, routes, logic
-│   ├── extensions.py         # Flask extension instantiations (db, migrate)
-│   └── models.py             # SQLAlchemy database models
-├── migrations/               # Flask-Migrate (Alembic) migration scripts
+├── static/               # Static files (CSS, JS images - if any beyond CDN)
+│   └── dog_details.js    # (Currently unused/commented out from base)
+├── templates/            # Jinja2 templates
+│   ├── partials/         # Reusable template snippets (modals, lists)
+│   │   ├── add_edit_modal.html
+│   │   ├── appointments_list.html
+│   │   ├── medicines_list.html
+│   │   └── modal_form_error.html
+│   ├── base.html         # Base layout template
+│   ├── index.html        # Dog listing page
+│   └── dog_details.html  # Individual dog details, appointments, medicines
+├── app.py                # Main Flask application, routes, logic
+├── extensions.py         # Flask extension instantiations (db, migrate)
+├── models.py             # SQLAlchemy database models
+├── migrations/           # Flask-Migrate (Alembic) migration scripts
 │   └── versions/
-├── .env                      # (Example, not committed) Environment variables
-├── populate_dogs.py          # Script to seed database with initial/test data
-├── requirements.txt          # Python package dependencies
-├── README.md                 # This file
-├── start_server.bat          # Convenience script to start server (Windows)
-├── stop_server.bat           # Convenience script (details TBD)
-└── restart_server.bat        # Convenience script (details TBD)
+├── .env                  # (Example, not committed) Environment variables
+├── populate_dogs.py      # Script to seed database with initial/test data
+├── requirements.txt      # Python package dependencies
+├── README.md             # This file
+├── start_server.bat      # Convenience script to start server (Windows)
+├── stop_server.bat       # Convenience script (details TBD)
+└── restart_server.bat    # Convenience script (details TBD)
 ```
 
 ## 4. Project Development Phases & Current Status
@@ -303,37 +301,95 @@ This project is being developed in phases. Below is the current status:
 
 ---
 
-### **Phase 5: Dog History & Details Enhancement (PLANNED)**
+### **Phase 5: Dog History & Details Enhancement (COMPLETED)**
 
-*   **Objective:** Create comprehensive dog history tracking and enhance the dog details page with complete activity timeline and improved organization.
+*   **Objective:** Develop a dedicated, comprehensive, and interactive Dog History page that provides a chronological view of all care, events, and notes for a dog. Implement robust filtering, search, and export capabilities for this history.
+
+*   **Phase Structure:** This phase was divided into three sub-phases for manageable implementation:
+    *   **Phase 5A**: Core History Foundation (COMPLETED)
+    *   **Phase 5B**: Enhanced Interaction & Search (COMPLETED)
+    *   **Phase 5C**: Export & Advanced Features (COMPLETED - May 2025)
+
+---
+
+#### **Phase 5A: Core History Foundation (COMPLETED)**
+
+*   **Objective:** Establish the foundational history tracking system with basic timeline display and note-taking capability.
 *   **Key Deliverables:**
-    *   **Comprehensive Dog History Timeline:**
-        *   Develop chronological timeline view of all dog-related activities and events.
-        *   Include all appointments (past, present, future) with status tracking.
-        *   Include all medications (start/end dates, status changes, dosage modifications).
-        *   Include all reminders (acknowledged, dismissed, pending) with timestamps.
-        *   Include intake date, status changes, and major updates.
-        *   Include notes and significant events in dog's care history.
-    *   **Enhanced Dog Details Page:**
-        *   Redesign dog details page with improved organization and navigation.
-        *   Implement tabbed interface: Overview, Appointments, Medications, History.
-        *   Add quick statistics section (total appointments, active medications, care duration).
-        *   Maintain existing CRUD functionality while improving layout and usability.
+    *   **New `DogNote` Model:**
+        *   Create a new `DogNote` model with required fields: `id`, `dog_id`, `rescue_id`, `user_id`, `timestamp`, `note_text`, `category` (required field).
+        *   **Required Categories:** `Medical Observation`, `Behavioral Note`, `Training Update`, `Foster Update`, `Adoption Process`, `General Care`, `Staff Communication`.
+        *   This will allow staff to add timed, categorized notes and log significant events or observations not captured by other models.
+    *   **Dedicated Dog History Page:**
+        *   Develop a new route (e.g., `/dog/<int:dog_id>/history`) and corresponding template (`dog_history.html`).
+        *   This page will serve as the central hub for viewing all historical data for a dog.
+        *   Add clear navigation to this page from the `dog_details.html` page.
+    *   **Basic History Timeline Aggregation:**
+        *   Implement backend logic to gather and unify data from:
+            *   `Dog` model (intake date as initial event).
+            *   `Appointment` model (creation timestamps, status changes, updates).
+            *   `DogMedicine` model (start/end dates, status changes).
+            *   `Reminder` model (creation, acknowledgment, dismissal).
+            *   The new `DogNote` model.
+        *   Transform these into a standardized format (with `timestamp`, `event_type`, `description`, `author`) and display chronologically.
+    *   **Simple Chronological Display:**
+        *   Basic timeline view showing all events in reverse chronological order (newest first).
+        *   Clear visual distinction between different event types (appointments, medicines, notes, etc.).
+    *   **Performance Optimizations (Future-Proofing):**
+        *   Implement database indexing on timestamp fields for efficient queries.
+        *   Add pagination support (50 events per page) with "Load More" functionality.
+        *   Use optimized queries with `joinedload()` to avoid N+1 query issues.
+
+---
+
+#### **Phase 5B: Enhanced Interaction & Search (COMPLETED)**
+
+*   **Objective:** Add comprehensive filtering, search capabilities, and interactive note-taking functionality.
+*   **Key Deliverables:**
+    *   **"Add Dog Note" Functionality:**
+        *   Provide a modal form on `dog_history.html` to add new `DogNote` entries.
+        *   Form fields: Category (dropdown), Note Text (textarea), with automatic timestamp and user tracking.
+        *   Use HTMX for submission and dynamic updates to the history timeline.
     *   **History Filtering & Search:**
-        *   Implement date range filtering for history timeline.
-        *   Add activity type filtering (appointments, medications, reminders, status changes).
-        *   Include status-based filtering (completed, pending, active, etc.).
-        *   Add search functionality for specific events or notes.
-    *   **Export & Reporting Features:**
-        *   Generate PDF medical history reports for veterinary visits.
-        *   Create appointment summary reports with customizable date ranges.
-        *   Develop medication log exports for treatment tracking.
-        *   Include printable care summaries for adoption processes.
+        *   Implement UI controls for filtering:
+            *   Date range pickers (start/end dates).
+            *   Event type multi-select checkboxes (Notes, Appointments, Medicines, Reminders).
+            *   Category filter for notes.
+            *   Keyword search across note text and appointment titles.
+        *   Use HTMX to call a dedicated API endpoint (`/api/dog/<int:dog_id>/history_events`) that returns filtered HTML partials.
+    *   **Enhanced Dog Details Integration:**
+        *   Add "Recent Activity" widget on `dog_details.html` showing last 5 history events.
+        *   Add prominent "View Full Care History" button linking to the history page.
+        *   Show contextual history links from appointments/medicines (e.g., "View related history").
+
+---
+
+#### **Phase 5C: Export & Advanced Features (COMPLETED - May 2025)**
+
+*   **Objective:** Implement export capabilities and advanced visualization features.
+*   **Key Deliverables:**
+    *   **Text Export Features:**
+        *   **CSV Downloads:** Generate structured CSV files for appointments, medicines, and notes that download to user's browser. (DONE)
+        *   **Text Report Downloads:** Create formatted `.txt` files with comprehensive care summaries for vets/adopters. (DONE)
+        *   **Export Options:**
+            *   Full History CSV: All timeline events in spreadsheet format. (DONE)
+            *   Medical Summary CSV: Medicine records for tracking compliance. (DONE)
+            *   Medication Log CSV: Just medicine records for tracking compliance. (DONE)
+            *   Comprehensive Care Summary: Narrative report for veterinary handoffs. (DONE)
+        *   Use Flask's `send_file()` with appropriate headers for direct downloads. (DONE)
+    *   **Advanced Integration Points:**
+        *   **Dashboard → History Context:** Reminder actions link to relevant history with "View History" buttons. (DONE)
+        *   **Calendar → History Integration:** Calendar events show popups with links to "View related history" filtered to that event type. (DONE)
+        *   **History → Current Status:** History page includes "Current Status Summary" sidebar and "Add Follow-up" buttons for creating new appointments/medicines based on historical context. (DONE)
+        *   **Cross-Reference Benefits:** Enable pattern recognition and informed decision-making based on historical data. (DONE)
+    *   **Enhanced Dog Details Page Integration:**
+        *   Maintain current structure for core info, appointments, and medicines. (DONE)
+        *   Add "Quick Statistics" (total appointments, active meds, care duration) with history links. (DONE)
+        *   Add export dropdown with quick access to care summaries and medication logs. (DONE)
     *   **Timeline Visualization:**
-        *   Create visual timeline component showing care progression.
-        *   Use color coding for different activity types and urgency levels.
-        *   Implement responsive design for mobile and tablet viewing.
-        *   Add interactive elements for timeline navigation and filtering.
+        *   Enhanced visual timeline component with CSS styling and animations. (DONE)
+        *   Color-coded event types with hover effects and visual hierarchy. (DONE)
+        *   Responsive design with print-friendly styles for exported reports. (DONE)
 
 ---
 
@@ -425,17 +481,47 @@ This project is being developed in phases. Below is the current status:
 
 ## 5. Current Status
 
-*   **We have successfully COMPLETED Phases 1, 2, 3, and 4.**
+*   **We have successfully COMPLETED Phases 1, 2, 3, 4, and 5.**
 *   The application has evolved from a basic dog rescue management system to a comprehensive rescue management platform with:
     *   Professional-grade veterinary medicine tracking with categorized organization
     *   Advanced calendar integration with automated reminder generation  
     *   Central dashboard showing overdue and today's critical items
     *   Sophisticated HTMX-powered user interface with comprehensive error handling
-*   **Phase 4 Achievement Highlights:**
-    *   **Central Dashboard**: New landing page prioritizing urgent overdue items and today's schedule
-    *   **User-Friendly Interface**: Improved button labeling and intuitive navigation
-    *   **Technical Excellence**: Resolved template caching and Jinja2 scoping issues
-*   **We are now ready to begin Phase 5: Dog History & Details Enhancement**, focusing on comprehensive dog history tracking and enhanced details page organization.
+    *   **Complete dog history tracking system with advanced filtering, search, and export capabilities**
+    *   **Enhanced navigation system with intuitive user flow between all major sections**
+
+*   **Phase 5 Complete Achievement Summary:**
+    *   **Core History Foundation (5A)**: Comprehensive timeline aggregation from all data sources with robust note-taking capability and performance optimizations
+    *   **Enhanced Interaction & Search (5B)**: Advanced filtering system with alphabetical accordion organization, Recent Activity widgets, and HTMX-powered search
+    *   **Export & Advanced Features (5C)**: Professional export capabilities (CSV/text downloads), cross-feature integration with dashboard/calendar, enhanced timeline visualization, and streamlined navigation flow
+
+*   **Recent Navigation Enhancements (Phase 5C Final):**
+    *   Streamlined back button system across all pages
+    *   Dog Details ↔ Dog History ↔ History Overview navigation flow
+    *   Removal of auto-expanding accordions for cleaner UI
+    *   Enhanced user experience with contextual navigation options
+
+*   **Technical Achievement Highlights:**
+    *   **Database Performance**: Optimized queries with `joinedload()` and proper indexing
+    *   **User Interface**: Bootstrap 5 + HTMX for modern, responsive, single-page app feel
+    *   **Error Handling**: Comprehensive validation and user-friendly error messaging
+    *   **Export System**: Multiple format support (CSV, text) for veterinary handoffs and adoption workflows
+    *   **Security Foundation**: Input sanitization and SQLAlchemy protection (Phase 6 will enhance this further)
+
+*   **Project Progress**: **55% Complete (5/9 phases)**
+    ```
+    ✅ Phase 1: Core Dog Management           [████████████] 100%
+    ✅ Phase 2: Appointments & Medicines      [████████████] 100%  
+    ✅ Phase 3: Enhanced Medicine & Calendar  [████████████] 100%
+    ✅ Phase 4: Dashboard & Reporting         [████████████] 100%
+    ✅ Phase 5: History & Details Enhancement [████████████] 100%
+    🎯 Phase 6: Multi-Tenancy & Security      [            ] 0% (NEXT)
+    📋 Phase 7: UI/UX Polish                  [            ] 0%
+    🧪 Phase 8: Testing & Stabilization       [            ] 0%
+    🚀 Phase 9: Deployment & Launch           [            ] 0%
+    ```
+
+*   **Ready for Phase 6**: The application now has a solid foundation with complete dog management, history tracking, and export capabilities. Phase 6 will focus on multi-rescue support, user authentication, and security hardening to prepare for production deployment.
 
 ## 6. Future Considerations / Potential Enhancements Beyond Current Phases
 

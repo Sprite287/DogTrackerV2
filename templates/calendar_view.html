@@ -19,11 +19,11 @@
                         {% set loop_index = loop.index %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
-                                <button class="accordion-button {{ '' if loop.first else 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" aria-expanded="false" aria-controls="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
                                     {{ group_name }} <span class="badge bg-secondary ms-2">{{ reminders_in_group|length }}</span>
                                 </button>
                             </h2>
-                            <div id="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" class="accordion-collapse collapse {{ 'show' if loop.first else '' }}" aria-labelledby="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" data-bs-parent="#remindersAccordion">
+                            <div id="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" data-bs-parent="#remindersAccordion">
                                 <div class="accordion-body p-0">
                                     <ul class="list-group list-group-flush">
                                         {% for reminder in reminders_in_group %}
@@ -44,6 +44,14 @@
                                                             hx-post="{{ url_for('dismiss_reminder', reminder_id=reminder.id) }}" 
                                                             hx-target="#reminder-{{ reminder.id }}" 
                                                             hx-swap="outerHTML">Dismiss</button>
+                                                    <!-- Phase 5C: History Integration -->
+                                                    {% if reminder.dog %}
+                                                        <a class="btn btn-sm btn-outline-info" 
+                                                           href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                           title="View related history for {{ reminder.dog.name }}">
+                                                            <i class="bi bi-clock-history"></i>
+                                                        </a>
+                                                    {% endif %}
                                                 </div>
                                             </li>
                                         {% endfor %}

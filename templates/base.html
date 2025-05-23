@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
     {# FullCalendar CSS is now injected by its JS according to v6 docs #}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Phase 5C: Timeline and History Styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='timeline.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     {% block head_extra %}{% endblock %}
 </head>
@@ -24,8 +26,18 @@
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('dashboard') }}">Home</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('dog_list_page') }}">Dog List</a>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="dogListDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Dogs
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="dogListDropdown">
+            <li><a class="dropdown-item" href="{{ url_for('dog_list_page') }}">
+              <i class="bi bi-list"></i> View All Dogs
+            </a></li>
+            <li><a class="dropdown-item" href="{{ url_for('dog_history_overview') }}">
+              <i class="bi bi-clock-history"></i> Dog History Overview
+            </a></li>
+          </ul>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('calendar_view') }}">Calendar & Reminders</a>

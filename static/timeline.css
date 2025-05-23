@@ -1,0 +1,253 @@
+/* Phase 5C: Enhanced Timeline Visualization & History Styling */
+
+/* Timeline Styling */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #6c757d);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+/* Event Type Specific Timeline Colors */
+.timeline-item.event-note::before {
+    background: #17a2b8;
+    box-shadow: 0 0 0 2px #17a2b8;
+}
+
+.timeline-item.event-appointment::before {
+    background: #28a745;
+    box-shadow: 0 0 0 2px #28a745;
+}
+
+.timeline-item.event-medicine::before {
+    background: #ffc107;
+    box-shadow: 0 0 0 2px #ffc107;
+}
+
+.timeline-item.event-reminder::before {
+    background: #dc3545;
+    box-shadow: 0 0 0 2px #dc3545;
+}
+
+/* History Event Cards */
+.history-event-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+.history-event-card:hover {
+    border-left-color: #0056b3;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.history-event-card.event-note {
+    border-left-color: #17a2b8;
+}
+
+.history-event-card.event-appointment {
+    border-left-color: #28a745;
+}
+
+.history-event-card.event-medicine {
+    border-left-color: #ffc107;
+}
+
+.history-event-card.event-reminder {
+    border-left-color: #dc3545;
+}
+
+/* Export Dropdown Styling */
+.export-dropdown .dropdown-menu {
+    min-width: 220px;
+}
+
+.export-dropdown .dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.export-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(4px);
+}
+
+.export-dropdown .dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Quick Statistics Enhancements */
+.quick-stats .stat-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+}
+
+.quick-stats .stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Filter Controls Styling */
+.filter-controls {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filter-controls .form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.filter-controls .btn {
+    border-radius: 6px;
+}
+
+/* Accordion Enhancements */
+.accordion-button:not(.collapsed) {
+    background-color: #e7f3ff;
+    border-color: #86b7fe;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Badge Enhancements */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+.badge.bg-letter-a { background-color: #007bff !important; }
+.badge.bg-letter-b { background-color: #28a745 !important; }
+.badge.bg-letter-c { background-color: #17a2b8 !important; }
+.badge.bg-letter-d { background-color: #ffc107 !important; color: #212529 !important; }
+.badge.bg-letter-e { background-color: #fd7e14 !important; }
+.badge.bg-letter-f { background-color: #e83e8c !important; }
+
+/* Recent Activity Widget */
+.recent-activity-timeline {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.recent-activity-timeline::-webkit-scrollbar {
+    width: 6px;
+}
+
+.recent-activity-timeline::-webkit-scrollbar-thumb {
+    background-color: #dee2e6;
+    border-radius: 3px;
+}
+
+.recent-activity-timeline::-webkit-scrollbar-thumb:hover {
+    background-color: #adb5bd;
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-item {
+        padding-left: 1rem;
+    }
+    
+    .export-dropdown .dropdown-menu {
+        min-width: 180px;
+    }
+    
+    .filter-controls {
+        padding: 1rem;
+    }
+}
+
+/* Print Styles for Export Preparation */
+@media print {
+    .timeline::before {
+        background: #000 !important;
+    }
+    
+    .timeline-item::before {
+        background: #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .history-event-card {
+        border-left-color: #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+    
+    .btn, .dropdown {
+        display: none !important;
+    }
+}
+
+/* Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success/Error State Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-out {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+@keyframes slideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(20px); }
+} 

@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Dog History Overview{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Dog History Overview</h2>
+        <a href="{{ url_for('dog_list_page') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> View Dog List
+        </a>
+    </div>
+
+    <!-- Filter Info Banner -->
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i> 
+        <strong>Looking for filters?</strong> Click the <i class="bi bi-clock-history"></i> history button next to any dog below to access their individual history page with advanced filtering and search capabilities.
+    </div>
+
+    <div class="row">
+        <!-- Dogs List Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-journal-text"></i> Dog Care Records
+                    </h4>
+                    <span class="badge bg-primary">{{ dogs|length }} dogs</span>
+                </div>
+                <div class="card-body">
+                    {% if dogs_by_letter %}
+                        <!-- Alphabetical Accordion for Dogs -->
+                        <div class="accordion" id="dogsAccordion">
+                            {% for letter, dogs_in_group in dogs_by_letter.items() %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading{{ letter }}">
+                                        <button class="accordion-button collapsed" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse{{ letter }}" 
+                                                aria-expanded="false" 
+                                                aria-controls="collapse{{ letter }}">
+                                            <strong>{{ letter }}</strong>
+                                            <span class="badge bg-secondary ms-2">{{ dogs_in_group|length }}</span>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ letter }}" 
+                                         class="accordion-collapse collapse" 
+                                         aria-labelledby="heading{{ letter }}" 
+                                         data-bs-parent="#dogsAccordion">
+                                        <div class="accordion-body p-0">
+                                            <div class="list-group list-group-flush">
+                                                {% for dog in dogs_in_group %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h6 class="mb-1">{{ dog.name }}</h6>
+                                                            <p class="mb-1 text-muted small">
+                                                                {{ dog.breed or 'Unknown breed' }} • 
+                                                                Status: {{ dog.adoption_status or 'Not set' }}
+                                                            </p>
+                                                            {% if dog.intake_date %}
+                                                                <small class="text-muted">In care since {{ dog.intake_date.strftime('%Y-%m-%d') }}</small>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="btn-group" role="group">
+                                                            <a href="{{ url_for('dog_details', dog_id=dog.id) }}" 
+                                                               class="btn btn-outline-secondary btn-sm" 
+                                                               title="View Details">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                            <a href="{{ url_for('dog_history', dog_id=dog.id) }}" 
+                                                               class="btn btn-primary btn-sm" 
+                                                               title="View Care History">
+                                                                <i class="bi bi-clock-history"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No dogs found in the system.</p>
+                            <a href="{{ url_for('dog_list_page') }}" class="btn btn-primary">Add First Dog</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-activity"></i> Recent Activity
+                    </h4>
+                    <span class="badge bg-info">Last 20 events</span>
+                </div>
+                <div class="card-body">
+                    {% if recent_events %}
+                        <div class="timeline">
+                            {% for event in recent_events %}
+                                <div class="timeline-item mb-3">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            {% if event.source_model == 'DogNote' %}
+                                                <i class="bi bi-chat-square-text text-primary"></i>
+                                            {% elif event.source_model == 'Appointment' %}
+                                                <i class="bi bi-calendar-event text-success"></i>
+                                            {% elif event.source_model == 'DogMedicine' %}
+                                                <i class="bi bi-capsule text-warning"></i>
+                                            {% elif event.source_model == 'Reminder' %}
+                                                <i class="bi bi-bell text-info"></i>
+                                            {% else %}
+                                                <i class="bi bi-circle text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <h6 class="mb-1">
+                                                    <a href="{{ url_for('dog_history', dog_id=event.dog_id) }}" 
+                                                       class="text-decoration-none">
+                                                        {{ event.dog_name }}
+                                                    </a>
+                                                    <small class="text-muted">• {{ event.event_type }}</small>
+                                                </h6>
+                                                <small class="text-muted">
+                                                    {{ event.timestamp.strftime('%m/%d %I:%M %p') }}
+                                                </small>
+                                            </div>
+                                            <p class="mb-1 small">{{ event.description|truncate(120) }}</p>
+                                            {% if event.author %}
+                                                <small class="text-muted">by {{ event.author }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Load More Button (placeholder for future enhancement) -->
+                        <div class="text-center mt-3">
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                <i class="bi bi-arrow-down-circle"></i> Load More Activity
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No recent activity found.</p>
+                            <p class="text-muted small">Start by adding notes, appointments, or medications to see activity here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row (Optional Enhancement) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h5 class="mb-1">{{ dogs|length }}</h5>
+                            <small class="text-muted">Total Dogs</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h5>
+                            <small class="text-muted">Adopted</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Not Adopted')|list|length }}</h5>
+                            <small class="text-muted">Available</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="mb-1">{{ recent_events|length }}</h5>
+                            <small class="text-muted">Recent Events</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-item {
+    border-left: 2px solid #e9ecef;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+
+.timeline-item:last-child {
+    border-left: 2px solid transparent;
+}
+
+.timeline-item .flex-shrink-0 {
+    background: white;
+    margin-left: -0.75rem;
+    padding: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Dog History Overview page loaded");
+});
+</script>
+{% endblock %} 

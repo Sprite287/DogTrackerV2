@@ -11,21 +11,56 @@
 }
 </style>
 <div class="container mt-4">
-  <a href="/" class="btn btn-secondary mb-3">&larr; Back to Dog List</a>
+  <div class="mb-3">
+    <a href="{{ url_for('dog_list_page') }}" class="btn btn-secondary">&larr; Back to Dog List</a>
+    <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-info ms-2">
+      <i class="bi bi-clock-history"></i> Back to History
+    </a>
+  </div>
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h3 class="mb-0">{{ dog.name }}</h3>
-      <button class="btn btn-primary btn-lg ms-auto" data-bs-toggle="modal" data-bs-target="#editDogModal"
-        data-dog-id="{{ dog.id }}"
-        data-dog-name="{{ dog.name }}"
-        data-dog-status="{{ dog.adoption_status or '' }}"
-        data-dog-age="{{ dog.age or '' }}"
-        data-dog-breed="{{ dog.breed or '' }}"
-        data-dog-intake-date="{{ dog.intake_date or '' }}"
-        data-dog-microchip-id="{{ dog.microchip_id or '' }}"
-        data-dog-notes="{{ dog.notes or '' }}"
-        data-dog-medical-info="{{ dog.medical_info or '' }}"
-        onclick="fillEditDogModal(this)">Edit</button>
+      <div class="ms-auto">
+        <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-info btn-lg me-2">View Care History</a>
+        
+        <!-- Phase 5C: Export Options -->
+        <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul class="dropdown-menu">
+                <li><h6 class="dropdown-header">Quick Exports</h6></li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_care_summary', dog_id=dog.id) }}">
+                        <i class="bi bi-file-earmark-text text-primary"></i> Care Summary Report
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_medication_log', dog_id=dog.id) }}">
+                        <i class="bi bi-capsule text-warning"></i> Medication Log
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('dog_history', dog_id=dog.id) }}">
+                        <i class="bi bi-clock-history text-info"></i> More Export Options
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#editDogModal"
+          data-dog-id="{{ dog.id }}"
+          data-dog-name="{{ dog.name }}"
+          data-dog-status="{{ dog.adoption_status or '' }}"
+          data-dog-age="{{ dog.age or '' }}"
+          data-dog-breed="{{ dog.breed or '' }}"
+          data-dog-intake-date="{{ dog.intake_date or '' }}"
+          data-dog-microchip-id="{{ dog.microchip_id or '' }}"
+          data-dog-notes="{{ dog.notes or '' }}"
+          data-dog-medical-info="{{ dog.medical_info or '' }}"
+          onclick="fillEditDogModal(this)">Edit</button>
+      </div>
     </div>
     <div class="card-body">
       <p><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
@@ -35,6 +70,117 @@
       <p><strong>Microchip/ID:</strong> {{ dog.microchip_id or 'N/A' }}</p>
       <p><strong>Notes:</strong> {{ dog.notes or 'N/A' }}</p>
       <p><strong>Medical Info:</strong> {{ dog.medical_info or 'N/A' }}</p>
+    </div>
+  </div>
+
+  <!-- Phase 5B: Recent Activity Widget -->
+  <div class="row">
+    <!-- Dog Basic Info (keep existing) -->
+    <div class="col-lg-8">
+      {% if recent_history_events %}
+        <div class="card mt-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+              <i class="bi bi-clock-history"></i> Recent Activity
+            </h4>
+            <div>
+              <span class="badge bg-secondary">{{ recent_history_events|length }} of latest events</span>
+              <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm ms-2">
+                View Full History
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="timeline-compact">
+              {% for event in recent_history_events %}
+                <div class="timeline-item-compact mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                  <div class="d-flex">
+                    <div class="flex-shrink-0 me-3">
+                      {% if event.source_model == 'DogNote' %}
+                        <i class="bi bi-chat-square-text text-primary"></i>
+                      {% elif event.source_model == 'Appointment' %}
+                        <i class="bi bi-calendar-event text-success"></i>
+                      {% elif event.source_model == 'DogMedicine' %}
+                        <i class="bi bi-capsule text-warning"></i>
+                      {% elif event.source_model == 'Reminder' %}
+                        <i class="bi bi-bell text-info"></i>
+                      {% else %}
+                        <i class="bi bi-circle text-secondary"></i>
+                      {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">{{ event.event_type }}</h6>
+                        <small class="text-muted">{{ event.timestamp.strftime('%m/%d %I:%M %p') }}</small>
+                      </div>
+                      <p class="mb-1 small">{{ event.description|truncate(120) }}</p>
+                      {% if event.author %}
+                        <small class="text-muted">by {{ event.author }}</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="text-center mt-3">
+              <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-primary">
+                <i class="bi bi-arrow-right-circle"></i> View Complete Care History
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- Quick Stats Sidebar -->
+    <div class="col-lg-4">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-graph-up"></i> Quick Statistics
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-3">
+              <h5 class="mb-1 text-primary">{{ dog.appointments|length }}</h5>
+              <small class="text-muted">Total Appointments</small>
+            </div>
+            <div class="col-6 mb-3">
+              <h5 class="mb-1 text-warning">{{ dog.medicines|length }}</h5>
+              <small class="text-muted">Active Medications</small>
+            </div>
+            <div class="col-6">
+              {% if dog.intake_date %}
+                <h5 class="mb-1 text-info">{{ dog.intake_date.strftime('%m/%d/%Y') }}</h5>
+                <small class="text-muted">Intake Date</small>
+              {% else %}
+                <h5 class="mb-1 text-muted">N/A</h5>
+                <small class="text-muted">Intake Date</small>
+              {% endif %}
+            </div>
+            <div class="col-6">
+              {% if recent_history_events %}
+                {% set last_event = recent_history_events[0] %}
+                <h5 class="mb-1 text-success">{{ last_event.timestamp.strftime('%m/%d') }}</h5>
+                <small class="text-muted">Last Update</small>
+              {% else %}
+                <h5 class="mb-1 text-muted">None</h5>
+                <small class="text-muted">Last Update</small>
+              {% endif %}
+            </div>
+          </div>
+          <hr>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-info btn-sm">
+              <i class="bi bi-journal-text"></i> Care History
+            </a>
+            <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+              <i class="bi bi-calendar-plus"></i> Quick Appointment
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

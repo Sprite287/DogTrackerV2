@@ -95,6 +95,14 @@
                                                                     hx-swap="outerHTML">
                                                                 <i class="bi bi-x-lg"></i> Dismiss
                                                             </button>
+                                                            <!-- Phase 5C: History Integration -->
+                                                            {% if reminder.dog %}
+                                                                <a class="btn btn-outline-info btn-sm" 
+                                                                   href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                                   title="View related history for {{ reminder.dog.name }}">
+                                                                    <i class="bi bi-clock-history"></i> History
+                                                                </a>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -188,6 +196,14 @@
                                                                     hx-swap="outerHTML">
                                                                 <i class="bi bi-x-lg"></i> Dismiss
                                                             </button>
+                                                            <!-- Phase 5C: History Integration -->
+                                                            {% if reminder.dog %}
+                                                                <a class="btn btn-outline-info btn-sm" 
+                                                                   href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                                   title="View related history for {{ reminder.dog.name }}">
+                                                                    <i class="bi bi-clock-history"></i> History
+                                                                </a>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -248,19 +264,11 @@
 
 {% block scripts %}
 {{ super() }}
-{# Auto-expand overdue items if any exist #}
+{# All accordions start closed - no auto-expansion #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Automatically expand first overdue accordion item if overdue items exist
-    const firstOverdueAccordion = document.querySelector('#overdueRemindersAccordion .accordion-collapse');
-    if (firstOverdueAccordion) {
-        firstOverdueAccordion.classList.add('show');
-        const button = document.querySelector(`[data-bs-target="#${firstOverdueAccordion.id}"]`);
-        if (button) {
-            button.classList.remove('collapsed');
-            button.setAttribute('aria-expanded', 'true');
-        }
-    }
+    // No auto-expansion - all accordion items start closed
+    console.log('Dashboard loaded - all accordions start collapsed');
 });
 </script>
 {% endblock %} 

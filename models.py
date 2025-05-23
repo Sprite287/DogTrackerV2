@@ -1,4 +1,4 @@
-from .extensions import db
+from extensions import db
 from sqlalchemy.orm import relationship
 from datetime import datetime, date
 
@@ -59,6 +59,7 @@ class Appointment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     reminders = relationship('Reminder', backref='appointment', lazy=True, cascade='all, delete-orphan')
+    creator = relationship('User', foreign_keys=[created_by], backref=db.backref('created_appointments', lazy=True))
 
 class MedicinePreset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -91,6 +92,7 @@ class DogMedicine(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     reminders = relationship('Reminder', backref='dog_medicine', lazy=True, cascade='all, delete-orphan')
     history = relationship('DogMedicineHistory', backref='dog_medicine', lazy=True, cascade='all, delete-orphan')
+    creator = relationship('User', foreign_keys=[created_by], backref=db.backref('created_dog_medicines', lazy=True))
 
 class Reminder(db.Model):
     __tablename__ = 'reminder'
@@ -119,4 +121,23 @@ class DogMedicineHistory(db.Model):
     dog_medicine_id = db.Column(db.Integer, db.ForeignKey('dog_medicine.id'), nullable=False)
     date_given = db.Column(db.Date, default=date.today)
     given_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    notes = db.Column(db.Text) 
+    notes = db.Column(db.Text)
+
+class DogNote(db.Model):
+    __tablename__ = 'dog_note'
+    id = db.Column(db.Integer, primary_key=True)
+    dog_id = db.Column(db.Integer, db.ForeignKey('dog.id'), nullable=False)
+    rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=False) # Assuming notes are also rescue-specific
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # User who created the note
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    note_text = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(100), nullable=False) # e.g., Medical Observation, Behavioral Note, etc.
+
+    # Relationships
+    dog = relationship('Dog', backref=db.backref('care_notes', lazy='dynamic', cascade='all, delete-orphan'))
+    user = relationship('User', backref=db.backref('dog_notes_created', lazy=True))
+    rescue = relationship('Rescue', backref=db.backref('dog_notes', lazy=True))
+
+    # Consider adding an __repr__ for easier debugging
+    def __repr__(self):
+        return f"<DogNote {self.id} - Dog {self.dog_id} - Category {self.category}>" 

@@ -1,0 +1,305 @@
+/* Basic body styling */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Add some basic styling for the calendar if needed */
+#calendar {
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+/* Phase 5B: Dog History & Enhanced UI Styling */
+
+/* Timeline Compact Styling for Recent Activity Widget */
+.timeline-compact .timeline-item-compact {
+    position: relative;
+}
+
+.timeline-compact .timeline-item-compact:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 2rem;
+    bottom: -1rem;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+/* History Event Cards */
+.history-event-card {
+    transition: box-shadow 0.2s ease-in-out;
+    border-left: 4px solid transparent;
+}
+
+.history-event-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.history-event-card[data-event-type*="note"] {
+    border-left-color: #007bff;
+}
+
+.history-event-card[data-event-type*="appointment"] {
+    border-left-color: #28a745;
+}
+
+.history-event-card[data-event-type*="medication"] {
+    border-left-color: #ffc107;
+}
+
+.history-event-card[data-event-type*="reminder"] {
+    border-left-color: #17a2b8;
+}
+
+/* Filter Controls Styling */
+.form-check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.form-check-inline {
+    margin-right: 1rem;
+}
+
+/* Quick Stats Card Styling */
+.quick-stats .stat-item {
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .timeline-compact {
+        padding-left: 0;
+    }
+    
+    .form-check-group {
+        flex-direction: column;
+    }
+    
+    .form-check-inline {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Loading State */
+.loading-overlay {
+    position: relative;
+}
+
+.loading-overlay::after {
+    content: 'Loading...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 0.375rem;
+    display: none;
+}
+
+.loading-overlay.loading::after {
+    display: block;
+}
+
+/* Enhanced Button Styling */
+.btn-group-toggle .btn {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Event Type Indicators */
+.event-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.event-indicator.note { background-color: #007bff; }
+.event-indicator.appointment { background-color: #28a745; }
+.event-indicator.medication { background-color: #ffc107; }
+.event-indicator.reminder { background-color: #17a2b8; }
+
+/* Alphabetical Accordion Filter Styling */
+.accordion .accordion-button {
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+}
+
+.accordion .accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.accordion .accordion-button:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Filter Group Headers */
+.accordion-header button::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+#headingA-D button::before {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+#headingE-N button::before {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+}
+
+#headingO-Z button::before {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+}
+
+/* Form Check Styling in Accordions */
+.accordion-body .form-check-group {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.accordion-body .form-check-inline {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.accordion-body .form-check-inline:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Filter Status and Button Enhancements */
+#filterStatus {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+#filterStatus.text-success {
+    color: #198754 !important;
+}
+
+.filter-action-buttons .btn {
+    min-width: 120px;
+}
+
+/* Responsive Filter Accordion */
+@media (max-width: 768px) {
+    .accordion-button {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .form-check-group {
+        padding: 0.75rem;
+    }
+    
+    .form-check-inline {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Dogs Alphabetical Accordion Styling */
+#dogsAccordion .accordion-button {
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 1rem 1.25rem;
+    background-color: #f8f9fa;
+}
+
+#dogsAccordion .accordion-button:not(.collapsed) {
+    background-color: #e7f3ff;
+    border-color: #007bff;
+    color: #0056b3;
+}
+
+#dogsAccordion .accordion-button .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+#dogsAccordion .list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 1rem;
+}
+
+#dogsAccordion .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+#dogsAccordion .btn-group .btn {
+    border-radius: 0.25rem;
+}
+
+/* Letter-based color coding for dog accordion headers */
+#dogsAccordion .accordion-button[aria-controls*="collapseA"],
+#dogsAccordion .accordion-button[aria-controls*="collapseB"],
+#dogsAccordion .accordion-button[aria-controls*="collapseC"] {
+    border-left: 4px solid #007bff;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseD"],
+#dogsAccordion .accordion-button[aria-controls*="collapseE"],
+#dogsAccordion .accordion-button[aria-controls*="collapseF"] {
+    border-left: 4px solid #28a745;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseG"],
+#dogsAccordion .accordion-button[aria-controls*="collapseH"],
+#dogsAccordion .accordion-button[aria-controls*="collapseI"] {
+    border-left: 4px solid #ffc107;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseJ"],
+#dogsAccordion .accordion-button[aria-controls*="collapseK"],
+#dogsAccordion .accordion-button[aria-controls*="collapseL"] {
+    border-left: 4px solid #dc3545;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseM"],
+#dogsAccordion .accordion-button[aria-controls*="collapseN"],
+#dogsAccordion .accordion-button[aria-controls*="collapseO"] {
+    border-left: 4px solid #6f42c1;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseP"],
+#dogsAccordion .accordion-button[aria-controls*="collapseQ"],
+#dogsAccordion .accordion-button[aria-controls*="collapseR"] {
+    border-left: 4px solid #fd7e14;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseS"],
+#dogsAccordion .accordion-button[aria-controls*="collapseT"],
+#dogsAccordion .accordion-button[aria-controls*="collapseU"] {
+    border-left: 4px solid #20c997;
+}
+
+#dogsAccordion .accordion-button[aria-controls*="collapseV"],
+#dogsAccordion .accordion-button[aria-controls*="collapseW"],
+#dogsAccordion .accordion-button[aria-controls*="collapseX"],
+#dogsAccordion .accordion-button[aria-controls*="collapseY"],
+#dogsAccordion .accordion-button[aria-controls*="collapseZ"] {
+    border-left: 4px solid #6c757d;
+}

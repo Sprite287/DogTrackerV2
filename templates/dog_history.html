@@ -1,0 +1,513 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dog.name }} - Care History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Simplified Navigation Section -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="{{ url_for('dog_details', dog_id=dog.id) }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to {{ dog.name }}'s Details
+            </a>
+            <a href="{{ url_for('dog_history_overview') }}" class="btn btn-outline-info">
+                <i class="bi bi-clock-history"></i> History Overview
+            </a>
+        </div>
+        <h2 class="mb-0">Care History for {{ dog.name }}</h2>
+    </div>
+
+    <p class="text-muted">View all recorded care events, notes, and updates for {{ dog.name }}.</p>
+
+    <!-- Add Dog Note Button -->
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
+            Add New Note
+        </button>
+        
+        <!-- Phase 5C: Export Options -->
+        <div class="btn-group ms-3" role="group">
+            <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download"></i> Export Data
+            </button>
+            <ul class="dropdown-menu">
+                <li><h6 class="dropdown-header">CSV Downloads</h6></li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_dog_history', dog_id=dog.id) }}">
+                        <i class="bi bi-file-earmark-spreadsheet text-success"></i> Full History CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_medical_summary', dog_id=dog.id) }}">
+                        <i class="bi bi-file-earmark-medical text-warning"></i> Medical Summary CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_medication_log', dog_id=dog.id) }}">
+                        <i class="bi bi-capsule text-info"></i> Medication Log CSV
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Text Reports</h6></li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('export_care_summary', dog_id=dog.id) }}">
+                        <i class="bi bi-file-earmark-text text-primary"></i> Comprehensive Care Summary
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Phase 5B: Filtering and Search Controls -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#filterControls" aria-expanded="false" aria-controls="filterControls">
+                    <i class="bi bi-funnel"></i> Filter & Search History
+                </button>
+            </h5>
+        </div>
+        <div class="collapse" id="filterControls">
+            <div class="card-body">
+                <form id="historyFilterForm">
+                    <!-- Accordion for organized filters -->
+                    <div class="accordion" id="filterAccordion">
+                        
+                        <!-- A-D: Date & Search -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingA-D">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseA-D" aria-expanded="false" aria-controls="collapseA-D">
+                                    A-D: Date Range & Search
+                                </button>
+                            </h2>
+                            <div id="collapseA-D" class="accordion-collapse collapse" aria-labelledby="headingA-D" data-bs-parent="#filterAccordion">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <!-- Date Range Filter -->
+                                        <div class="col-md-4 mb-3">
+                                            <label for="startDate" class="form-label">Start Date</label>
+                                            <input type="date" class="form-control" id="startDate" name="start_date">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="endDate" class="form-label">End Date</label>
+                                            <input type="date" class="form-control" id="endDate" name="end_date">
+                                        </div>
+                                        <!-- Search Query -->
+                                        <div class="col-md-4 mb-3">
+                                            <label for="searchQuery" class="form-label">Search Text</label>
+                                            <input type="text" class="form-control" id="searchQuery" name="search_query" placeholder="Search notes, appointments...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- E-N: Event Types -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingE-N">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseE-N" aria-expanded="false" aria-controls="collapseE-N">
+                                    E-N: Event Types
+                                </button>
+                            </h2>
+                            <div id="collapseE-N" class="accordion-collapse collapse" aria-labelledby="headingE-N" data-bs-parent="#filterAccordion">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Filter by Event Type</label>
+                                            <div class="form-check-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="typeNotes" name="event_types" value="Note">
+                                                    <label class="form-check-label" for="typeNotes">
+                                                        <i class="bi bi-chat-square-text text-primary"></i> Notes
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="typeAppointments" name="event_types" value="Appointment">
+                                                    <label class="form-check-label" for="typeAppointments">
+                                                        <i class="bi bi-calendar-event text-success"></i> Appointments
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="typeMedications" name="event_types" value="Medication">
+                                                    <label class="form-check-label" for="typeMedications">
+                                                        <i class="bi bi-capsule text-warning"></i> Medications
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="typeReminders" name="event_types" value="Reminder">
+                                                    <label class="form-check-label" for="typeReminders">
+                                                        <i class="bi bi-bell text-info"></i> Reminders
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- O-Z: Note Categories -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingO-Z">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseO-Z" aria-expanded="false" aria-controls="collapseO-Z">
+                                    O-Z: Note Categories & Options
+                                </button>
+                            </h2>
+                            <div id="collapseO-Z" class="accordion-collapse collapse" aria-labelledby="headingO-Z" data-bs-parent="#filterAccordion">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Filter by Note Category</label>
+                                            <div class="form-check-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catMedical" name="categories" value="Medical Observation">
+                                                    <label class="form-check-label" for="catMedical">Medical Observation</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catBehavioral" name="categories" value="Behavioral Note">
+                                                    <label class="form-check-label" for="catBehavioral">Behavioral Note</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catTraining" name="categories" value="Training Update">
+                                                    <label class="form-check-label" for="catTraining">Training Update</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catFoster" name="categories" value="Foster Update">
+                                                    <label class="form-check-label" for="catFoster">Foster Update</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catAdoption" name="categories" value="Adoption Process">
+                                                    <label class="form-check-label" for="catAdoption">Adoption Process</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catGeneral" name="categories" value="General Care">
+                                                    <label class="form-check-label" for="catGeneral">General Care</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="catStaff" name="categories" value="Staff Communication">
+                                                    <label class="form-check-label" for="catStaff">Staff Communication</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-3">
+                        <div class="col-12 filter-action-buttons">
+                            <button type="button" class="btn btn-primary" id="applyFilters">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="clearFilters">
+                                <i class="bi bi-arrow-clockwise"></i> Clear All Filters
+                            </button>
+                            <span id="filterStatus" class="ms-3 text-muted"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row">
+        <!-- History Timeline -->
+        <div class="col-lg-8">
+            <!-- History Events List -->
+            <div id="history-events-list">
+                {% include 'partials/history_event_list.html' %}
+            </div>
+        </div>
+        
+        <!-- Phase 5C: Current Status Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data"></i> Current Status Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Basic Information -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Basic Information</h6>
+                        <p class="mb-1"><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
+                        <p class="mb-1"><strong>Age:</strong> {{ dog.age or 'N/A' }}</p>
+                        <p class="mb-1"><strong>Breed:</strong> {{ dog.breed or 'N/A' }}</p>
+                        {% if days_in_care is not none %}
+                            <p class="mb-1"><strong>Days in Care:</strong> {{ days_in_care }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Current Medical Status -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Medical Status</h6>
+                        {% set active_meds = dog.medicines|selectattr('status', 'equalto', 'Active')|list %}
+                        <p class="mb-1">
+                            <strong>Active Medications:</strong> 
+                            <span class="badge bg-{{ 'success' if active_meds|length > 0 else 'secondary' }}">{{ active_meds|length }}</span>
+                        </p>
+                        {% if active_meds %}
+                            <ul class="list-unstyled small mb-2">
+                                {% for med in active_meds[:3] %}
+                                    <li>• {{ med.preset.name if med.preset else med.custom_name }}</li>
+                                {% endfor %}
+                                {% if active_meds|length > 3 %}
+                                    <li class="text-muted">... and {{ active_meds|length - 3 }} more</li>
+                                {% endif %}
+                            </ul>
+                        {% endif %}
+                        
+                        {% set upcoming_appointments = dog.appointments|selectattr('status', 'equalto', 'Scheduled')|list %}
+                        <p class="mb-1">
+                            <strong>Upcoming Appointments:</strong> 
+                            <span class="badge bg-{{ 'warning' if upcoming_appointments|length > 0 else 'secondary' }}">{{ upcoming_appointments|length }}</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Recent Activity Summary -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Recent Activity</h6>
+                        {% if recent_history_events %}
+                            <p class="mb-1">
+                                <strong>Last Update:</strong><br>
+                                <small class="text-muted">{{ recent_history_events[0].timestamp.strftime('%m/%d/%Y at %I:%M %p') }}</small>
+                            </p>
+                            <p class="mb-1">
+                                <strong>Event Type:</strong> {{ recent_history_events[0].event_type }}<br>
+                                <small class="text-muted">{{ recent_history_events[0].description[:60] }}{% if recent_history_events[0].description|length > 60 %}...{% endif %}</small>
+                            </p>
+                        {% else %}
+                            <p class="text-muted small">No recent activity recorded.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Quick Actions -->
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-left-circle"></i> Back to Dog Details
+                        </a>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
+                            <i class="bi bi-plus-circle"></i> Add Follow-up Note
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-plus"></i> Quick Add
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('dog_details', dog_id=dog.id) }}#appointments">
+                                    <i class="bi bi-calendar-plus"></i> New Appointment
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('dog_details', dog_id=dog.id) }}#medicines">
+                                    <i class="bi bi-capsule-pill"></i> New Medicine
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="History Pagination" class="mt-4" id="history-pagination">
+        {% if total_events > per_page %}
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=page-1) if page > 1 else '#' }}">Previous</a>
+                </li>
+                {% for p in range(1, (total_events // per_page) + (1 if total_events % per_page > 0 else 0) + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=p) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+                <li class="page-item {% if page * per_page >= total_events %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=page+1) if page * per_page < total_events else '#' }}">Next</a>
+                </li>
+            </ul>
+        {% endif %}
+    </nav>
+
+</div>
+
+<!-- Add Dog Note Modal -->
+<div class="modal fade" id="addDogNoteModal" tabindex="-1" aria-labelledby="addDogNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDogNoteModalLabel">Add New Note for {{ dog.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addDogNoteForm" 
+                  hx-post="{{ url_for('add_dog_note', dog_id=dog.id) }}" 
+                  hx-target="#history-timeline-list" 
+                  hx-swap="innerHTML">
+                <div class="modal-body">
+                    <div id="addDogNoteModalError" class="text-danger mb-2"></div>
+                    <input type="hidden" name="dog_id" value="{{ dog.id }}">
+                    <div class="mb-3">
+                        <label for="dogNoteCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="dogNoteCategory" name="category" required>
+                            <option selected disabled value="">Choose...</option>
+                            <option value="Medical Observation">Medical Observation</option>
+                            <option value="Behavioral Note">Behavioral Note</option>
+                            <option value="Training Update">Training Update</option>
+                            <option value="Foster Update">Foster Update</option>
+                            <option value="Adoption Process">Adoption Process</option>
+                            <option value="General Care">General Care</option>
+                            <option value="Staff Communication">Staff Communication</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dogNoteText" class="form-label">Note <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="dogNoteText" name="note_text" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Dog History page loaded for {{ dog.name|e }}");
+
+    const addDogNoteModal = document.getElementById('addDogNoteModal');
+    if (addDogNoteModal) {
+        addDogNoteModal.addEventListener('hidden.bs.modal', function () {
+            const form = document.getElementById('addDogNoteForm');
+            if (form) {
+                form.reset();
+            }
+            const errorDisplay = document.getElementById('addDogNoteModalError');
+            if (errorDisplay) {
+                errorDisplay.innerHTML = '';
+            }
+        });
+        
+        addDogNoteModal.addEventListener('show.bs.modal', function() {
+            const errorDisplay = document.getElementById('addDogNoteModalError');
+            if (errorDisplay) {
+                errorDisplay.innerHTML = '';
+            }
+        });
+    }
+
+    // Phase 5B: Filtering and Search Functionality
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const filterForm = document.getElementById('historyFilterForm');
+    const filterStatus = document.getElementById('filterStatus');
+    const timelineList = document.getElementById('history-timeline-list');
+
+    function applyHistoryFilters() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams();
+        
+        // Add form data to params
+        for (let [key, value] of formData.entries()) {
+            if (value.trim()) {
+                params.append(key + '[]', value);
+            }
+        }
+        
+        // Add single values (not arrays)
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const searchQuery = document.getElementById('searchQuery').value;
+        
+        if (startDate) params.set('start_date', startDate);
+        if (endDate) params.set('end_date', endDate);
+        if (searchQuery.trim()) params.set('search_query', searchQuery.trim());
+        
+        const url = `{{ url_for('api_dog_history_events', dog_id=dog.id) }}?${params.toString()}`;
+        
+        // Show loading state
+        filterStatus.textContent = 'Applying filters...';
+        
+        // Use HTMX to load filtered results
+        htmx.ajax('GET', url, {
+            target: '#history-timeline-list',
+            swap: 'innerHTML'
+        }).then(() => {
+            filterStatus.textContent = 'Filters applied';
+            setTimeout(() => {
+                filterStatus.textContent = '';
+            }, 3000);
+        }).catch(() => {
+            filterStatus.textContent = 'Error applying filters';
+        });
+    }
+
+    function clearHistoryFilters() {
+        filterForm.reset();
+        filterStatus.textContent = 'Clearing filters...';
+        
+        // Load unfiltered results
+        const url = `{{ url_for('dog_history', dog_id=dog.id) }}`;
+        window.location.href = url;
+    }
+
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', applyHistoryFilters);
+    }
+    
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearHistoryFilters);
+    }
+    
+    // Allow Enter key in search field to apply filters
+    const searchInput = document.getElementById('searchQuery');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyHistoryFilters();
+            }
+        });
+    }
+});
+
+// Handle successful HTMX form submission for adding a note
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'history-timeline-list' && 
+        event.detail.xhr.status === 200 && 
+        event.detail.requestConfig.verb === 'post' && 
+        event.detail.requestConfig.path.includes('/note/add')) {
+        
+        // Close the modal
+        const modalElement = document.getElementById('addDogNoteModal');
+        if (modalElement) {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        }
+        
+        // Show success feedback
+        const filterStatus = document.getElementById('filterStatus');
+        if (filterStatus) {
+            filterStatus.textContent = 'Note added successfully!';
+            filterStatus.className = 'ms-3 text-success';
+            setTimeout(() => {
+                filterStatus.textContent = '';
+                filterStatus.className = 'ms-3 text-muted';
+            }, 3000);
+        }
+    }
+});
+</script>
+{% endblock %} 
