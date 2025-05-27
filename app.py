@@ -1,14 +1,17 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, render_template_string, get_flashed_messages, make_response, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, render_template_string, get_flashed_messages, make_response, send_file, abort
 import os
-from extensions import db, migrate
+from extensions import db, migrate, login_manager
 import json
-from models import Dog, AppointmentType, MedicinePreset, Appointment, DogMedicine, Reminder, User, DogNote
+from models import Dog, AppointmentType, MedicinePreset, Appointment, DogMedicine, Reminder, User, DogNote, Rescue, AuditLog
 from datetime import datetime, timedelta
 from collections import defaultdict
 from sqlalchemy.orm import joinedload
 import csv
 import io
 from werkzeug.utils import secure_filename
+from audit import log_audit_event, AuditCleanupThread, get_audit_system_stats, _audit_batcher, cleanup_old_audit_logs
+from flask_login import login_user, logout_user, login_required, current_user
+from forms import LoginForm, RegistrationForm, RescueRegistrationForm, PasswordResetRequestForm, PasswordResetForm
 
 app = Flask(__name__)
 
@@ -23,6 +26,16 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 db.init_app(app)
 migrate.init_app(app, db)
+
+# Initialize Flask-Login
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 def _get_dog_history_events(dog_id):
     dog = Dog.query.options(
@@ -144,7 +157,10 @@ def group_reminders_by_type(reminders_query):
     return ordered_grouped
 
 def render_dog_cards():
-    dogs = Dog.query.order_by(Dog.name.asc()).all()
+    if current_user.is_authenticated:
+        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+    else:
+        dogs = []
     return render_template('dog_cards.html', dogs=dogs)
 
 def render_alert(message, category='success'):
@@ -152,17 +168,258 @@ def render_alert(message, category='success'):
 
 @app.route('/')
 def home_redirect():
-    return redirect(url_for('dashboard'))
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+# Authentication Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            if not user.is_active:
+                flash('Your account has been deactivated. Please contact support.', 'danger')
+                return render_template('auth/login.html', form=form)
+            
+            # Check if user's rescue is approved (unless superadmin)
+            if not user.is_superadmin() and user.rescue and user.rescue.status != 'approved':
+                flash('Your rescue organization is still pending approval. Please wait for admin approval.', 'warning')
+                return render_template('auth/login.html', form=form)
+            
+            login_user(user, remember=form.remember_me.data)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            # Log successful login
+            log_audit_event(
+                user_id=user.id,
+                rescue_id=user.rescue_id,
+                action='login_success',
+                resource_type='User',
+                resource_id=user.id,
+                details={'email': user.email},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=True
+            )
+            
+            next_page = request.args.get('next')
+            if not next_page or not next_page.startswith('/'):
+                next_page = url_for('dashboard')
+            return redirect(next_page)
+        else:
+            # Log failed login attempt
+            log_audit_event(
+                user_id=None,
+                rescue_id=None,
+                action='login_failed',
+                resource_type='User',
+                resource_id=None,
+                details={'email': form.email.data, 'reason': 'invalid_credentials'},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=False
+            )
+            flash('Invalid email or password.', 'danger')
+    
+    return render_template('auth/login.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    # Log logout
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=current_user.rescue_id,
+        action='logout',
+        resource_type='User',
+        resource_id=current_user.id,
+        details={'email': current_user.email},
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
+    
+    logout_user()
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # This is for individual user registration (not rescue registration)
+        # For now, redirect to rescue registration
+        flash('Please register your rescue organization first.', 'info')
+        return redirect(url_for('register_rescue'))
+    
+    return render_template('auth/register.html', form=form)
+
+@app.route('/register-rescue', methods=['GET', 'POST'])
+def register_rescue():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = RescueRegistrationForm()
+    if form.validate_on_submit():
+        # Create rescue
+        rescue = Rescue(
+            name=form.rescue_name.data,
+            address=form.rescue_address.data,
+            phone=form.rescue_phone.data,
+            email=form.rescue_email.data,
+            primary_contact_name=form.contact_name.data,
+            primary_contact_email=form.contact_email.data,
+            primary_contact_phone=form.contact_phone.data,
+            data_consent=form.data_consent.data,
+            marketing_consent=form.marketing_consent.data,
+            status='pending'  # Requires admin approval
+        )
+        db.session.add(rescue)
+        db.session.flush()  # Get the rescue ID
+        
+        # Create first user (admin of the rescue)
+        user = User(
+            name=form.contact_name.data,
+            email=form.contact_email.data,
+            role='admin',
+            rescue_id=rescue.id,
+            is_first_user=True,
+            email_verified=False,  # Will need email verification
+            data_consent=form.data_consent.data,
+            marketing_consent=form.marketing_consent.data
+        )
+        user.set_password(form.contact_password.data)
+        user.generate_email_verification_token()
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log rescue registration
+        log_audit_event(
+            user_id=user.id,
+            rescue_id=rescue.id,
+            action='rescue_registration',
+            resource_type='Rescue',
+            resource_id=rescue.id,
+            details={
+                'rescue_name': rescue.name,
+                'primary_contact_email': rescue.primary_contact_email,
+                'status': rescue.status
+            },
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent'),
+            success=True
+        )
+        
+        flash('Rescue registration submitted successfully! Your registration is pending admin approval. You will receive an email once approved.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('auth/register_rescue.html', form=form)
+
+@app.route('/password-reset-request', methods=['GET', 'POST'])
+def password_reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_password_reset_token()
+            db.session.commit()
+            
+            # Log password reset request
+            log_audit_event(
+                user_id=user.id,
+                rescue_id=user.rescue_id,
+                action='password_reset_request',
+                resource_type='User',
+                resource_id=user.id,
+                details={'email': user.email},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=True
+            )
+            
+            # TODO: Send email with reset link
+            # For now, just show a message
+            flash(f'Password reset instructions have been sent to {form.email.data}. (Note: Email functionality not yet implemented)', 'info')
+        else:
+            # Don't reveal if email exists or not for security
+            flash(f'If an account with email {form.email.data} exists, password reset instructions have been sent.', 'info')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('auth/password_reset_request.html', form=form)
+
+@app.route('/password-reset/<token>', methods=['GET', 'POST'])
+def password_reset(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.filter_by(password_reset_token=token).first()
+    if not user or not user.verify_password_reset_token(token):
+        flash('Invalid or expired password reset token.', 'danger')
+        return redirect(url_for('login'))
+    
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        user.password_reset_token = None
+        user.password_reset_expires = None
+        db.session.commit()
+        
+        # Log successful password reset
+        log_audit_event(
+            user_id=user.id,
+            rescue_id=user.rescue_id,
+            action='password_reset_success',
+            resource_type='User',
+            resource_id=user.id,
+            details={'email': user.email},
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent'),
+            success=True
+        )
+        
+        flash('Your password has been reset successfully. You can now log in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('auth/password_reset.html', form=form)
 
 @app.route('/dogs')
+@login_required
 def dog_list_page():
-    dogs = Dog.query.order_by(Dog.name.asc()).all()
-    return render_template('index.html', dogs=dogs)
+    if current_user.role == 'superadmin':
+        rescue_id = request.args.get('rescue_id', type=int)
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        if rescue_id:
+            dogs = Dog.query.filter_by(rescue_id=rescue_id).order_by(Dog.name.asc()).all()
+        else:
+            dogs = Dog.query.order_by(Dog.name.asc()).all()
+        return render_template('index.html', dogs=dogs, rescues=rescues, selected_rescue_id=rescue_id)
+    else:
+        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+        return render_template('index.html', dogs=dogs)
 
 def render_dog_cards_html():
-    return render_template('dog_cards.html', dogs=Dog.query.order_by(Dog.name.asc()).all())
+    if current_user.is_authenticated:
+        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+    else:
+        dogs = []
+    return render_template('dog_cards.html', dogs=dogs)
 
 @app.route('/dog/add', methods=['POST'])
+@login_required
 def add_dog():
     name = request.form.get('name')
     if not name:
@@ -172,7 +429,7 @@ def add_dog():
             resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog name is required.", "category": "danger"}})
             return resp
         flash('Dog name is required.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('dog_list_page'))
     age = request.form.get('age')
     breed = request.form.get('breed')
     adoption_status = request.form.get('adoption_status')
@@ -182,30 +439,45 @@ def add_dog():
     microchip_id = request.form.get('microchip_id')
     notes = request.form.get('notes')
     medical_info = request.form.get('medical_info')
+    # Use current user's rescue_id
+    rescue_id = current_user.rescue_id
     dog = Dog(name=name, age=age, breed=breed, adoption_status=adoption_status,
               intake_date=intake_date, microchip_id=microchip_id, notes=notes,
-              medical_info=medical_info, rescue_id=1)
+              medical_info=medical_info, rescue_id=rescue_id)
     db.session.add(dog)
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=dog.rescue_id,
+        action='create',
+        resource_type='Dog',
+        resource_id=dog.id,
+        details={
+            'name': dog.name,
+            'age': dog.age,
+            'breed': dog.breed,
+            'adoption_status': dog.adoption_status,
+            'intake_date': str(dog.intake_date),
+            'microchip_id': dog.microchip_id
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
     if request.headers.get('HX-Request'):
         cards = render_dog_cards_html()
         resp = make_response(cards)
         resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog added successfully!", "category": "success"}})
         return resp
     flash('Dog added successfully!', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('dog_list_page'))
 
 @app.route('/dog/edit', methods=['POST'])
+@login_required
 def edit_dog():
-    print('--- Edit Dog Debug ---')
-    print('Request method:', request.method)
-    print('Request path:', request.path)
-    print('Request headers:', dict(request.headers))
-    print('Form data:', request.form)
-    print('Request referrer:', request.referrer)
     dog_id = request.form.get('dog_id')
     dog = Dog.query.get_or_404(dog_id)
-    print('Edit request received for dog:', dog_id)
     name = request.form.get('name')
     if not name:
         if request.headers.get('HX-Request'):
@@ -214,7 +486,7 @@ def edit_dog():
             resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog name is required.", "category": "danger"}})
             return resp
         flash('Dog name is required.', 'danger')
-        return redirect(request.referrer or url_for('index'))
+        return redirect(request.referrer or url_for('dog_list_page'))
     dog.name = name
     dog.age = request.form.get('age')
     dog.breed = request.form.get('breed')
@@ -226,6 +498,25 @@ def edit_dog():
     dog.notes = request.form.get('notes')
     dog.medical_info = request.form.get('medical_info')
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=dog.rescue_id,
+        action='edit',
+        resource_type='Dog',
+        resource_id=dog.id,
+        details={
+            'name': dog.name,
+            'age': dog.age,
+            'breed': dog.breed,
+            'adoption_status': dog.adoption_status,
+            'intake_date': str(dog.intake_date),
+            'microchip_id': dog.microchip_id
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
     if request.headers.get('HX-Request'):
         if request.form.get('from_details') == 'details':
             from flask import make_response, request as flask_request
@@ -239,27 +530,45 @@ def edit_dog():
         resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog updated successfully!", "category": "success"}})
         return resp
     flash('Dog updated successfully!', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('dog_list_page'))
 
 @app.route('/dog/<int:dog_id>/delete', methods=['POST'])
+@login_required
 def delete_dog(dog_id):
     dog = Dog.query.get_or_404(dog_id)
     db.session.delete(dog)
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=dog.rescue_id,
+        action='delete',
+        resource_type='Dog',
+        resource_id=dog.id,
+        details={
+            'name': dog.name,
+            'age': dog.age,
+            'breed': dog.breed,
+            'adoption_status': dog.adoption_status,
+            'intake_date': str(dog.intake_date),
+            'microchip_id': dog.microchip_id
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
     if request.headers.get('HX-Request'):
         cards = render_dog_cards_html()
         resp = make_response(cards)
         resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog deleted successfully!", "category": "success"}})
         return resp
     flash('Dog deleted successfully!', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('dog_list_page'))
 
-@app.route('/test-edit', methods=['POST'])
-def test_edit():
-    print('Test edit route hit!')
-    return 'OK'
+
 
 @app.route('/dog/<int:dog_id>')
+@login_required
 def dog_details(dog_id):
     dog = Dog.query.get_or_404(dog_id)
 
@@ -328,6 +637,7 @@ def list_routes():
 
 # --- Appointments CRUD ---
 @app.route('/dog/<int:dog_id>/appointment/add', methods=['POST'])
+@login_required
 def add_appointment(dog_id):
     dog = Dog.query.get_or_404(dog_id)
     print(f"[ADD APPT DEBUG] Form data: {request.form}") # Debug form data
@@ -397,6 +707,25 @@ def add_appointment(dog_id):
     print('Creating appointment:', appt)
     db.session.add(appt)
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='create',
+        resource_type='Appointment',
+        resource_id=appt.id,
+        details={
+            'dog_id': dog.id,
+            'type_id': appt.type_id,
+            'title': appt.title,
+            'start_datetime': appt.start_datetime.isoformat() if appt.start_datetime else None,
+            'end_datetime': appt.end_datetime.isoformat() if appt.end_datetime else None,
+            'status': appt.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
 
     # Reminder Generation
     try:
@@ -484,6 +813,26 @@ def edit_appointment(dog_id, appointment_id):
     db.session.commit()
     print('Updated appointment:', appt)
 
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='edit',
+        resource_type='Appointment',
+        resource_id=appt.id,
+        details={
+            'dog_id': dog.id,
+            'type_id': appt.type_id,
+            'title': appt.title,
+            'start_datetime': appt.start_datetime.isoformat() if appt.start_datetime else None,
+            'end_datetime': appt.end_datetime.isoformat() if appt.end_datetime else None,
+            'status': appt.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
+
     # Reminder Generation/Update Logic
     # Only update reminders if the start time has changed, or perhaps always regenerate for simplicity if other details changed.
     # For now, let's always delete old and create new ones if the critical date changed or for simplicity.
@@ -554,6 +903,26 @@ def delete_appointment(dog_id, appointment_id):
     appt = Appointment.query.get_or_404(appointment_id)
     db.session.delete(appt)
     db.session.commit()
+    # --- AUDIT LOG ---
+    temp_user_id = get_first_user_id()
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='delete',
+        resource_type='Appointment',
+        resource_id=appt.id,
+        details={
+            'dog_id': dog.id,
+            'type_id': appt.type_id,
+            'title': appt.title,
+            'start_datetime': appt.start_datetime.isoformat() if appt.start_datetime else None,
+            'end_datetime': appt.end_datetime.isoformat() if appt.end_datetime else None,
+            'status': appt.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
     dog = Dog.query.get_or_404(dog_id)  # Refresh
     appointment_types = AppointmentType.query.filter_by(rescue_id=dog.rescue_id).all()
     return render_template('partials/appointments_list.html', dog=dog, appointment_types=appointment_types)
@@ -650,6 +1019,29 @@ def add_medicine(dog_id):
     )
     db.session.add(med)
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='create',
+        resource_type='DogMedicine',
+        resource_id=med.id,
+        details={
+            'dog_id': dog.id,
+            'medicine_id': med.medicine_id,
+            'custom_name': med.custom_name,
+            'dosage': med.dosage,
+            'unit': med.unit,
+            'form': med.form,
+            'frequency': med.frequency,
+            'start_date': str(med.start_date) if med.start_date else None,
+            'end_date': str(med.end_date) if med.end_date else None,
+            'status': med.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
 
     # Reminder Generation for Medicine Start
     if med.start_date:
@@ -762,6 +1154,29 @@ def edit_medicine(dog_id, medicine_id):
     med.notes = med_notes
     
     db.session.commit()
+    # --- AUDIT LOG ---
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='edit',
+        resource_type='DogMedicine',
+        resource_id=med.id,
+        details={
+            'dog_id': dog.id,
+            'medicine_id': med.medicine_id,
+            'custom_name': med.custom_name,
+            'dosage': med.dosage,
+            'unit': med.unit,
+            'form': med.form,
+            'frequency': med.frequency,
+            'start_date': str(med.start_date) if med.start_date else None,
+            'end_date': str(med.end_date) if med.end_date else None,
+            'status': med.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
 
     # Reminder Generation/Update Logic for Medicine Start
     # Regenerate if start_date changed or for simplicity, always (current condition `or True`)
@@ -810,8 +1225,35 @@ def delete_medicine(dog_id, medicine_id):
     med = DogMedicine.query.get_or_404(medicine_id)
     db.session.delete(med)
     db.session.commit()
+    # --- AUDIT LOG ---
+    temp_user_id = get_first_user_id()
+    log_audit_event(
+        user_id=temp_user_id,
+        rescue_id=dog.rescue_id,
+        action='delete',
+        resource_type='DogMedicine',
+        resource_id=med.id,
+        details={
+            'dog_id': dog.id,
+            'medicine_id': med.medicine_id,
+            'custom_name': med.custom_name,
+            'dosage': med.dosage,
+            'unit': med.unit,
+            'form': med.form,
+            'frequency': med.frequency,
+            'start_date': str(med.start_date) if med.start_date else None,
+            'end_date': str(med.end_date) if med.end_date else None,
+            'status': med.status
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
     dog = Dog.query.get_or_404(dog_id)  # Refresh
-    return render_template('partials/medicines_list.html', dog=dog)
+    medicine_presets_data = MedicinePreset.query.filter(
+        (MedicinePreset.rescue_id == dog.rescue_id) | (MedicinePreset.rescue_id == None)
+    ).all()
+    return render_template('partials/medicines_list.html', dog=dog, medicine_presets=medicine_presets_data)
 
 @app.route('/api/appointment/<int:appointment_id>')
 def api_get_appointment(appointment_id):
@@ -874,86 +1316,51 @@ def dismiss_reminder(reminder_id):
 
 # --- Calendar Integration ---
 @app.route('/calendar')
+@login_required
 def calendar_view():
+    rescue_id = request.args.get('rescue_id', type=int)
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        if rescue_id:
+            reminders_query = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine)
+            ).filter(Reminder.status == 'pending', Reminder.dog.has(rescue_id=rescue_id)).order_by(Reminder.due_datetime.asc()).all()
+        else:
+            reminders_query = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine)
+            ).filter(Reminder.status == 'pending').order_by(Reminder.due_datetime.asc()).all()
+    else:
+        rescues = None
+        rescue_id = current_user.rescue_id
+        reminders_query = Reminder.query.options(
+            db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+            db.joinedload(Reminder.dog_medicine)
+        ).filter(Reminder.status == 'pending', Reminder.dog.has(rescue_id=current_user.rescue_id)).order_by(Reminder.due_datetime.asc()).all()
     from collections import defaultdict
-    now = datetime.utcnow()
-    seven_days_later = now + timedelta(days=7)
-    
-    upcoming_reminders_query = Reminder.query.options(
-        db.joinedload(Reminder.appointment).joinedload(Appointment.type),
-        db.joinedload(Reminder.dog_medicine) 
-    ).filter(
-        Reminder.status == 'pending',
-        Reminder.due_datetime >= now,
-        Reminder.due_datetime <= seven_days_later
-    ).order_by(Reminder.due_datetime.asc()).all()
-
-    grouped_reminders = defaultdict(list)
-    # Define a specific order for groups
     group_order = ["Vet Reminders", "Medication Reminders", "Other Reminders"]
-    # Initialize the dict with empty lists to maintain order even if no reminders for a group
+    grouped_reminders = defaultdict(list)
     for group in group_order:
         grouped_reminders[group] = []
-
-    for reminder in upcoming_reminders_query:
-        group_name = "Other Reminders" # Default group
+    for reminder in reminders_query:
+        group_name = "Other Reminders"
         specific_type_name_for_grouping = None
-
-        print(f"Processing reminder ID {reminder.id}: {reminder.message}, Appt ID: {reminder.appointment_id}, Med ID: {reminder.dog_medicine_id}") # DEBUG
-
         if reminder.appointment_id and reminder.appointment:
             if reminder.appointment.type:
                 specific_type_name_for_grouping = reminder.appointment.type.name
-                print(f"  Reminder ID {reminder.id} - Appointment Type Name: {specific_type_name_for_grouping}") # DEBUG
                 if "vet" in specific_type_name_for_grouping.lower():
                     group_name = "Vet Reminders"
                 elif "grooming" in specific_type_name_for_grouping.lower():
                     group_name = "Grooming Reminders"
-                # Add other specific checks here if needed, e.g.:
-                # elif "vaccination" in specific_type_name_for_grouping.lower():
-                #     group_name = "Vaccination Reminders"
-                else:
-                    # Use the actual appointment type name if not Vet/Grooming and we want specific groups
-                    # For now, other specific appointment types will fall into "Other Reminders"
-                    # or you can make group_name = specific_type_name_for_grouping if you want a group for each type
-                    pass # Falls to "Other Reminders" if not Vet or Grooming
-            else:
-                print(f"  Reminder ID {reminder.id} - Linked to Appointment ID {reminder.appointment_id}, but AppointmentType is missing.") # DEBUG
+            # else falls to Other Reminders
         elif reminder.dog_medicine_id:
             group_name = "Medication Reminders"
-            print(f"  Reminder ID {reminder.id} - Categorized as: Medication Reminder") # DEBUG
-        else:
-            # Fallback for reminders not linked to appointments with types or medicines
-            # Could use reminder.reminder_type for more generic grouping if desired
-            print(f"  Reminder ID {reminder.id} - Categorized as: Other Reminders (no specific appt type or medicine)") # DEBUG
-        
-        print(f"  Reminder ID {reminder.id} - Final Group: {group_name}") # DEBUG
-        # Ensure the group exists in group_order if we are adding new dynamic groups
-        if group_name not in grouped_reminders:
-             # If we allow dynamic group names (e.g. specific appointment types beyond Vet/Meds/Other)
-             # We might want to add them to group_order or handle their display order separately.
-             # For now, non-predefined groups will appear after the ordered ones.
-             if group_name not in group_order: # Add to group_order if it's a new dynamic one for sorting later
-                # This part is tricky if we want to maintain a strict order for *all* possible groups.
-                # For now, let's assume specific_type_name_for_grouping will be used if we uncomment logic for it,
-                # and such groups might appear after the main ones or sorted alphabetically later.
-                pass 
         grouped_reminders[group_name].append(reminder)
-    
-    # Adjust final_grouped_reminders to handle potentially new group names from specific appointment types
-    # Create a new dictionary ensuring the order from group_order is first, then any other groups sorted alphabetically.
     ordered_final_groups = {group: grouped_reminders[group] for group in group_order if group in grouped_reminders}
-    
-    # Add any other groups that might have been created dynamically, sort them alphabetically
-    other_dynamic_groups = { 
-        k: v for k, v in sorted(grouped_reminders.items()) 
-        if k not in ordered_final_groups and v # only add if it has reminders
-    }
+    other_dynamic_groups = {k: v for k, v in sorted(grouped_reminders.items()) if k not in ordered_final_groups and v}
     ordered_final_groups.update(other_dynamic_groups)
-    # Filter out groups that are in group_order but ended up empty, if desired
-    # final_display_groups = {k: v for k, v in ordered_final_groups.items() if v}
-
-    return render_template('calendar_view.html', grouped_reminders=ordered_final_groups) # Pass the re-ordered dict
+    return render_template('calendar_view.html', grouped_reminders=ordered_final_groups, rescues=rescues, selected_rescue_id=rescue_id)
 
 @app.route('/api/calendar/events')
 def calendar_events_api():
@@ -1047,63 +1454,87 @@ def calendar_events_api():
 
 # --- Dashboard Route ---
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    """Main dashboard page showing overdue items and today's schedule."""
     from datetime import date
-    
-    now = datetime.utcnow()
-    today_start = datetime.combine(date.today(), datetime.min.time())
-    today_end = today_start + timedelta(days=1)
-    
-    print("=== DASHBOARD ROUTE CALLED ===")
-    print(f"Current time (UTC): {now}")
-    print(f"Today range: {today_start} to {today_end}")
-    
-    # Get current user (first available user for now)
-    current_user = User.query.first()
-    
-    # Fetch overdue reminders (due_datetime < now and status = 'pending')
-    overdue_reminders = Reminder.query.options(
-        db.joinedload(Reminder.appointment).joinedload(Appointment.type),
-        db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
-        db.joinedload(Reminder.dog)
-    ).filter(
-        Reminder.status == 'pending',
-        Reminder.due_datetime < now
-    ).order_by(Reminder.due_datetime.asc()).all()
-    
-    print(f"DEBUG: Fetched {len(overdue_reminders)} overdue reminders from DB.")
-    
-    # Fetch today's reminders (due_datetime within today and status = 'pending')
-    today_reminders = Reminder.query.options(
-        db.joinedload(Reminder.appointment).joinedload(Appointment.type),
-        db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
-        db.joinedload(Reminder.dog)
-    ).filter(
-        Reminder.status == 'pending',
-        Reminder.due_datetime >= today_start,
-        Reminder.due_datetime < today_end
-    ).order_by(Reminder.due_datetime.asc()).all()
-    
-    print(f"DEBUG: Fetched {len(today_reminders)} today's reminders from DB.")
-    
-    # Group reminders by type
+    rescue_id = request.args.get('rescue_id', type=int)
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        if rescue_id:
+            overdue_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime < datetime.utcnow(),
+                Reminder.dog.has(rescue_id=rescue_id)
+            ).order_by(Reminder.due_datetime.asc()).all()
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            today_end = today_start + timedelta(days=1)
+            today_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime >= today_start,
+                Reminder.due_datetime < today_end,
+                Reminder.dog.has(rescue_id=rescue_id)
+            ).order_by(Reminder.due_datetime.asc()).all()
+        else:
+            overdue_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime < datetime.utcnow()
+            ).order_by(Reminder.due_datetime.asc()).all()
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            today_end = today_start + timedelta(days=1)
+            today_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime >= today_start,
+                Reminder.due_datetime < today_end
+            ).order_by(Reminder.due_datetime.asc()).all()
+    else:
+        rescues = None
+        rescue_id = current_user.rescue_id
+        overdue_reminders = Reminder.query.options(
+            db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+            db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+            db.joinedload(Reminder.dog)
+        ).filter(
+            Reminder.status == 'pending',
+            Reminder.due_datetime < datetime.utcnow(),
+            Reminder.dog.has(rescue_id=current_user.rescue_id)
+        ).order_by(Reminder.due_datetime.asc()).all()
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_end = today_start + timedelta(days=1)
+        today_reminders = Reminder.query.options(
+            db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+            db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+            db.joinedload(Reminder.dog)
+        ).filter(
+            Reminder.status == 'pending',
+            Reminder.due_datetime >= today_start,
+            Reminder.due_datetime < today_end,
+            Reminder.dog.has(rescue_id=current_user.rescue_id)
+        ).order_by(Reminder.due_datetime.asc()).all()
     grouped_overdue_reminders = group_reminders_by_type(overdue_reminders)
     grouped_today_reminders = group_reminders_by_type(today_reminders)
-    
-    # Debug the grouped results
-    overdue_counts = {k: len(v) for k, v in grouped_overdue_reminders.items()}
-    today_counts = {k: len(v) for k, v in grouped_today_reminders.items()}
-    print(f"DEBUG: Grouped overdue reminders: {overdue_counts}")
-    print(f"DEBUG: Grouped today's reminders: {today_counts}")
-    
-    print("DEBUG: About to render template with reminder data")
-    
     return render_template('dashboard.html',
                            current_user=current_user,
                            grouped_overdue_reminders=grouped_overdue_reminders,
                            grouped_today_reminders=grouped_today_reminders,
-                           now=now)
+                           now=datetime.utcnow(),
+                           rescues=rescues,
+                           selected_rescue_id=rescue_id)
 
 @app.route('/dog/<int:dog_id>/history')
 def dog_history(dog_id):
@@ -1131,10 +1562,17 @@ def dog_history(dog_id):
 
 @app.route('/history')
 def dog_history_overview():
-    """Overview page showing all dogs and recent history activity across the rescue."""
-    # Get all dogs for the rescue (for now, just get all dogs)
-    dogs = Dog.query.order_by(Dog.name.asc()).all()
-    
+    rescue_id = request.args.get('rescue_id', type=int)
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        if rescue_id:
+            dogs = Dog.query.filter_by(rescue_id=rescue_id).order_by(Dog.name.asc()).all()
+        else:
+            dogs = Dog.query.order_by(Dog.name.asc()).all()
+    else:
+        rescues = None
+        rescue_id = current_user.rescue_id
+        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
     # Organize dogs alphabetically for accordion display
     dogs_by_letter = {}
     for dog in dogs:
@@ -1142,28 +1580,23 @@ def dog_history_overview():
         if first_letter not in dogs_by_letter:
             dogs_by_letter[first_letter] = []
         dogs_by_letter[first_letter].append(dog)
-    
-    # Sort the letters and create ordered groups
     sorted_dogs_by_letter = dict(sorted(dogs_by_letter.items()))
-    
     # Get recent history events across all dogs (last 20 events)
     recent_events = []
     for dog in dogs:
         _, dog_events = _get_dog_history_events(dog.id)
-        # Add dog name to each event for the overview
         for event in dog_events:
             event['dog_name'] = dog.name
             event['dog_id'] = dog.id
         recent_events.extend(dog_events)
-    
-    # Sort all events by timestamp (newest first) and take the most recent 20
     recent_events.sort(key=lambda x: x['timestamp'], reverse=True)
     recent_events = recent_events[:20]
-    
     return render_template('dog_history_overview.html', 
                            dogs=dogs,
                            dogs_by_letter=sorted_dogs_by_letter,
-                           recent_events=recent_events)
+                           recent_events=recent_events,
+                           rescues=rescues,
+                           selected_rescue_id=rescue_id)
 
 @app.route('/dog/<int:dog_id>/note/add', methods=['POST'])
 def add_dog_note(dog_id):
@@ -1488,6 +1921,59 @@ def export_care_summary(dog_id):
     response.headers['Content-Type'] = 'text/plain'
     
     return response
+
+def get_current_user():
+    """Get current authenticated user or None if not authenticated."""
+    if current_user.is_authenticated:
+        return current_user
+    return None
+
+@app.route('/admin/audit-logs')
+def admin_audit_logs():
+    current_user = get_current_user()
+    if not current_user or not (current_user.role in ('superadmin', 'owner')):
+        abort(403)
+    page = int(request.args.get('page', 1))
+    per_page = 25
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    audit_stats = get_audit_system_stats() if current_user.role == 'superadmin' else None
+    return render_template('admin_audit_logs.html', logs=logs, current_user=current_user, audit_stats=audit_stats)
+
+@app.route('/admin/flush-audit-batch', methods=['POST'])
+def admin_flush_audit_batch():
+    current_user = get_current_user()
+    if not current_user or current_user.role != 'superadmin':
+        abort(403)
+    # Force flush the audit batch queue
+    flushed = False
+    if hasattr(_audit_batcher, 'queue'):
+        batch = []
+        while not _audit_batcher.queue.empty():
+            batch.append(_audit_batcher.queue.get())
+        if batch:
+            _audit_batcher._flush(batch)
+            flushed = True
+    flash('Audit batch flushed.' if flushed else 'No events to flush.', 'info')
+    return redirect(url_for('admin_audit_logs'))
+
+@app.route('/admin/run-audit-cleanup', methods=['POST'])
+def admin_run_audit_cleanup():
+    current_user = get_current_user()
+    if not current_user or current_user.role != 'superadmin':
+        abort(403)
+    cleanup_old_audit_logs()
+    flash('Audit log cleanup completed.', 'info')
+    return redirect(url_for('admin_audit_logs'))
+
+@app.route('/staff-management')
+@login_required
+def staff_management():
+    return render_template('staff_management.html')
+
+@app.route('/rescue-info')
+@login_required
+def rescue_info():
+    return render_template('rescue_info.html')
 
 if __name__ == '__main__':
     print('--- ROUTES REGISTERED ---')

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
 from app import app
-from models import db, Dog, Appointment, Rescue, User, AppointmentType, MedicinePreset, DogMedicine, Reminder, DogMedicineHistory, DogNote
+from models import db, Dog, Appointment, Rescue, User, AppointmentType, MedicinePreset, DogMedicine, Reminder, DogMedicineHistory, DogNote, AuditLog
 from datetime import datetime, timedelta, timezone, date
 import random
 import sys
+import getpass
 
 names = [
     'Baxter', 'Luna', 'Moose', 'Ziggy', 'Willow', 'Pepper', 'Finn', 'Olive', 'Milo', 'Sadie',
@@ -569,8 +570,9 @@ def seed_reminders(users, appointments, medicines):
 
 def clear_data():
     print("Clearing existing data...")
-    # Clear data in an order that respects foreign key constraints (children before parents)
+    # Clear audit_log first to avoid FK errors
     models_to_clear_in_order = [
+        AuditLog,  # Clear audit logs first
         Reminder, 
         DogNote,
         DogMedicineHistory,
@@ -591,9 +593,7 @@ def clear_data():
             except Exception as e:
                 db.session.rollback()
                 print(f"Error clearing {model.__tablename__}: {e}")
-                # Optionally, re-raise or handle more gracefully
-                # For development, printing the error might be sufficient
-                return # Stop if one fails, to avoid further FK issues
+                return
     db.session.commit()
     print("Data clearing complete.")
 
@@ -688,12 +688,70 @@ def main():
     for i, (name, _) in enumerate(options, 1):
         print(f"[{i}] {name}")
     print(f"[{len(options)+1}] Seed EVERYTHING")
+    print(f"[{len(options)+2}] Create or Edit Superadmin User")
     selection = input("\nEnter numbers separated by commas (e.g., 1,3,5), 0 to clear, or press Enter to seed everything: ").strip()
     
     if selection == '0':
         with app.app_context():
             clear_data()
         sys.exit(0)
+
+    if selection == str(len(options)+2):
+        with app.app_context():
+            existing_superadmin = User.query.filter_by(role='superadmin').first()
+            if existing_superadmin:
+                print(f"Superadmin already exists: {existing_superadmin.email}")
+                update = input("Do you want to update this superadmin? (y/n): ").strip().lower()
+                if update != 'y':
+                    print("No changes made.")
+                    sys.exit(0)
+                name = input(f"Enter new name [{existing_superadmin.name}]: ").strip() or existing_superadmin.name
+                email = input(f"Enter new email [{existing_superadmin.email}]: ").strip() or existing_superadmin.email
+                password = getpass.getpass("Enter new password (leave blank to keep current): ").strip()
+                if password:
+                    if len(password) < 4:
+                        print("Password must be at least 4 characters long.")
+                        sys.exit(1)
+                    existing_superadmin.set_password(password)
+                existing_superadmin.name = name
+                existing_superadmin.email = email
+                db.session.commit()
+                print("Superadmin updated successfully!")
+                sys.exit(0)
+            else:
+                print("Creating superadmin user...")
+                name = input("Enter superadmin name: ").strip()
+                email = input("Enter superadmin email: ").strip()
+                if not email or '@' not in email:
+                    print("Invalid email address.")
+                    sys.exit(1)
+                from models import User
+                if User.query.filter_by(email=email).first():
+                    print(f"User with email {email} already exists.")
+                    sys.exit(1)
+                password = getpass.getpass("Enter superadmin password: ").strip()
+                password_confirm = getpass.getpass("Confirm password: ").strip()
+                if password != password_confirm:
+                    print("Passwords do not match.")
+                    sys.exit(1)
+                if len(password) < 4:
+                    print("Password must be at least 4 characters long.")
+                    sys.exit(1)
+                superadmin = User(
+                    name=name,
+                    email=email,
+                    role='superadmin',
+                    rescue_id=None,
+                    is_active=True,
+                    email_verified=True,
+                    data_consent=True,
+                    marketing_consent=False
+                )
+                superadmin.set_password(password)
+                db.session.add(superadmin)
+                db.session.commit()
+                print(f"Superadmin user created successfully!\nName: {name}\nEmail: {email}\nRole: superadmin")
+                sys.exit(0)
 
     if not selection: # Enter for seed everything
         selected = list(range(len(options)))
@@ -765,6 +823,24 @@ def main():
             print(f"{name} seeding complete.")
 
     print("\nDatabase seeding/clearing complete.")
+
+    # Add a script section to create a superadmin user if one does not exist.
+    # The superadmin will have name='superadmin', role='owner', and be linked to the first rescue.
+    # Print the result to the console.
+    with app.app_context():
+        superadmin = User.query.filter_by(name='superadmin').first()
+        if superadmin:
+            print('Superadmin user already exists.')
+        else:
+            rescue = Rescue.query.first()
+            if not rescue:
+                rescue = Rescue(name='Default Rescue', address='N/A', phone='N/A', email='superadmin@rescue.org')
+                db.session.add(rescue)
+                db.session.commit()
+            superadmin = User(name='superadmin', role='owner', rescue_id=rescue.id, can_edit=True)
+            db.session.add(superadmin)
+            db.session.commit()
+            print('Superadmin user created with name="superadmin" and role="owner".')
 
 if __name__ == '__main__':
     main() 

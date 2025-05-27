@@ -1,3 +1,4 @@
+<!-- TEST_MARKER_1234567890 -->
 {% extends 'base.html' %}
 
 {% block title %}Dog History Overview{% endblock %}
@@ -11,11 +12,17 @@
         </a>
     </div>
 
-    <!-- Filter Info Banner -->
-    <div class="alert alert-info" role="alert">
-        <i class="bi bi-info-circle"></i> 
-        <strong>Looking for filters?</strong> Click the <i class="bi bi-clock-history"></i> history button next to any dog below to access their individual history page with advanced filtering and search capabilities.
-    </div>
+    {% if current_user.role == 'superadmin' %}
+    <form method="get" class="mb-3" id="rescueFilterForm">
+        <label for="rescueSelect" class="form-label">Filter by Rescue:</label>
+        <select name="rescue_id" id="rescueSelect" class="form-select" onchange="this.form.submit()">
+            <option value="">All Rescues</option>
+            {% for rescue in rescues %}
+                <option value="{{ rescue.id }}" {% if rescue.id == selected_rescue_id %}selected{% endif %}>{{ rescue.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
 
     <div class="row">
         <!-- Dogs List Section -->
@@ -157,34 +164,6 @@
                             <p class="text-muted small">Start by adding notes, appointments, or medications to see activity here.</p>
                         </div>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Stats Row (Optional Enhancement) -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h5 class="mb-1">{{ dogs|length }}</h5>
-                            <small class="text-muted">Total Dogs</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h5>
-                            <small class="text-muted">Adopted</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Not Adopted')|list|length }}</h5>
-                            <small class="text-muted">Available</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h5 class="mb-1">{{ recent_events|length }}</h5>
-                            <small class="text-muted">Recent Events</small>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

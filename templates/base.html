@@ -23,6 +23,7 @@
     </button>
     <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
       <ul class="navbar-nav">
+        {% if current_user.is_authenticated %}
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('dashboard') }}">Home</a>
         </li>
@@ -43,14 +44,49 @@
           <a class="nav-link" href="{{ url_for('calendar_view') }}">Calendar & Reminders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Staff Management</a>
+          <a class="nav-link" href="{{ url_for('staff_management') }}">Staff Management</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Rescue Info</a>
+          <a class="nav-link" href="{{ url_for('rescue_info') }}">Rescue Info</a>
+        </li>
+        {% if current_user.role in ['superadmin', 'owner'] %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin_audit_logs') }}">Audit Logs</a>
+        </li>
+        {% endif %}
+        {% endif %}
+      </ul>
+      
+      <!-- User menu on the right -->
+      <ul class="navbar-nav ms-auto">
+        {% if current_user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle"></i> {{ current_user.name }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <li><h6 class="dropdown-header">{{ current_user.rescue.name if current_user.rescue else 'No Rescue' }}</h6></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">
+              <i class="bi bi-person"></i> Profile
+            </a></li>
+            <li><a class="dropdown-item" href="#">
+              <i class="bi bi-gear"></i> Settings
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a></li>
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('login') }}">Login</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Logout</a>
+          <a class="nav-link" href="{{ url_for('register_rescue') }}">Register</a>
         </li>
+        {% endif %}
       </ul>
     </div>
   </div>

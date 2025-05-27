@@ -259,6 +259,18 @@
             </div>
         </div>
     </div>
+
+    {% if current_user.role == 'superadmin' %}
+    <form method="get" class="mb-3" id="rescueFilterForm">
+        <label for="rescueSelect" class="form-label">Filter by Rescue:</label>
+        <select name="rescue_id" id="rescueSelect" class="form-select" onchange="this.form.submit()">
+            <option value="">All Rescues</option>
+            {% for rescue in rescues %}
+                <option value="{{ rescue.id }}" {% if rescue.id == selected_rescue_id %}selected{% endif %}>{{ rescue.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
 </div>
 {% endblock %}
 

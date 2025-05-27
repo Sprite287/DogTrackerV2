@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Register Rescue - DogTracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-heart me-2"></i>
+                        Register Your Rescue Organization
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('register_rescue') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Rescue Information Section -->
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-building me-2"></i>
+                            Rescue Organization Information
+                        </h5>
+                        
+                        <div class="mb-3">
+                            {{ form.rescue_name.label(class="form-label") }}
+                            {{ form.rescue_name(class="form-control" + (" is-invalid" if form.rescue_name.errors else "")) }}
+                            {% if form.rescue_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.rescue_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.rescue_address.label(class="form-label") }}
+                            {{ form.rescue_address(class="form-control" + (" is-invalid" if form.rescue_address.errors else ""), rows="3") }}
+                            {% if form.rescue_address.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.rescue_address.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.rescue_phone.label(class="form-label") }}
+                                {{ form.rescue_phone(class="form-control" + (" is-invalid" if form.rescue_phone.errors else "")) }}
+                                {% if form.rescue_phone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.rescue_phone.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.rescue_email.label(class="form-label") }}
+                                {{ form.rescue_email(class="form-control" + (" is-invalid" if form.rescue_email.errors else "")) }}
+                                {% if form.rescue_email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.rescue_email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Primary Contact Section -->
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-user me-2"></i>
+                            Primary Contact (Your Account)
+                        </h5>
+
+                        <div class="mb-3">
+                            {{ form.contact_name.label(class="form-label") }}
+                            {{ form.contact_name(class="form-control" + (" is-invalid" if form.contact_name.errors else "")) }}
+                            {% if form.contact_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.contact_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.contact_email.label(class="form-label") }}
+                                {{ form.contact_email(class="form-control" + (" is-invalid" if form.contact_email.errors else "")) }}
+                                {% if form.contact_email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact_email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.contact_phone.label(class="form-label") }}
+                                {{ form.contact_phone(class="form-control" + (" is-invalid" if form.contact_phone.errors else "")) }}
+                                {% if form.contact_phone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact_phone.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.contact_password.label(class="form-label") }}
+                                {{ form.contact_password(class="form-control" + (" is-invalid" if form.contact_password.errors else "")) }}
+                                {% if form.contact_password.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact_password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Password must be at least 4 characters with at least one letter and one number.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.contact_password2.label(class="form-label") }}
+                                {{ form.contact_password2(class="form-control" + (" is-invalid" if form.contact_password2.errors else "")) }}
+                                {% if form.contact_password2.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.contact_password2.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Consent Section -->
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Privacy & Consent
+                        </h5>
+
+                        <div class="mb-3 form-check">
+                            {{ form.data_consent(class="form-check-input" + (" is-invalid" if form.data_consent.errors else "")) }}
+                            {{ form.data_consent.label(class="form-check-label") }}
+                            {% if form.data_consent.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.data_consent.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            {{ form.marketing_consent(class="form-check-input") }}
+                            {{ form.marketing_consent.label(class="form-check-label") }}
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Your rescue registration will be reviewed by our administrators. 
+                            You will receive an email notification once your registration is approved and you can begin using the system.
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-success btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">
+                        Already have an account? 
+                        <a href="{{ url_for('login') }}" class="text-decoration-none">
+                            Sign in here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
