@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ 'Edit' if preset else 'Add' }} Rescue Medicine Preset</h2>
+<form method="post">
+  <div class="mb-3">
+    <label for="name" class="form-label">Name</label>
+    <input type="text" class="form-control" id="name" name="name" value="{{ preset.name if preset else '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label for="category" class="form-label">Category</label>
+    <input type="text" class="form-control" id="category" name="category" value="{{ preset.category if preset else '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="default_dosage_instructions" class="form-label">Default Dosage Instructions</label>
+    <textarea class="form-control" id="default_dosage_instructions" name="default_dosage_instructions">{{ preset.default_dosage_instructions if preset else '' }}</textarea>
+  </div>
+  <div class="mb-3">
+    <label for="suggested_units" class="form-label">Suggested Units (comma-separated)</label>
+    <input type="text" class="form-control" id="suggested_units" name="suggested_units" value="{{ preset.suggested_units if preset else '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="default_unit" class="form-label">Default Unit</label>
+    <input type="text" class="form-control" id="default_unit" name="default_unit" value="{{ preset.default_unit if preset else '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="notes" class="form-label">Notes</label>
+    <textarea class="form-control" id="notes" name="notes">{{ preset.notes if preset else '' }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ 'Update' if preset else 'Add' }} Preset</button>
+  <a href="{{ url_for('manage_rescue_medicines') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %} 

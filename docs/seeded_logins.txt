@@ -1,0 +1,34 @@
+# WARNING: This file contains plaintext test credentials. DELETE BEFORE DEPLOYMENT!
+
+# Seeded User Logins (Owner/Staff)
+
+Name: Rescue 1 Owner
+Email: rescue_1_owner@example.com
+Role: owner
+Password: liOqRmz4l0Q4
+---
+Name: Rescue 1 Staff
+Email: rescue_1_staff@example.com
+Role: staff
+Password: 6OaIHi5n2mxx
+---
+Name: Rescue 2 Owner
+Email: rescue_2_owner@example.com
+Role: owner
+Password: Qpxq7EJNG9Gx
+---
+Name: Rescue 2 Staff
+Email: rescue_2_staff@example.com
+Role: staff
+Password: MCSDlwwD6WXj
+---
+Name: Rescue 3 Owner
+Email: rescue_3_owner@example.com
+Role: owner
+Password: pdwjvs2ijL7w
+---
+Name: Rescue 3 Staff
+Email: rescue_3_staff@example.com
+Role: staff
+Password: wHgs7SJbT9Ng
+---

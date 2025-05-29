@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Manage Available Medicines</h2>
+
+<a href="{{ url_for('add_rescue_medicine_preset') }}" class="btn btn-success mb-2">Add New Preset</a>
+
+<div class="accordion" id="medicineAccordion">
+  {% set categories = rescue_presets|groupby('category') %}
+  {% for category, items in categories|sort(attribute='0') %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading-{{ loop.index }}">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
+        {{ category or 'Uncategorized' }}
+      </button>
+    </h2>
+    <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ loop.index }}" data-bs-parent="#medicineAccordion">
+      <div class="accordion-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr><th>Name</th><th>Active?</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for preset in items|sort(attribute='name') %}
+            <tr>
+              <td>{{ preset.name }}</td>
+              <td>
+                <input type="checkbox" class="activate-toggle" data-preset-id="{{ preset.id }}" {% if preset.id not in active_global_ids %}checked{% endif %}>
+              </td>
+              <td>
+                {% if (preset.rescue_id == current_user.rescue_id) or current_user.role == 'superadmin' %}
+                  <a href="{{ url_for('edit_rescue_medicine_preset', preset_id=preset.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                  <form method="post" action="{{ url_for('delete_rescue_medicine_preset', preset_id=preset.id) }}" style="display:inline;" onsubmit="return confirm('Delete this preset?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="activation-message" class="text-success"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.activate-toggle').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+      const presetId = this.getAttribute('data-preset-id');
+      const activate = this.checked;
+      fetch('/rescue/medicines/toggle_activation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `preset_id=${presetId}&activate=${activate}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        const msg = document.getElementById('activation-message');
+        if (data.success) {
+          msg.textContent = 'Activation updated!';
+          msg.className = 'text-success';
+        } else {
+          msg.textContent = 'Error: ' + (data.error || 'Unknown error');
+          msg.className = 'text-danger';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 2000);
+      })
+      .catch(() => {
+        const msg = document.getElementById('activation-message');
+        msg.textContent = 'Network error.';
+        msg.className = 'text-danger';
+        setTimeout(() => { msg.textContent = ''; }, 2000);
+      });
+    });
+  });
+});
+</script>
+{% endblock %} 

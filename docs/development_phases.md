@@ -1,182 +1,3 @@
-# DogTrackerV2 - Dog Rescue Management Application
-
-## Table of Contents
-1. [Project Overview](#1-project-overview)
-2. [Technology Stack](#2-technology-stack)
-3. [Project Setup & Installation](#3-project-setup--installation)
-4. [Project Development Phases & Current Status](#4-project-development-phases--current-status)
-5. [Current Status](#5-current-status)
-6. [Future Considerations](#6-future-considerations--potential-enhancements-beyond-current-phases)
-
----
-
-## 1. Project Overview
-
-DogTrackerV2 is a web application designed to help dog rescue organizations manage their dogs, including tracking their status, medical information, appointments, and medication schedules. The application aims to provide a user-friendly interface for staff and volunteers to efficiently manage rescue operations and ensure the well-being of the animals in their care.
-
-The system features robust CRUD (Create, Read, Update, Delete) functionalities for dogs, appointments, and medicines, utilizing modern web technologies like Flask, SQLAlchemy, HTMX, and Bootstrap to deliver a responsive and dynamic user experience without requiring full page reloads for most interactions.
-
----
-
-## 2. Technology Stack
-
-### Backend
-- **Framework:** Flask (Python)
-- **Database ORM:** SQLAlchemy
-- **Database:** PostgreSQL (default, configurable via `DATABASE_URL`)
-- **Migrations:** Flask-Migrate (Alembic)
-- **Authentication:** Basic session management (details depend on user implementation, e.g., Flask-Login)
-
-### Frontend
-- **Templating:** Jinja2
-- **Styling:** Bootstrap 5.3
-- **Dynamic Interactions:** HTMX 1.9.2
-- **JavaScript:** Vanilla JavaScript for Bootstrap component interaction and custom enhancements
-
-### Development Environment
-- Python 3.x
-- `pip` for package management (`requirements.txt`)
-- Virtual environment (e.g., `venv`)
-
----
-
-## 3. Project Setup & Installation
-
-### 3.1. Prerequisites
-
-- Python 3.8+
-- PostgreSQL server installed and running
-- `pip` and `virtualenv` (or `venv`)
-
-### 3.2. Initial Setup
-
-**1. Clone the Repository (if applicable):**
-```bash
-git clone <your-repository-url>
-cd DogTrackerV2
-```
-
-**2. Create and Activate a Virtual Environment:**
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
-
-**3. Install Dependencies:**
-```bash
-pip install -r requirements.txt
-```
-*(Ensure `requirements.txt` is up-to-date with all necessary packages: Flask, SQLAlchemy, Flask-Migrate, psycopg2-binary, etc.)*
-
-**4. Configure Environment Variables:**
-
-Create a `.env` file in the project root (DogTrackerV2) or set system environment variables:
-```env
-DATABASE_URL="postgresql://doguser:dogpassword@localhost:5432/dogtracker"
-SECRET_KEY="a_very_secret_random_key_for_sessions"
-FLASK_APP="app" # Or your app entry point
-FLASK_DEBUG="True" # For development
-```
-
-- **`DATABASE_URL`**: Update with your PostgreSQL connection details (user, password, host, port, database name)
-- **`SECRET_KEY`**: Generate a strong, random secret key
-
-**5. Create the Database (if it doesn't exist):**
-
-Connect to your PostgreSQL server and create the database specified in `DATABASE_URL` (e.g., `dogtracker`).
-```sql
--- Example psql command
-CREATE DATABASE dogtracker;
-CREATE USER doguser WITH PASSWORD 'dogpassword';
-GRANT ALL PRIVILEGES ON DATABASE dogtracker TO doguser;
-```
-
-**6. Initialize Database and Run Migrations:**
-```bash
-flask db init  # Only if you haven't initialized migrations before
-flask db migrate -m "Initial migration" # Or a descriptive message
-flask db upgrade
-```
-
-**7. Populate Initial Data (Optional but Recommended):**
-
-If you have a script like `populate_dogs.py` or similar for seeding initial data:
-```bash
-python populate_dogs.py # Or flask <command_name> if it's a CLI command
-```
-
-### 3.3. Running the Application
-
-**1. Activate Virtual Environment (if not already active):**
-```bash
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
-
-**2. Run the Flask Development Server:**
-
-The project includes batch files for convenience:
-- `start_server.bat` (Windows)
-
-Alternatively, use the Flask CLI:
-```bash
-flask run
-```
-
-The application should typically be available at `http://127.0.0.1:5000/`.
-
-### 3.4. Project Structure
-
-```
-DogTrackerV2/
-├── static/               # Static files (CSS, JS, images)
-│   └── dog_details.js    # Custom JavaScript for dog details functionality
-├── templates/            # Jinja2 templates
-│   ├── partials/         # Reusable template snippets (modals, lists)
-│   │   ├── add_edit_modal.html         # Generic add/edit modal template
-│   │   ├── appointments_list.html      # Appointments display partial
-│   │   ├── medicines_list.html         # Medicines display partial
-│   │   ├── modal_form_error.html       # Error display partial for modals
-│   │   └── history_timeline.html       # History timeline partial (Phase 5)
-│   ├── base.html         # Base layout template with navigation
-│   ├── index.html        # Dog listing page (redirects to dashboard)
-│   ├── dashboard.html    # Main dashboard (Phase 4 - landing page)
-│   ├── dog_details.html  # Individual dog details, appointments, medicines
-│   ├── dog_history.html  # Comprehensive dog history page (Phase 5)
-│   ├── dog_list.html     # Dog management listing page
-│   └── calendar.html     # Calendar view with reminders (Phase 3)
-├── migrations/           # Flask-Migrate (Alembic) migration scripts
-│   └── versions/         # Database migration version files
-├── app.py                # Main Flask application, routes, logic
-├── extensions.py         # Flask extension instantiations (db, migrate)
-├── models.py             # SQLAlchemy database models
-│   # Current models: User, Rescue, Dog, AppointmentType, Appointment,
-│   # MedicinePreset, DogMedicine, Reminder, DogNote (Phase 5)
-├── populate_dogs.py      # Comprehensive data seeding script
-├── requirements.txt      # Python package dependencies
-├── README.md             # This documentation file
-├── .env.example          # Environment variables template
-├── .gitignore           # Git ignore rules
-├── start_server.bat      # Windows server start script
-├── stop_server.bat       # Windows server stop script
-└── restart_server.bat    # Windows server restart script
-```
-
-**Key Directories & Files:**
-- **`templates/`**: All HTML templates with Jinja2 templating
-- **`templates/partials/`**: Reusable components for HTMX functionality
-- **`static/`**: Client-side assets (minimal due to CDN usage)
-- **`models.py`**: Database schema with 9 core models across 5 phases
-- **`app.py`**: ~800+ lines of Flask routes and business logic
-- **`populate_dogs.py`**: Sample data generation for testing and demos
-
----
-
 ## 4. Project Development Phases & Current Status
 
 This project is being developed in phases. Below is the current status:
@@ -382,41 +203,6 @@ This project is being developed in phases. Below is the current status:
 - **Simple Chronological Display:** Timeline view showing events in reverse chronological order ✅
 - **Performance Optimizations:** Database indexing and pagination support ✅
 
-#### **Phase 5B: Enhanced Interaction & Search ✅**
-
-**Objective:** Add comprehensive filtering, search capabilities, and interactive note-taking functionality.
-
-**Key Deliverables:**
-- **"Add Dog Note" Functionality:** Modal form with HTMX submission ✅
-- **History Filtering & Search:** UI controls for filtering by date range, event type, category, and keywords ✅
-- **Enhanced Dog Details Integration:** Recent Activity widget and history navigation ✅
-
-#### **Phase 5C: Export & Advanced Features ✅**
-
-**Objective:** Implement export capabilities and advanced visualization features.
-
-**Key Deliverables:**
-- **Text Export Features:**
-  - CSV Downloads: Structured CSV files for appointments, medicines, and notes ✅
-  - Text Report Downloads: Formatted care summaries for vets/adopters ✅
-  - Multiple Export Options: Full History, Medical Summary, Medication Log, Care Summary ✅
-- **Advanced Integration Points:**
-  - Dashboard → History Context: Reminder actions link to relevant history ✅
-  - Calendar → History Integration: Calendar events show history links ✅
-  - History → Current Status: Current status summary sidebar ✅
-- **Enhanced Dog Details Page Integration:**
-  - Quick Statistics with history links ✅
-  - Export dropdown with quick access to summaries ✅
-- **Timeline Visualization:**
-  - Enhanced visual timeline component with CSS styling ✅
-  - Color-coded event types with responsive design ✅
-
-**Recent Navigation Enhancements (Phase 5C Final):**
-- Streamlined back button system across all pages ✅
-- Dog Details ↔ Dog History ↔ History Overview navigation flow ✅
-- Removal of auto-expanding accordions for cleaner UI ✅
-- Enhanced user experience with contextual navigation options ✅
-
 ---
 
 ### **Phase 6: Multi-Tenancy, Security & Core Audit (IN PROGRESS)**
@@ -459,21 +245,28 @@ This project is being developed in phases. Below is the current status:
             *   **Audit Integration:** All authentication events (login/logout, registrations, password resets) logged through audit system. ✅
             *   **Multi-tenancy Foundation:** Data filtering by `current_user.rescue_id`, navigation updates, user role management. ✅
 
-    *   **6B: Multi-Tenant Data Isolation & Management**
-        *   **Rescue Association & Query Filtering:** Enforce `rescue_id` on all relevant models. Modify ALL database queries to filter by `current_user.rescue_id`. Implement helper functions for consistent filtering.
-        *   **Ownership Verification:** Ensure users only access/modify their own rescue's resources. Return 403/404 for unauthorized access.
-        *   **Medicine Management (Hybrid System):**
-            *   `MedicinePreset` to have `is_global` and `created_by_rescue_id` fields.
-            *   `RescueMedicineActivation` junction table (`rescue_id`, `medicine_preset_id`, `is_active`, `activated_at`, `deactivated_at`, `deactivated_by`, `reactivated_at`, `reactivated_by`).
-            *   New rescues start with an empty medicine list but can activate global medicines or create custom ones.
-            *   **Medicine Deactivation:** Soft deactivation (`is_active = False` in `RescueMedicineActivation`). Deactivated medicines are hidden from new prescriptions but preserved in existing records. Admins can reactivate from their admin page.
-        *   **Appointment Types:** Global standard types. Customization via notes.
-        *   **Audit Integration:** All multi-tenancy operations (rescue creation, data access, ownership verification failures) are logged through the audit system.
+    *   **6B: Multi-Tenant Data Isolation & Hybrid Medicine Management**
+        *   All data models (dogs, appointments, medicines, reminders, medicine presets) are rescue-aware and support both global and rescue-specific data. ✅
+        *   All queries and routes are filtered and protected by rescue ownership; superadmins can access all data. ✅
+        *   Medicine Preset Management:
+            *   Rescue admins can create, edit, and delete their own rescue's medicine presets (not visible to other rescues). ✅
+            *   Rescue admins can activate or deactivate (toggle) both global and their own rescue-specific medicine presets for their rescue. ✅
+            *   Presets are active by default; deactivation is explicit and stored. Unchecking disables a preset for the rescue. ✅
+            *   The "Manage Medicines" UI groups presets by category in an accordion for easy navigation. ✅
+        *   Audit/History:
+            *   Every activation or deactivation of a medicine preset is audit-logged, including who did it, which preset, which rescue, and the action (activate/deactivate). ✅
+            *   These events are visible in the Audit Logs for full traceability. ✅
 
-    *   **6C: Authorization & Permissions (Initial Scope)**
-        *   **Role-Based Access Control (RBAC):** Utilize existing `User.role` ('admin', 'staff' per rescue). Admins have full control within their rescue; staff have limited (e.g., no deletion of critical items, no user management).
-        *   Implement permission checks (e.g., decorators) for critical actions. UI elements dynamically show/hide based on permissions.
-        *   **Audit Integration:** All authorization decisions and permission changes are logged through the audit system.
+        *   Phase 6B is now fully implemented, providing robust multi-tenant data isolation, hybrid medicine management, and traceability for all medicine-related actions. ✅
+
+    *   **6C: Authorization & Permissions (RBAC) & Staff Management ✅ COMPLETED**
+        *   **Objective:** Implement robust Role-Based Access Control (RBAC) and a full-featured staff management UI. ✅
+
+        **Key Deliverables:**
+        - Centralized permission decorators for roles and rescue access (`permissions.py`). ✅
+        *   **Role-Based Access Control (RBAC):** Utilize existing `User.role` ('admin', 'staff' per rescue). Admins have full control within their rescue; staff have limited (e.g., no deletion of critical items, no user management). ✅
+        *   Implement permission checks (e.g., decorators) for critical actions. UI elements dynamically show/hide based on permissions. ✅
+        *   **Audit Integration:** All authorization decisions and permission changes are logged through the audit system. ✅
 
     *   **6D: Security Hardening (Core)**
         *   **CSRF Protection:** Integrate Flask-WTF for all forms. Ensure HTMX compatibility (e.g., JS to fetch and add CSRF token to HTMX requests).
@@ -801,115 +594,4 @@ This project is being developed in phases. Below is the current status:
     *   Zero critical security incidents or data breaches.
     *   Customer satisfaction score >4.5/5 in post-launch surveys.
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-## 5. Current Status
-
-### 🎉 **Project Achievements**
-
-**We have successfully COMPLETED Phases 1, 2, 3, 4, and 5.**
-
-The application has evolved from a basic dog rescue management system to a comprehensive rescue management platform with:
-
-- ✅ **Professional-grade veterinary medicine tracking** with categorized organization
-- ✅ **Advanced calendar integration** with automated reminder generation  
-- ✅ **Central dashboard** showing overdue and today's critical items
-- ✅ **Sophisticated HTMX-powered user interface** with comprehensive error handling
-- ✅ **Complete dog history tracking system** with advanced filtering, search, and export capabilities
-- ✅ **Enhanced navigation system** with intuitive user flow between all major sections
-
-### 📊 **Phase Completion Summary**
-
-#### **Phase 5 Complete Achievement Summary:**
-- **Core History Foundation (5A)**: Comprehensive timeline aggregation from all data sources with robust note-taking capability and performance optimizations ✅
-- **Enhanced Interaction & Search (5B)**: Advanced filtering system with alphabetical accordion organization, Recent Activity widgets, and HTMX-powered search ✅
-- **Export & Advanced Features (5C)**: Professional export capabilities (CSV/text downloads), cross-feature integration with dashboard/calendar, enhanced timeline visualization, and streamlined navigation flow ✅
-
-#### **Recent Navigation Enhancements (Phase 5C Final):**
-- Streamlined back button system across all pages ✅
-- Dog Details ↔ Dog History ↔ History Overview navigation flow ✅
-- Removal of auto-expanding accordions for cleaner UI ✅
-- Enhanced user experience with contextual navigation options ✅
-
-### 🔧 **Technical Achievement Highlights**
-
-| Area | Achievement |
-|------|-------------|
-| **Database Performance** | Optimized queries with `joinedload()` and proper indexing |
-| **User Interface** | Bootstrap 5 + HTMX for modern, responsive, single-page app feel |
-| **Error Handling** | Comprehensive validation and user-friendly error messaging |
-| **Export System** | Multiple format support (CSV, text) for veterinary handoffs and adoption workflows |
-| **Security Foundation** | Input sanitization and SQLAlchemy protection (Phase 6 will enhance this further) |
-
-### 📈 **Project Progress**
-
-**50% Complete (5.5/11 phases)**
-
-```
-✅ Phase 1: Core Dog Management           [████████████] 100%
-✅ Phase 2: Appointments & Medicines      [████████████] 100%  
-✅ Phase 3: Enhanced Medicine & Calendar  [████████████] 100%
-✅ Phase 4: Dashboard & Reporting         [████████████] 100%
-✅ Phase 5: History & Details Enhancement [████████████] 100%
-🔄 Phase 6: Multi-Tenancy, Security & Core Audit [██████      ] 50% (IN PROGRESS)
-📋 Phase 7: UI/UX Polish                  [            ] 0%
-🧪 Phase 8: System Testing & Stabilization [            ] 0%
-🤝 Phase 9: Adv. Features & Compliance   [            ] 0%
-📈 Phase 10: Ultimate Multi-Tenancy & Scale [            ] 0%
-🚀 Phase 11: Deployment & Launch           [            ] 0%
-```
-
-### 🚀 **Phase 6A.2 Complete - Ready for Phase 6B**
-
-The application now has a comprehensive authentication system and is ready for the next phase of multi-tenancy implementation. **Phase 6A.2 Achievements:**
-
-- ✅ **Complete Authentication System** with Flask-Login and secure session management
-- ✅ **Rescue Self-Registration** with duplicate prevention and approval workflow
-- ✅ **Professional UI/UX** with Bootstrap 5 templates and comprehensive form validation
-- ✅ **Security Foundation** with CSRF protection, password policies, and audit integration
-- ✅ **Multi-tenancy Preparation** with data filtering and user role management
-
-**Next: Phase 6B** will focus on:
-
-- 🔐 **Multi-tenant Data Isolation** with helper functions for consistent rescue filtering
-- 💊 **Hybrid Medicine Management** with global/rescue-specific medicine systems
-- 🛡️ **Authorization & Permissions** with role-based access control
-- 🔒 **Security Hardening** with rate limiting and additional security headers
-
----
-
-## 6. Future Considerations / Potential Enhancements Beyond Current Phases
-
-### 🔮 **Additional Features for Future Development**
-
-Beyond the planned 11 phases, the following enhancements could further improve the platform:
-
-#### **User Experience Enhancements**
-- 📧 **Advanced User Management**: Email invitations and password reset functionality
-- 🔍 **Full-text Search**: Advanced search capabilities across all content
-- 📱 **Mobile App**: Native mobile applications for iOS and Android
-
-#### **Content & Media Management**
-- 📸 **File Upload System**: Support for dog photos and medical documents
-- 📄 **Document Management**: Organized storage and retrieval of important files
-- 🖼️ **Photo Galleries**: Visual documentation of dog progress and events
-
-#### **External Integrations**
-- 🏠 **Public Adoption Portal**: Public-facing views for potential adopters
-- 🔌 **Third-party APIs**: Integration with Petfinder, PetRescue, and other platforms
-- 💬 **Communication Tools**: Integration with email, SMS, and messaging services
-- 🏥 **Veterinary Systems**: Direct integration with veterinary practice management software
-
-#### **Advanced Analytics & Reporting**
-- 📊 **Business Intelligence**: Advanced analytics and insights dashboard
-- 📈 **Predictive Analytics**: Machine learning for adoption success prediction
-- 📉 **Performance Metrics**: Detailed rescue operation performance tracking
-
-#### **Operational Excellence**
-- 🔄 **Workflow Automation**: Advanced automation for routine tasks
-- 📋 **Compliance Tools**: Enhanced regulatory compliance and reporting
-- 🌐 **Multi-language Support**: Internationalization for global rescue organizations
-
----
-
-**This README provides a comprehensive overview of the DogTrackerV2 project's current state and future roadmap. The application is well-positioned for continued development toward becoming a production-ready rescue management platform.** 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 

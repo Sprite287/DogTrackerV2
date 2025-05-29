@@ -31,7 +31,12 @@ class Rescue(db.Model):
     users = relationship('User', backref='rescue', lazy=True, foreign_keys='User.rescue_id')
     dogs = relationship('Dog', backref='rescue', lazy=True)
     appointment_types = relationship('AppointmentType', backref='rescue', lazy=True)
-    medicine_presets = relationship('MedicinePreset', backref='rescue', lazy=True)
+    medicine_presets = relationship(
+        'MedicinePreset',
+        backref='rescue',
+        lazy=True,
+        foreign_keys='MedicinePreset.rescue_id'
+    )
     approver = relationship('User', foreign_keys=[approved_by], backref='approved_rescues')
 
 class User(UserMixin, db.Model):
@@ -147,6 +152,8 @@ class Appointment(db.Model):
 class MedicinePreset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=True)  # null = global preset
+    is_global = db.Column(db.Boolean, default=False, nullable=False)  # New: True if global
+    created_by_rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=True)  # New: which rescue created this preset (if not global)
     name = db.Column(db.String(120), nullable=False)
     category = db.Column(db.String(100), nullable=True) # Added: e.g., Antibiotic, NSAID, Parasite Control
     default_dosage_instructions = db.Column(db.Text, nullable=True) # Added: General dosing info/guidelines
@@ -253,4 +260,24 @@ class AuditLog(db.Model):
     )
 
     def __repr__(self):
-        return f"<AuditLog {self.id} {self.action} {self.resource_type} {self.resource_id} user={self.user_id} rescue={self.rescue_id}>" 
+        return f"<AuditLog {self.id} {self.action} {self.resource_type} {self.resource_id} user={self.user_id} rescue={self.rescue_id}>"
+
+class RescueMedicineActivation(db.Model):
+    __tablename__ = 'rescue_medicine_activation'
+    id = db.Column(db.Integer, primary_key=True)
+    rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=False, index=True)
+    medicine_preset_id = db.Column(db.Integer, db.ForeignKey('medicine_preset.id'), nullable=False, index=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    activated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    deactivated_at = db.Column(db.DateTime)
+    deactivated_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reactivated_at = db.Column(db.DateTime)
+    reactivated_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    rescue = relationship('Rescue', backref=db.backref('medicine_activations', lazy=True))
+    medicine_preset = relationship('MedicinePreset', backref=db.backref('rescue_activations', lazy=True))
+    deactivator = relationship('User', foreign_keys=[deactivated_by], backref=db.backref('deactivated_medicine_activations', lazy=True))
+    reactivator = relationship('User', foreign_keys=[reactivated_by], backref=db.backref('reactivated_medicine_activations', lazy=True))
+
+    def __repr__(self):
+        return f"<RescueMedicineActivation rescue_id={self.rescue_id} medicine_preset_id={self.medicine_preset_id} is_active={self.is_active}>" 
