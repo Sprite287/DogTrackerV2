@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Email Verified - DogTracker{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Email Verified!
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">Thank you for verifying your email address.</p>
+                    <p>Your account is now active. You can log in below.</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary mt-3">Log In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

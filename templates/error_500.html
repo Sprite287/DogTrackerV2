@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Server Error - DogTracker{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white text-center">
+                    <h4 class="mb-0"><i class="fas fa-bug me-2"></i>500 - Server Error</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">Oops! Something went wrong on our end.</p>
+                    <p>If this problem persists, please contact support.</p>
+                    <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="btn btn-primary mt-3">Go Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

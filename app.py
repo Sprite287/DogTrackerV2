@@ -16,6 +16,16 @@ from rescue_helpers import get_rescue_dogs, get_rescue_appointments, get_rescue_
 from permissions import roles_required, role_required, rescue_access_required
 from werkzeug.security import generate_password_hash
 import secrets
+from flask_wtf import CSRFProtect
+from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFError
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import bleach
+from flask_mail import Mail, Message
+
+# Load environment variables from .env if present
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -24,9 +34,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
 
+# --- Security: Session Cookie Flags & Timeout ---
+is_dev = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG') == '1'
+app.config['SESSION_COOKIE_SECURE'] = not is_dev  # Only send cookies over HTTPS in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Mitigate CSRF
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes (in seconds)
+
 # Development settings to prevent caching issues
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+csrf = CSRFProtect(app)
 
 db.init_app(app)
 migrate.init_app(app, db)
@@ -36,6 +55,24 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
+
+# Initialize Flask-Limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Flask-Mail configuration (use environment variables for secrets in production)
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.example.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', '1', 'yes']
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'false').lower() in ['true', '1', 'yes']
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'DogTracker <noreply@example.com>')
+
+mail = Mail(app)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -178,6 +215,7 @@ def home_redirect():
 
 # Authentication Routes
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -189,17 +227,12 @@ def login():
             if not user.is_active:
                 flash('Your account has been deactivated. Please contact support.', 'danger')
                 return render_template('auth/login.html', form=form)
-            
-            # Bypass rescue approval check in DEBUG or TESTING mode
-            if (not user.is_superadmin() and user.rescue and user.rescue.status != 'approved'
-                and not app.config.get('TESTING', False) and not app.config.get('DEBUG', False)):
-                flash('Your rescue organization is still pending approval. Please wait for admin approval.', 'warning')
+            if not user.email_verified:
+                flash('Please verify your email before logging in. Check your inbox for the verification link.', 'warning')
                 return render_template('auth/login.html', form=form)
-            
             login_user(user, remember=form.remember_me.data)
             user.last_login = datetime.utcnow()
             db.session.commit()
-            
             # Log successful login
             log_audit_event(
                 user_id=user.id,
@@ -212,7 +245,6 @@ def login():
                 user_agent=request.headers.get('User-Agent'),
                 success=True
             )
-            
             next_page = request.args.get('next')
             if not next_page or not next_page.startswith('/'):
                 next_page = url_for('dashboard')
@@ -231,7 +263,6 @@ def login():
                 success=False
             )
             flash('Invalid email or password.', 'danger')
-    
     return render_template('auth/login.html', form=form)
 
 @app.route('/logout')
@@ -286,7 +317,7 @@ def register_rescue():
             primary_contact_phone=form.contact_phone.data,
             data_consent=form.data_consent.data,
             marketing_consent=form.marketing_consent.data,
-            status='pending'  # Requires admin approval
+            status='active'  # No admin approval needed
         )
         db.session.add(rescue)
         db.session.flush()  # Get the rescue ID
@@ -303,10 +334,23 @@ def register_rescue():
             marketing_consent=form.marketing_consent.data
         )
         user.set_password(form.contact_password.data)
-        user.generate_email_verification_token()
-        
+        token = user.generate_email_verification_token()
         db.session.add(user)
         db.session.commit()
+        
+        # Send verification email
+        verification_url = url_for('verify_email', token=token, _external=True)
+        try:
+            msg = Message(
+                subject="Verify your DogTracker account",
+                recipients=[user.email],
+                body=f"Hello {user.name},\n\nPlease verify your email by clicking the link below:\n{verification_url}\n\nIf you did not register, please ignore this email."
+            )
+            mail.send(msg)
+        except Exception as e:
+            print(f"[EMAIL ERROR] Failed to send verification email: {e}")
+            flash('Registration successful, but failed to send verification email. Please contact support.', 'danger')
+            return redirect(url_for('login'))
         
         # Log rescue registration
         log_audit_event(
@@ -325,12 +369,13 @@ def register_rescue():
             success=True
         )
         
-        flash('Rescue registration submitted successfully! Your registration is pending admin approval. You will receive an email once approved.', 'success')
+        flash('Registration successful! Please check your email to verify your account before logging in.', 'success')
         return redirect(url_for('login'))
     
     return render_template('auth/register_rescue.html', form=form)
 
 @app.route('/password-reset-request', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
 def password_reset_request():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -426,24 +471,39 @@ def render_dog_cards_html():
 @app.route('/dog/add', methods=['POST'])
 @login_required
 def add_dog():
-    name = request.form.get('name')
-    if not name:
+    name = request.form.get('name', '').strip()
+    if not name or len(name) > 100:
+        error_msg = 'Dog name is required and must be 100 characters or less.'
         if request.headers.get('HX-Request'):
             cards = render_dog_cards_html()
             resp = make_response(cards)
-            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog name is required.", "category": "danger"}})
+            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": error_msg, "category": "danger"}})
             return resp
-        flash('Dog name is required.', 'danger')
+        flash(error_msg, 'danger')
         return redirect(url_for('dog_list_page'))
-    age = request.form.get('age')
-    breed = request.form.get('breed')
-    adoption_status = request.form.get('adoption_status')
+    age = request.form.get('age', '').strip()
+    if age and len(age) > 10:
+        age = age[:10]
+    breed = request.form.get('breed', '').strip()
+    if breed and len(breed) > 50:
+        breed = breed[:50]
+    adoption_status = request.form.get('adoption_status', '').strip()
+    if adoption_status and len(adoption_status) > 30:
+        adoption_status = adoption_status[:30]
     intake_date = request.form.get('intake_date')
     if not intake_date:
         intake_date = None
-    microchip_id = request.form.get('microchip_id')
-    notes = request.form.get('notes')
-    medical_info = request.form.get('medical_info')
+    microchip_id = request.form.get('microchip_id', '').strip()
+    if microchip_id and len(microchip_id) > 50:
+        microchip_id = microchip_id[:50]
+    notes = request.form.get('notes', '').strip()
+    if notes and len(notes) > 1000:
+        notes = notes[:1000]
+    notes = bleach.clean(notes)
+    medical_info = request.form.get('medical_info', '').strip()
+    if medical_info and len(medical_info) > 1000:
+        medical_info = medical_info[:1000]
+    medical_info = bleach.clean(medical_info)
     # Use current user's rescue_id
     rescue_id = current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id')
     dog = Dog(name=name, age=age, breed=breed, adoption_status=adoption_status,
@@ -486,25 +546,28 @@ def edit_dog():
     dog = Dog.query.get_or_404(dog_id)
     if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
         abort(403)
-    name = request.form.get('name')
-    if not name:
+    name = request.form.get('name', '').strip()
+    if not name or len(name) > 100:
+        error_msg = 'Dog name is required and must be 100 characters or less.'
         if request.headers.get('HX-Request'):
             cards = render_dog_cards_html()
             resp = make_response(cards)
-            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog name is required.", "category": "danger"}})
+            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": error_msg, "category": "danger"}})
             return resp
-        flash('Dog name is required.', 'danger')
+        flash(error_msg, 'danger')
         return redirect(request.referrer or url_for('dog_list_page'))
     dog.name = name
-    dog.age = request.form.get('age')
-    dog.breed = request.form.get('breed')
-    dog.adoption_status = request.form.get('adoption_status')
+    dog.age = request.form.get('age', '').strip()[:10]
+    dog.breed = request.form.get('breed', '').strip()[:50]
+    dog.adoption_status = request.form.get('adoption_status', '').strip()[:30]
     dog.intake_date = request.form.get('intake_date')
     if not dog.intake_date:
         dog.intake_date = None
-    dog.microchip_id = request.form.get('microchip_id')
-    dog.notes = request.form.get('notes')
-    dog.medical_info = request.form.get('medical_info')
+    dog.microchip_id = request.form.get('microchip_id', '').strip()[:50]
+    notes = request.form.get('notes', '').strip()[:1000]
+    dog.notes = bleach.clean(notes)
+    medical_info = request.form.get('medical_info', '').strip()[:1000]
+    dog.medical_info = bleach.clean(medical_info)
     db.session.commit()
     # --- AUDIT LOG ---
     log_audit_event(
@@ -660,7 +723,11 @@ def add_appointment(dog_id):
     appt_type_id = request.form.get('appt_type_id')
     appt_start_datetime = request.form.get('appt_start_datetime')
     appt_end_datetime = request.form.get('appt_end_datetime')
+    appt_title = request.form.get('appt_title', '').strip()
+    appt_notes = request.form.get('appt_notes', '').strip()
+    appt_status = request.form.get('appt_status', '').strip()
 
+    # Validation
     if not appt_type_id:
         error_message = 'Appointment type is required.'
         print(f"[ADD APPT DEBUG] Validation Error: {error_message}")
@@ -669,7 +736,6 @@ def add_appointment(dog_id):
         response.headers['HX-Retarget'] = '#addAppointmentModalError'
         response.headers['HX-Reswap'] = 'innerHTML'
         return response
-
     if not appt_start_datetime:
         error_message = 'Start date/time is required.'
         print(f"[ADD APPT DEBUG] Validation Error: {error_message}")
@@ -678,7 +744,23 @@ def add_appointment(dog_id):
         response.headers['HX-Retarget'] = '#addAppointmentModalError'
         response.headers['HX-Reswap'] = 'innerHTML'
         return response
-    
+    if appt_title and len(appt_title) > 100:
+        error_message = 'Title must be 100 characters or less.'
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 400
+        response.headers['HX-Retarget'] = '#addAppointmentModalError'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    if appt_notes and len(appt_notes) > 2000:
+        error_message = 'Notes must be 2000 characters or less.'
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 400
+        response.headers['HX-Retarget'] = '#addAppointmentModalError'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    # Sanitize notes
+    appt_notes = bleach.clean(appt_notes)
+
     try:
         start_dt = datetime.strptime(appt_start_datetime, '%Y-%m-%dT%H:%M')
     except ValueError:
@@ -712,11 +794,11 @@ def add_appointment(dog_id):
         dog_id=dog.id,
         rescue_id=dog.rescue_id,
         type_id=int(appt_type_id) if appt_type_id else None,
-        title=request.form.get('appt_title'),
-        description=request.form.get('appt_notes'),
+        title=appt_title,
+        description=appt_notes,
         start_datetime=start_dt,
         end_datetime=end_dt,
-        status=request.form.get('appt_status'),
+        status=appt_status,
         created_by=temp_user_id
     )
     print('Creating appointment:', appt)
@@ -813,12 +895,35 @@ def edit_appointment(dog_id, appointment_id):
 
     # Update appointment fields from form
     appt = dog.appointments.filter_by(id=appointment_id).first()
-    appt.type_id = int(request.form.get('appt_type_id')) if request.form.get('appt_type_id') else None
-    appt.title = request.form.get('appt_title')
-    appt.description = request.form.get('appt_notes')
-    appt.status = request.form.get('appt_status')
+    appt_type_id = request.form.get('appt_type_id')
+    appt_title = request.form.get('appt_title', '').strip()
+    appt_notes = request.form.get('appt_notes', '').strip()
+    appt_status = request.form.get('appt_status', '').strip()
     appt_start_datetime = request.form.get('appt_start_datetime')
     appt_end_datetime = request.form.get('appt_end_datetime')
+
+    # Validation
+    if appt_title and len(appt_title) > 100:
+        error_message = 'Title must be 100 characters or less.'
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 400
+        response.headers['HX-Retarget'] = f'#editAppointmentModalError-{appointment_id}'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    if appt_notes and len(appt_notes) > 2000:
+        error_message = 'Notes must be 2000 characters or less.'
+        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
+        response.status_code = 400
+        response.headers['HX-Retarget'] = f'#editAppointmentModalError-{appointment_id}'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    # Sanitize notes
+    appt_notes = bleach.clean(appt_notes)
+
+    appt.type_id = int(appt_type_id) if appt_type_id else None
+    appt.title = appt_title
+    appt.description = appt_notes
+    appt.status = appt_status
     if appt_start_datetime:
         appt.start_datetime = datetime.strptime(appt_start_datetime, '%Y-%m-%dT%H:%M')
     if appt_end_datetime:
@@ -957,33 +1062,41 @@ def add_medicine(dog_id):
     if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
         abort(403)
     med_preset_id_str = request.form.get('med_preset_id')
-    med_dosage = request.form.get('med_dosage')
-    med_unit = request.form.get('med_unit')
-    med_form = request.form.get('med_form')
-    med_frequency = request.form.get('med_frequency')
+    med_dosage = request.form.get('med_dosage', '').strip()
+    med_unit = request.form.get('med_unit', '').strip()
+    med_form = request.form.get('med_form', '').strip()
+    med_frequency = request.form.get('med_frequency', '').strip()
     med_start_date_str = request.form.get('med_start_date')
     med_end_date_str = request.form.get('med_end_date')
-    med_status = request.form.get('med_status')
-    med_notes = request.form.get('med_notes')
+    med_status = request.form.get('med_status', '').strip()
+    med_notes = request.form.get('med_notes', '').strip()
 
     error_message = None
     start_date = None
     end_date = None
 
-    if not med_start_date_str:
+    # Validation
+    if med_dosage and len(med_dosage) > 50:
+        error_message = 'Dosage must be 50 characters or less.'
+    elif med_unit and len(med_unit) > 50:
+        error_message = 'Unit must be 50 characters or less.'
+    elif med_frequency and len(med_frequency) > 100:
+        error_message = 'Frequency must be 100 characters or less.'
+    elif med_notes and len(med_notes) > 2000:
+        error_message = 'Notes must be 2000 characters or less.'
+
+    if not error_message and not med_start_date_str:
         error_message = 'Start Date is required.'
     else:
         try:
             start_date = datetime.strptime(med_start_date_str, '%Y-%m-%d').date()
         except ValueError:
             error_message = 'Invalid start date format.'
-    
     if not error_message and med_end_date_str:
         try:
             end_date = datetime.strptime(med_end_date_str, '%Y-%m-%d').date()
         except ValueError:
             error_message = 'Invalid end date format.'
-
     if not error_message and not med_preset_id_str:
         error_message = 'Medicine preset is required.'
     if not error_message and not med_dosage:
@@ -1001,19 +1114,17 @@ def add_medicine(dog_id):
         response.headers['HX-Retarget'] = '#addMedicineModalError'
         response.headers['HX-Reswap'] = 'innerHTML'
         return response
-    
+
+    # Sanitize notes
+    med_notes = bleach.clean(med_notes)
+
     temp_user_id = get_first_user_id()
     if temp_user_id is None:
-        # This case is a more systemic issue, flash message and redirect might be okay
-        # or could also be an HTMX response if the whole page context allows for it.
-        # For now, keeping flash for this rarer case.
         flash('Cannot add medicine: No users found in the system.', 'danger')
-        # If HTMX request, perhaps return an OOB flash message instead of full redirect render
         if request.headers.get('HX-Request'):
-             # Simplified: just trigger an alert for now if HX, actual OOB flash more complex
-            alert_resp = make_response('') # Empty response, HX-Trigger does the work
+            alert_resp = make_response('')
             alert_resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Cannot add medicine: No users found.", "category": "danger"}})
-            return alert_resp, 200 # 200 so HTMX processes the trigger, not an error
+            return alert_resp, 200
         return redirect(url_for('dog_details', dog_id=dog_id))
 
     final_preset_id = None
@@ -1030,8 +1141,8 @@ def add_medicine(dog_id):
     med = DogMedicine(
         dog_id=dog.id,
         rescue_id=dog.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id'),
-        medicine_id=final_preset_id, # This is the FK to medicine_preset
-        custom_name=None, # Explicitly None
+        medicine_id=final_preset_id,
+        custom_name=None,
         dosage=med_dosage,
         unit=med_unit,
         form=med_form,
@@ -1119,33 +1230,41 @@ def edit_medicine(dog_id, medicine_id):
 
     # Get data from form
     med_preset_id_str = request.form.get('med_preset_id')
-    med_dosage = request.form.get('med_dosage')
-    med_unit = request.form.get('med_unit')
-    med_form = request.form.get('med_form')
-    med_frequency = request.form.get('med_frequency')
+    med_dosage = request.form.get('med_dosage', '').strip()
+    med_unit = request.form.get('med_unit', '').strip()
+    med_form = request.form.get('med_form', '').strip()
+    med_frequency = request.form.get('med_frequency', '').strip()
     med_start_date_str = request.form.get('med_start_date')
     med_end_date_str = request.form.get('med_end_date')
-    med_status = request.form.get('med_status')
-    med_notes = request.form.get('med_notes')
+    med_status = request.form.get('med_status', '').strip()
+    med_notes = request.form.get('med_notes', '').strip()
 
     error_message = None
     start_date = None
     end_date = None
 
-    if not med_start_date_str:
+    # Validation
+    if med_dosage and len(med_dosage) > 50:
+        error_message = 'Dosage must be 50 characters or less.'
+    elif med_unit and len(med_unit) > 50:
+        error_message = 'Unit must be 50 characters or less.'
+    elif med_frequency and len(med_frequency) > 100:
+        error_message = 'Frequency must be 100 characters or less.'
+    elif med_notes and len(med_notes) > 2000:
+        error_message = 'Notes must be 2000 characters or less.'
+
+    if not error_message and not med_start_date_str:
         error_message = 'Start Date is required.'
     else:
         try:
             start_date = datetime.strptime(med_start_date_str, '%Y-%m-%d').date()
         except ValueError:
             error_message = 'Invalid start date format.'
-    
     if not error_message and med_end_date_str:
         try:
             end_date = datetime.strptime(med_end_date_str, '%Y-%m-%d').date()
         except ValueError:
             error_message = 'Invalid end date format.'
-
     if not error_message and not med_preset_id_str:
         error_message = 'Medicine preset is required.'
     if not error_message and not med_dosage:
@@ -1164,6 +1283,9 @@ def edit_medicine(dog_id, medicine_id):
         response.headers['HX-Reswap'] = 'innerHTML'
         return response
 
+    # Sanitize notes
+    med_notes = bleach.clean(med_notes)
+
     temp_user_id = get_first_user_id()
     if temp_user_id is None:
         flash('Cannot edit medicine: No users found in the system.', 'danger')
@@ -1171,9 +1293,7 @@ def edit_medicine(dog_id, medicine_id):
 
     # Update medicine object properties
     med.medicine_id = int(med_preset_id_str) if med_preset_id_str else None
-    med.custom_name = None # If using preset, custom_name is typically nullified.
-                           # UI should handle if custom name is allowed when no preset or a specific "custom" preset is chosen.
-                           # For now, aligning with add_medicine where custom_name is set to None if preset is used.
+    med.custom_name = None
     med.dosage = med_dosage
     med.unit = med_unit
     med.form = med_form
@@ -1182,7 +1302,6 @@ def edit_medicine(dog_id, medicine_id):
     med.end_date = end_date
     med.status = med_status
     med.notes = med_notes
-    
     db.session.commit()
     # --- AUDIT LOG ---
     log_audit_event(
@@ -1633,8 +1752,7 @@ def add_dog_note(dog_id):
     dog = Dog.query.get_or_404(dog_id)
     if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
         abort(403)
-    # dog object is fetched by _get_dog_history_events if needed, or use a simpler query here just for validation
-    dog_check = Dog.query.get_or_404(dog_id) 
+    dog_check = Dog.query.get_or_404(dog_id)
     current_user_id = get_first_user_id()
     if not current_user_id:
         if request.headers.get('HX-Request'):
@@ -1645,18 +1763,19 @@ def add_dog_note(dog_id):
         flash('Error: Could not identify user for note creation.', 'danger')
         return redirect(url_for('dog_history', dog_id=dog_id))
 
-    category = request.form.get('category')
-    note_text = request.form.get('note_text')
+    category = request.form.get('category', '').strip()
+    note_text = request.form.get('note_text', '').strip()
 
+    # Validation
+    error_message = None
     if not category or not note_text:
         error_message = "Category and Note text are required."
-        if not category and not note_text:
-            error_message = "Category and Note text are required."
-        elif not category:
-            error_message = "Category is required."
-        else: 
-            error_message = "Note text is required."
-        
+    elif len(category) > 100:
+        error_message = "Category must be 100 characters or less."
+    elif len(note_text) > 2000:
+        error_message = "Note text must be 2000 characters or less."
+
+    if error_message:
         if request.headers.get('HX-Request'):
             response = make_response(render_template('partials/modal_form_error.html', message=error_message), 200)
             response.headers['HX-Retarget'] = '#addDogNoteModalError'
@@ -1665,6 +1784,9 @@ def add_dog_note(dog_id):
         else:
             flash(error_message, 'danger')
             return redirect(url_for('dog_history', dog_id=dog_id))
+
+    # Sanitize note_text
+    note_text = bleach.clean(note_text)
 
     new_note = DogNote(
         dog_id=dog_check.id,
@@ -1679,7 +1801,6 @@ def add_dog_note(dog_id):
 
     # After successful submission, re-fetch all history events for the dog using the helper
     dog_for_render, all_history_events_updated = _get_dog_history_events(dog_id)
-    
     page = 1 
     per_page = 50 
     start_index = (page - 1) * per_page
@@ -2106,15 +2227,39 @@ def toggle_medicine_activation():
 @login_required
 def add_rescue_medicine_preset():
     if request.method == 'POST':
-        name = request.form.get('name')
-        category = request.form.get('category')
-        default_dosage_instructions = request.form.get('default_dosage_instructions')
-        suggested_units = request.form.get('suggested_units')
-        default_unit = request.form.get('default_unit')
-        notes = request.form.get('notes')
+        name = request.form.get('name', '').strip()
+        category = request.form.get('category', '').strip()
+        default_dosage_instructions = request.form.get('default_dosage_instructions', '').strip()
+        suggested_units = request.form.get('suggested_units', '').strip()
+        default_unit = request.form.get('default_unit', '').strip()
+        notes = request.form.get('notes', '').strip()
+
+        # Validation
         if not name:
             flash('Name is required.', 'danger')
             return redirect(url_for('add_rescue_medicine_preset'))
+        if len(name) > 120:
+            flash('Name must be 120 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        if category and len(category) > 100:
+            flash('Category must be 100 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        if suggested_units and len(suggested_units) > 255:
+            flash('Suggested units must be 255 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        if default_unit and len(default_unit) > 20:
+            flash('Default unit must be 20 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        if notes and len(notes) > 2000:
+            flash('Notes must be 2000 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        if default_dosage_instructions and len(default_dosage_instructions) > 2000:
+            flash('Dosage instructions must be 2000 characters or less.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+        # Sanitize notes and instructions
+        notes = bleach.clean(notes)
+        default_dosage_instructions = bleach.clean(default_dosage_instructions)
+
         from models import MedicinePreset, RescueMedicineActivation
         preset = MedicinePreset(
             rescue_id=current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id'),
@@ -2144,12 +2289,43 @@ def edit_rescue_medicine_preset(preset_id):
     if not (current_user.role == 'superadmin' or (preset.rescue_id == current_user.rescue_id and preset.rescue_id is not None)):
         abort(403)
     if request.method == 'POST':
-        preset.name = request.form.get('name')
-        preset.category = request.form.get('category')
-        preset.default_dosage_instructions = request.form.get('default_dosage_instructions')
-        preset.suggested_units = request.form.get('suggested_units')
-        preset.default_unit = request.form.get('default_unit')
-        preset.notes = request.form.get('notes')
+        name = request.form.get('name', '').strip()
+        category = request.form.get('category', '').strip()
+        default_dosage_instructions = request.form.get('default_dosage_instructions', '').strip()
+        suggested_units = request.form.get('suggested_units', '').strip()
+        default_unit = request.form.get('default_unit', '').strip()
+        notes = request.form.get('notes', '').strip()
+        # Validation
+        if not name:
+            flash('Name is required.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if len(name) > 120:
+            flash('Name must be 120 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if category and len(category) > 100:
+            flash('Category must be 100 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if suggested_units and len(suggested_units) > 255:
+            flash('Suggested units must be 255 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if default_unit and len(default_unit) > 20:
+            flash('Default unit must be 20 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if notes and len(notes) > 2000:
+            flash('Notes must be 2000 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        if default_dosage_instructions and len(default_dosage_instructions) > 2000:
+            flash('Dosage instructions must be 2000 characters or less.', 'danger')
+            return redirect(url_for('edit_rescue_medicine_preset', preset_id=preset_id))
+        # Sanitize notes and instructions
+        notes = bleach.clean(notes)
+        default_dosage_instructions = bleach.clean(default_dosage_instructions)
+        preset.name = name
+        preset.category = category
+        preset.default_dosage_instructions = default_dosage_instructions
+        preset.suggested_units = suggested_units
+        preset.default_unit = default_unit
+        preset.notes = notes
         db.session.commit()
         flash('Preset updated!', 'success')
         return redirect(url_for('manage_rescue_medicines'))
@@ -2175,10 +2351,15 @@ def delete_rescue_medicine_preset(preset_id):
 @roles_required(['superadmin', 'owner', 'admin'])
 def add_staff_member():
     from models import User
+    import bleach
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip().lower()
     role = request.form.get('role', '').strip().lower()
-    if not name or not email or role not in ['owner', 'admin', 'staff']:
+    # Length validation and sanitization for name
+    if not name or len(name) < 2 or len(name) > 120:
+        return jsonify({'success': False, 'error': 'Name must be between 2 and 120 characters.'}), 400
+    name = bleach.clean(name)
+    if not email or role not in ['owner', 'admin', 'staff']:
         return jsonify({'success': False, 'error': 'Invalid input.'}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({'success': False, 'error': 'Email already exists.'}), 400
@@ -2205,6 +2386,7 @@ def add_staff_member():
 @roles_required(['superadmin', 'owner', 'admin'])
 def edit_staff_member():
     from models import User
+    import bleach
     user_id = request.form.get('user_id')
     name = request.form.get('name', '').strip()
     role = request.form.get('role', '').strip().lower()
@@ -2215,7 +2397,11 @@ def edit_staff_member():
     # Only superadmin can edit any user; others only users in their rescue
     if current_user.role != 'superadmin' and user.rescue_id != current_user.rescue_id:
         return jsonify({'success': False, 'error': 'Permission denied.'}), 403
-    if not name or role not in ['owner', 'admin', 'staff']:
+    # Length validation and sanitization for name
+    if not name or len(name) < 2 or len(name) > 120:
+        return jsonify({'success': False, 'error': 'Name must be between 2 and 120 characters.'}), 400
+    name = bleach.clean(name)
+    if role not in ['owner', 'admin', 'staff']:
         return jsonify({'success': False, 'error': 'Invalid input.'}), 400
     user.name = name
     user.role = role
@@ -2276,6 +2462,97 @@ def reset_staff_password():
     user.set_password(new_password)
     db.session.commit()
     return jsonify({'success': True, 'password': new_password})
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    # Log CSRF violation to audit log
+    log_audit_event(
+        user_id=getattr(current_user, 'id', None) if current_user.is_authenticated else None,
+        rescue_id=getattr(current_user, 'rescue_id', None) if current_user.is_authenticated else None,
+        action='csrf_violation',
+        resource_type='Request',
+        resource_id=None,
+        details={
+            'reason': e.description,
+            'path': request.path,
+            'method': request.method,
+            'form': request.form.to_dict(),
+            'headers': dict(request.headers),
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=False
+    )
+    # HTMX or AJAX request: return partial or JSON error
+    if request.headers.get('HX-Request') or request.is_json or request.accept_mimetypes['application/json']:
+        response = make_response(render_template('partials/modal_form_error.html', message='Security Error: Your session has expired or the form was tampered with. Please refresh and try again.'), 400)
+        response.headers['HX-Retarget'] = '#alerts'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    # Normal request: flash and redirect
+    flash('Security Error: Your session has expired or the form was tampered with. Please refresh the page and try again.', 'danger')
+    return redirect(request.referrer or url_for('login'))
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
+        "style-src 'self' https://cdn.jsdelivr.net; "
+        "font-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' data:;"
+    )
+    return response
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    # Log rate limit violation
+    log_audit_event(
+        user_id=getattr(current_user, 'id', None) if current_user.is_authenticated else None,
+        rescue_id=getattr(current_user, 'rescue_id', None) if current_user.is_authenticated else None,
+        action='rate_limit_exceeded',
+        resource_type='Request',
+        resource_id=None,
+        details={
+            'path': request.path,
+            'method': request.method,
+            'form': request.form.to_dict(),
+            'headers': dict(request.headers),
+            'description': str(e)
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=False
+    )
+    # HTMX or AJAX request: return partial or JSON error
+    if request.headers.get('HX-Request') or request.is_json or request.accept_mimetypes['application/json']:
+        response = make_response(render_template('partials/modal_form_error.html', message='Too many requests. Please wait and try again.'), 429)
+        response.headers['HX-Retarget'] = '#alerts'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    flash('Too many requests. Please wait and try again.', 'danger')
+    return redirect(request.referrer or url_for('login'))
+
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    user = User.query.filter_by(email_verification_token=token).first()
+    if not user:
+        flash('Invalid or expired verification link.', 'danger')
+        return redirect(url_for('login'))
+    user.email_verified = True
+    user.email_verification_token = None
+    db.session.commit()
+    return render_template('auth/email_verified.html')
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('error_404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error_500.html'), 500
 
 if __name__ == '__main__':
     print('--- ROUTES REGISTERED ---')
