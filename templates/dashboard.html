@@ -277,10 +277,10 @@
 {% block scripts %}
 {{ super() }}
 {# All accordions start closed - no auto-expansion #}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     // No auto-expansion - all accordion items start closed
     console.log('Dashboard loaded - all accordions start collapsed');
 });
 </script>
-{% endblock %} 
+{% endblock %}

@@ -33,9 +33,9 @@ def configure_logging(debug=False):
 class SeedingConfig:
     """Configuration class for seeding parameters"""
     # Quantity settings
-    DOGS_PER_BATCH_RANGE = (10, 50)
-    DOGS_PER_BATCH = 30  # Number of dogs to seed
-    MIN_RESCUES_REQUIRED = 3
+    DOGS_PER_BATCH_RANGE = (20, 100) # Increased range
+    DOGS_PER_BATCH = 75  # Increased number of dogs to seed
+    MIN_RESCUES_REQUIRED = 7 # Increased number of rescues
     APPOINTMENTS_PER_DOG_RANGE = (1, 2)
     MEDICINES_PER_DOG_RANGE = (0, 2)
     NOTES_PER_DOG_RANGE = (1, 3)
@@ -73,7 +73,10 @@ class SampleData:
         'Loki', 'Milo', 'Nina', 'Opal', 'Pax', 'Queenie', 'Rufus', 'Suki', 'Toby', 'Uma', 'Vera', 'Waldo',
         'Xander', 'Yara', 'Zigzag', 'Amber', 'Basil', 'Clover', 'Duke', 'Elsa', 'Fritz', 'Ginger', 'Hugo',
         'Iris', 'Jett', 'Kane', 'Lacey', 'Mira', 'Nash', 'Oreo', 'Piper', 'Quincy', 'Raven', 'Sable', 'Tess',
-        'Ulysses', 'Vixen', 'Wren', 'Xyla', 'Yeti', 'Zorro'
+        'Ulysses', 'Vixen', 'Wren', 'Xyla', 'Yeti', 'Zorro', # Original names
+        'Apollo', 'Athena', 'Bear', 'Cocoa', 'Diesel', 'Freya', 'Gus', 'Honey', 'Iggy', 'Jinx',
+        'Kira', 'Leo', 'Misty', 'Nala', 'Odin', 'Patches', 'Queenie', 'Rolo', 'Shadow', 'Trixie',
+        'Ursula', 'Vader', 'Winnie', 'Xavier', 'Yogi', 'Zelda', 'Zephyr', 'Zoe', 'Ziggy', 'Zola'
     ]
     
     BREEDS = [
@@ -98,10 +101,13 @@ class SampleData:
         'French Spaniel', 'Greenland Dog', 'Hamiltonstovare', 'Icelandic Sheepdog', 'Jagdterrier',
         'Kai Ken', 'Lagotto Romagnolo', 'Mudi', 'Norfolk Terrier', 'Otterhound', 'Pumi', 'Pyrenean Shepherd',
         'Russian Toy', 'Sloughi', 'Tornjak', 'Utonagan', 'Volpino Italiano', 'West Siberian Laika',
-        'Xoloitzcuintli', 'Yakutian Laika', 'Zerdava'
+        'Xoloitzcuintli', 'Yakutian Laika', 'Zerdava', # Original breeds
+        'Pomeranian', 'Siberian Husky', 'Australian Cattle Dog', 'Basset Hound', 'Bichon Frise',
+        'Border Terrier', 'Cairn Terrier', 'Cane Corso', 'Cardigan Welsh Corgi', 'Chesapeake Bay Retriever',
+        'Clumber Spaniel', 'Coton de Tulear', 'Dandie Dinmont Terrier', 'Doberman Pinscher', 'English Cocker Spaniel'
     ]
     
-    ADOPTION_STATUSES = ['Adopted', 'Not Adopted', 'Pending', 'Fostered', 'Returned', 'Transferred']
+    ADOPTION_STATUSES = ['Adopted', 'Not Adopted', 'Pending', 'Fostered', 'Returned', 'Transferred', 'Available', 'Hold', 'Deceased']
     
     DOG_NOTES = [
         '', 'Very friendly and playful.', 'Needs special diet.', 'Good with children.',
@@ -114,12 +120,18 @@ class SampleData:
         'Can jump very high fences.', 'Prefers female handlers.', 'Sensitive to cold weather.',
         'Enjoys agility courses.', 'Needs daily brushing.', 'Can be stubborn at times.',
         'Loves to cuddle on the couch.', 'Prefers soft food.', 'Gets carsick easily.',
-        'Enjoys sunbathing in the yard.', 'Can be shy around men.', 'Loves to dig holes.',
+        'Enjoys sunbathing in the yard.', 'Can be shy around men.', 'Loves to dig holes',
         'Does not like thunderstorms.', 'Enjoys playing in the snow.', 'Loves to chase squirrels.',
         'Prefers quiet music.', 'Enjoys being brushed.', 'Likes to sleep under the bed.',
         'Enjoys tug-of-war games.', 'Can be picky with food.', 'Loves to greet visitors.',
         'Enjoys hiking trips.', 'Likes to watch TV.', 'Prefers to drink from running water.',
-        'Enjoys car rides with the window down.', 'Likes to nap in the sun.', 'Enjoys hide and seek.'
+        'Enjoys car rides with the window down.', 'Likes to nap in the sun.', 'Enjoys hide and seek.', # Original notes
+        'Loves to chase laser pointers.', 'Very vocal, loves to "talk".', 'Needs secure yard, escape artist.',
+        'Afraid of stairs.', 'Loves to be groomed.', 'Good with cats.', 'Can be destructive if bored.',
+        'Responds well to positive reinforcement.', 'Has a favorite blanket.', 'Always happy to see people.',
+        'Enjoys puzzle toys.', 'Can be a picky eater.', 'Loves to dig in the garden.', 'Good on a leash.',
+        'Excels at obedience training.', 'Needs daily mental stimulation.', 'Very curious and explores everything.',
+        'Loves to play in water.', 'Enjoys car rides.', 'Can be a bit of a clown.', 'Loves to be the center of attention.'
     ]
     
     MEDICAL_INFO = [
@@ -134,7 +146,12 @@ class SampleData:
         'Has a chronic cough.', 'Has a history of pancreatitis.', 'Has a luxating patella.',
         'Has a history of mange.', 'Has a broken tail.', 'Has a history of kennel cough.',
         'Has a sensitive liver.', 'Has a history of bladder stones.', 'Has a history of anemia.',
-        'Has a history of tick-borne disease.', 'Has a history of heartworm.'
+        'Has a history of tick-borne disease.', 'Has a history of heartworm.', # Original medical info
+        'Requires regular eye drops.', 'Has a chronic ear infection, managed with medication.',
+        'Recovering from a broken leg.', 'Has a history of urinary tract infections.',
+        'On a special hypoallergenic diet.', 'Has a mild heart condition, monitored regularly.',
+        'History of anxiety, managed with behavioral therapy.', 'Needs regular grooming for skin health.',
+        'Has a history of dental issues, requires frequent cleaning.', 'Prone to ear infections during allergy season.'
     ]
     
     ADOPTER_NOTES = [
@@ -148,7 +165,12 @@ class SampleData:
         'Adopted by a family who loves hiking.', 'Adopted by a family with a cat.',
         'Adopted by a family who lives near the beach.', 'Adopted by a family who owns a pet store.',
         'Adopted by a family who lives on a boat.', 'Adopted by a family who runs a daycare.',
-        'Adopted by a family who lives in the mountains.'
+        'Adopted by a family who lives in the mountains.', # Original adopter notes
+        'Adopted by a family who lives in a rural area.', 'Adopted by a family with a large property.',
+        'Adopted by a family with grown children.', 'Adopted by a family with a quiet home environment.',
+        'Adopted by a family with experience with the breed.', 'Adopted by a family who fosters other animals.',
+        'Adopted by a family who competes in dog sports.', 'Adopted by a family with a therapy dog program.',
+        'Adopted by a family who lives on a farm with livestock.', 'Adopted by a family who travels for work.'
     ]
     
     APPOINTMENT_TYPES = [

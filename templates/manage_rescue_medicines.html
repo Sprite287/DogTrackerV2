@@ -46,7 +46,7 @@
 
 <div id="activation-message" class="text-success"></div>
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.activate-toggle').forEach(function(checkbox) {
     checkbox.addEventListener('change', function() {

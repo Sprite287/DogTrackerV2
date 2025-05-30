@@ -136,7 +136,7 @@
     <p>No staff members found for this rescue.</p>
   {% endif %}
 
-  <script>
+  <script nonce="{{ g.csp_nonce }}">
     // Add Staff
     document.getElementById('addStaffForm').addEventListener('submit', async function(e) {
       e.preventDefault();

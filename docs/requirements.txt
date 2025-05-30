@@ -6,3 +6,4 @@ flask-login
 flask-wtf
 email-validator 
 flask-limiter 
+flask-mail

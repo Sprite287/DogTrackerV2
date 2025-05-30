@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, render_template_string, get_flashed_messages, make_response, send_file, abort
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, render_template_string, get_flashed_messages, make_response, send_file, abort, g, session
 import os
 from extensions import db, migrate, login_manager
+from flask_wtf.csrf import CSRFProtect
 import json
 from models import Dog, AppointmentType, MedicinePreset, Appointment, DogMedicine, Reminder, User, DogNote, Rescue, AuditLog
 from datetime import datetime, timedelta
@@ -9,9 +10,9 @@ from sqlalchemy.orm import joinedload
 import csv
 import io
 from werkzeug.utils import secure_filename
-from audit import log_audit_event, AuditCleanupThread, get_audit_system_stats, _audit_batcher, cleanup_old_audit_logs
+from audit import log_audit_event, AuditCleanupThread, get_audit_system_stats, _audit_batcher, cleanup_old_audit_logs, init_audit
 from flask_login import login_user, logout_user, login_required, current_user
-from forms import LoginForm, RegistrationForm, RescueRegistrationForm, PasswordResetRequestForm, PasswordResetForm
+from forms import LoginForm, RegistrationForm, RescueRegistrationForm, PasswordResetRequestForm, PasswordResetForm, AuditForm
 from rescue_helpers import get_rescue_dogs, get_rescue_appointments, get_rescue_medicines, get_rescue_reminders, get_rescue_medicine_presets
 from permissions import roles_required, role_required, rescue_access_required
 from werkzeug.security import generate_password_hash
@@ -19,20 +20,46 @@ import secrets
 from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFError
+import secrets
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import bleach
 from flask_mail import Mail, Message
+import warnings
 
 # Load environment variables from .env if present
 load_dotenv()
 
 app = Flask(__name__)
-
-# Configurations
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://doguser:dogpassword@localhost:5432/dogtracker')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit for request size
+
+# --- SECRET_KEY Validation ---
+import warnings # Add this import at the top of the file if not already present
+SECRET_KEY = app.config['SECRET_KEY']
+MIN_SECRET_KEY_LENGTH = 32
+WEAK_SECRET_KEYS = ['dev', 'secret', 'changeme', 'your-secret-key']
+
+if not SECRET_KEY or len(SECRET_KEY) < MIN_SECRET_KEY_LENGTH:
+    warnings.warn(
+        f'SECURITY WARNING: SECRET_KEY is missing or too short (less than {MIN_SECRET_KEY_LENGTH} characters). ' 
+        'This is a serious security risk. Please set a strong, random SECRET_KEY environment variable.',
+        UserWarning
+    )
+    # In a production environment, you might want to raise an exception here to prevent startup
+    # raise RuntimeError("Critical security risk: SECRET_KEY is not configured properly.")
+elif SECRET_KEY in WEAK_SECRET_KEYS:
+    warnings.warn(
+        f'SECURITY WARNING: SECRET_KEY is set to a known weak value ("{SECRET_KEY}"). ' 
+        'This is a serious security risk. Please set a strong, random SECRET_KEY environment variable.',
+        UserWarning
+    )
+    # In a production environment, you might want to raise an exception here
+    # raise RuntimeError("Critical security risk: SECRET_KEY is set to a weak default.")
+else:
+    print("SECRET_KEY validation passed.") # Optional: for confirmation during startup
 
 # --- Security: Session Cookie Flags & Timeout ---
 is_dev = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG') == '1'
@@ -45,7 +72,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes (in seconds)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+
 csrf = CSRFProtect(app)
+
 
 db.init_app(app)
 migrate.init_app(app, db)
@@ -56,11 +85,22 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
+# Custom key function for Flask-Limiter
+def get_rate_limit_key():
+    if current_user.is_authenticated:
+        return str(current_user.get_id()) # Use user ID for authenticated users
+    return get_remote_address() # Fallback to IP address for anonymous users
+
 # Initialize Flask-Limiter
 limiter = Limiter(
-    get_remote_address,
+    key_func=get_rate_limit_key, # Use our custom key function
     app=app,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["200 per day", "50 per hour"], # Global default limits
+    # You can also define specific limits for authenticated users vs anonymous if needed
+    # by using different decorators or conditional logic within routes.
+    # For example, a stricter limit for anonymous users on certain actions.
+    default_limits_per_method=True,
+    default_limits_exempt_when=lambda: current_user.is_authenticated and current_user.is_rescue_admin() # Example: exempt admins
 )
 
 # Flask-Mail configuration (use environment variables for secrets in production)
@@ -73,6 +113,9 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'DogTracker <noreply@example.com>')
 
 mail = Mail(app)
+
+# Initialize Audit System
+init_audit(app)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -456,17 +499,81 @@ def dog_list_page():
             dogs = Dog.query.filter_by(rescue_id=rescue_id).order_by(Dog.name.asc()).all()
         else:
             dogs = Dog.query.order_by(Dog.name.asc()).all()
+        # Store in session for use by delete_dog
+        session['selected_rescue_id'] = str(rescue_id) if rescue_id else ""
         return render_template('index.html', dogs=dogs, rescues=rescues, selected_rescue_id=rescue_id)
     else:
         dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+        # Store in session for use by delete_dog
+        session['selected_rescue_id'] = str(current_user.rescue_id)
         return render_template('index.html', dogs=dogs)
 
-def render_dog_cards_html():
+def render_dog_cards_html(selected_rescue_id=None):
+    dogs = []
     if current_user.is_authenticated:
-        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+        if current_user.role == 'superadmin':
+            if selected_rescue_id and selected_rescue_id != "":
+                try:
+                    # Ensure selected_rescue_id is an integer if it's not empty
+                    rescue_id_int = int(selected_rescue_id)
+                    dogs = Dog.query.filter_by(rescue_id=rescue_id_int).order_by(Dog.name.asc()).all()
+                except ValueError:
+                    # Handle cases where selected_rescue_id might not be a valid integer (e.g., empty string handled above)
+                    dogs = Dog.query.order_by(Dog.name.asc()).all() # Default to all if conversion fails
+            else:
+                # Superadmin, no specific rescue selected, show all dogs
+                dogs = Dog.query.order_by(Dog.name.asc()).all()
+        else:
+            # Non-superadmin, show dogs for their own rescue
+            dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
     else:
         dogs = []
-    return render_template('dog_cards.html', dogs=dogs)
+    return render_template('dog_cards.html', dogs=dogs, selected_rescue_id=selected_rescue_id)
+
+def render_dog_stats_html(selected_rescue_id=None):
+    dogs = []
+    rescues = [] # Keep for potential future use, but not used in current stats
+
+    if current_user.is_authenticated:
+        if current_user.role == 'superadmin':
+            if selected_rescue_id and selected_rescue_id != "":
+                try:
+                    rescue_id_int = int(selected_rescue_id)
+                    dogs = Dog.query.filter_by(rescue_id=rescue_id_int).order_by(Dog.name.asc()).all()
+                except ValueError:
+                    dogs = Dog.query.order_by(Dog.name.asc()).all()
+            else:
+                dogs = Dog.query.order_by(Dog.name.asc()).all()
+        else:
+            dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+        
+        if current_user.role == 'superadmin':
+            rescues = Rescue.query.all() # Keep for context, might be used if stats evolve
+
+    return render_template_string('''
+<div class="row mb-4" id="dogStatsRow" hx-swap-oob="outerHTML">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h5 class="mb-1">{{ dogs|length }}</h5>
+                        <small class="text-muted">Total Dogs</small>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h5>
+                        <small class="text-muted">Adopted</small>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Not Adopted')|list|length }}</h5>
+                        <small class="text-muted">Available</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+''', dogs=dogs, rescues=rescues, selected_rescue_id=selected_rescue_id)
 
 @app.route('/dog/add', methods=['POST'])
 @login_required
@@ -632,9 +739,30 @@ def delete_dog(dog_id):
         success=True
     )
     if request.headers.get('HX-Request'):
-        cards = render_dog_cards_html()
-        resp = make_response(cards)
-        resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog deleted successfully!", "category": "success"}})
+        # Get selected_rescue_id from hx-vals (form data).
+        # It will be an empty string "" if "All Rescues" was selected, or a numeric string for a specific rescue.
+        current_selected_rescue_id = request.form.get('selected_rescue_id')
+
+        if current_selected_rescue_id is None:
+            # Fallback if hx-vals is missing
+            current_selected_rescue_id = request.args.get('rescue_id', session.get('selected_rescue_id'))
+            if current_selected_rescue_id is None: # Ensure it's an empty string if no filter is active
+                current_selected_rescue_id = ""
+
+        # Render updated dog cards
+        dog_cards_html = render_dog_cards_html(selected_rescue_id=current_selected_rescue_id)
+
+        # Render updated dog stats
+        dog_stats_html = render_dog_stats_html(selected_rescue_id=current_selected_rescue_id)
+
+        # Combine the dog cards HTML (main content) and the dog stats HTML (OOB content).
+        # dog_stats_html already contains hx-swap-oob="outerHTML" on its root element with id="dogStatsRow".
+        # HTMX will process both: dog_cards_html will replace the target, and dog_stats_html will be swapped OOB.
+        combined_html = dog_cards_html + dog_stats_html
+        resp = make_response(combined_html)
+        resp.headers['HX-Trigger'] = json.dumps({
+            "showAlert": {"message": "Dog deleted successfully!", "category": "success"}
+        })
         return resp
     flash('Dog deleted successfully!', 'success')
     return redirect(url_for('dog_list_page'))
@@ -699,18 +827,6 @@ def dog_details(dog_id):
                            medicine_presets_categorized=sorted_categorized_medicine_presets,
                            recent_history_events=recent_history_events)
 
-@app.cli.command('list-routes')
-def list_routes():
-    import urllib
-    output = []
-    for rule in app.url_map.iter_rules():
-        methods = ','.join(sorted(rule.methods))
-        line = urllib.parse.unquote(f"{rule.endpoint:30s} {methods:20s} {rule}")
-        output.append(line)
-    for line in sorted(output):
-        print(line)
-
-# --- Appointments CRUD ---
 @app.route('/dog/<int:dog_id>/appointment/add', methods=['POST'])
 @rescue_access_required(lambda kwargs: Dog.query.get(kwargs['dog_id']).rescue_id)
 @login_required
@@ -1529,8 +1645,6 @@ def calendar_events_api():
             main_title_part = appt.title
             if not main_title_part and appt.type: main_title_part = appt.type.name
             if not main_title_part: main_title_part = "Appointment"
-            event_title_parts.append(main_title_part)
-            
             event_title_str = " - ".join(filter(None, event_title_parts))
 
             event_data = {
@@ -2086,7 +2200,7 @@ def get_current_user():
         return current_user
     return None
 
-@app.route('/admin/audit-logs')
+@app.route('/admin/audit-logs', methods=['GET', 'POST'])
 @roles_required(['superadmin', 'owner'])
 def admin_audit_logs():
     current_user = get_current_user()
@@ -2094,11 +2208,15 @@ def admin_audit_logs():
     per_page = 25
     logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
     audit_stats = get_audit_system_stats() if current_user.role == 'superadmin' else None
-    return render_template('admin_audit_logs.html', logs=logs, current_user=current_user, audit_stats=audit_stats)
+    flush_form = AuditForm()
+    cleanup_form = AuditForm()
+    return render_template('admin_audit_logs.html', logs=logs, current_user=current_user, audit_stats=audit_stats, flush_form=flush_form, cleanup_form=cleanup_form)
 
 @app.route('/admin/flush-audit-batch', methods=['POST'])
 @role_required('superadmin')
 def admin_flush_audit_batch():
+    print(f"[CSRF DEBUG /admin/flush-audit-batch] Session CSRF Token: {session.get('_csrf_token')}")
+    print(f"[CSRF DEBUG /admin/flush-audit-batch] Form CSRF Token: {request.form.get('csrf_token')}")
     current_user = get_current_user()
     # Force flush the audit batch queue
     flushed = False
@@ -2113,11 +2231,13 @@ def admin_flush_audit_batch():
     return redirect(url_for('admin_audit_logs'))
 
 @app.route('/admin/run-audit-cleanup', methods=['POST'])
+@login_required
 @role_required('superadmin')
 def admin_run_audit_cleanup():
-    current_user = get_current_user()
-    cleanup_old_audit_logs()
-    flash('Audit log cleanup completed.', 'info')
+    audit_action = request.form.get('audit_action')
+    if audit_action == 'cleanup':
+        cleanup_old_audit_logs()
+        flash('Audit logs cleanup initiated.', 'success')
     return redirect(url_for('admin_audit_logs'))
 
 @app.route('/staff-management')
@@ -2463,8 +2583,14 @@ def reset_staff_password():
     db.session.commit()
     return jsonify({'success': True, 'password': new_password})
 
+@app.before_request
+def generate_csp_nonce():
+    g.csp_nonce = secrets.token_hex(16)
+
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
+    print(f"[CSRF ERROR HANDLER] CSRF validation failed. Reason: {e.description}")
+    print(f"[CSRF ERROR HANDLER] request.form content: {request.form}")
     # Log CSRF violation to audit log
     log_audit_event(
         user_id=getattr(current_user, 'id', None) if current_user.is_authenticated else None,
@@ -2497,13 +2623,32 @@ def handle_csrf_error(e):
 def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
-        "style-src 'self' https://cdn.jsdelivr.net; "
-        "font-src 'self' https://cdn.jsdelivr.net; "
-        "img-src 'self' data:;"
-    )
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    nonce = getattr(g, 'csp_nonce', None)
+    if nonce:
+        csp_policy = (
+            "default-src 'self'; "
+            f"script-src 'self' https://cdn.jsdelivr.net https://unpkg.com 'nonce-{nonce}'; "
+            f"style-src 'self' https://cdn.jsdelivr.net 'nonce-{nonce}'; "  # Apply nonce to styles too
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:;"
+        )
+    else:
+        # Fallback CSP if nonce is not available (should not happen in normal flow)
+        csp_policy = (
+            "default-src 'self'; "
+            "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
+            "style-src 'self' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:;"
+        )
+    response.headers['Content-Security-Policy'] = csp_policy
+
+    # Consider adding Permissions-Policy if you want to restrict browser features
+    # response.headers['Permissions-Policy'] = "geolocation=(), microphone=(), camera=()"
     return response
 
 @app.errorhandler(429)
@@ -2553,6 +2698,17 @@ def not_found_error(error):
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('error_500.html'), 500
+
+@app.route('/test-minimal-form', methods=['GET'])
+def show_minimal_test_form():
+    # Ensure CSRF token is available for the template
+    return render_template('minimal_form_test.html')
+
+@app.route('/receive-test-form', methods=['POST'])
+@csrf.exempt
+def receive_test_form():
+    print(f"[RECEIVE_TEST_FORM] request.form content: {request.form}")
+    return "Test form data received. Check console.", 200
 
 if __name__ == '__main__':
     print('--- ROUTES REGISTERED ---')

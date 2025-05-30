@@ -17,11 +17,13 @@
       <li class="list-group-item"><strong>Current Queue Size:</strong> {{ audit_stats.queue_size }}</li>
       <li class="list-group-item"><strong>Total Events Logged (since startup):</strong> {{ audit_stats.total_events_logged }}</li>
     </ul>
-    <form method="post" action="{{ url_for('admin_flush_audit_batch') }}" class="d-inline">
-      <button type="submit" class="btn btn-warning me-2">Flush Audit Batch Now</button>
+    <form action="{{ url_for('admin_flush_audit_batch') }}" method="post" style="display: inline-block;">
+      {{ flush_form.csrf_token }}
+      <button type="submit">Flush Audit Batch Now</button>
     </form>
-    <form method="post" action="{{ url_for('admin_run_audit_cleanup') }}" class="d-inline">
-      <button type="submit" class="btn btn-danger">Run Audit Cleanup Now</button>
+    <form action="{{ url_for('admin_run_audit_cleanup') }}" method="post" style="display: inline-block;">
+      {{ cleanup_form.csrf_token }}
+      <button type="submit">Run Audit Cleanup Now</button>
     </form>
   </div>
 </div>

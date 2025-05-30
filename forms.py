@@ -16,8 +16,8 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[
         DataRequired(),
-        Length(min=4, message='Password must be at least 4 characters long'),
-        Regexp(r'^(?=.*[A-Za-z])(?=.*\d)', message='Password must contain at least one letter and one number')
+        Length(min=8, message='Password must be at least 8 characters long'),
+        Regexp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$', message='Password must include uppercase, lowercase, a number, and a special character (e.g., @, $, !, %, *, ?, &).')
     ])
     password2 = PasswordField('Confirm Password', validators=[
         DataRequired(), 
@@ -45,8 +45,8 @@ class RescueRegistrationForm(FlaskForm):
     contact_phone = StringField('Primary Contact Phone')
     contact_password = PasswordField('Password', validators=[
         DataRequired(),
-        Length(min=4, message='Password must be at least 4 characters long'),
-        Regexp(r'^(?=.*[A-Za-z])(?=.*\d)', message='Password must contain at least one letter and one number')
+        Length(min=8, message='Password must be at least 8 characters long'),
+        Regexp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$', message='Password must include uppercase, lowercase, a number, and a special character (e.g., @, $, !, %, *, ?, &).')
     ])
     contact_password2 = PasswordField('Confirm Password', validators=[
         DataRequired(), 
@@ -96,11 +96,15 @@ class PasswordResetRequestForm(FlaskForm):
 class PasswordResetForm(FlaskForm):
     password = PasswordField('New Password', validators=[
         DataRequired(),
-        Length(min=4, message='Password must be at least 4 characters long'),
-        Regexp(r'^(?=.*[A-Za-z])(?=.*\d)', message='Password must contain at least one letter and one number')
+        Length(min=8, message='Password must be at least 8 characters long'),
+        Regexp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$', message='Password must include uppercase, lowercase, a number, and a special character (e.g., @, $, !, %, *, ?, &).')
     ])
     password2 = PasswordField('Confirm Password', validators=[
         DataRequired(), 
         EqualTo('password', message='Passwords must match')
     ])
-    submit = SubmitField('Reset Password') 
+    submit = SubmitField('Reset Password')
+
+class AuditForm(FlaskForm):
+    # This form is intentionally empty, as it only needs CSRF protection
+    pass 

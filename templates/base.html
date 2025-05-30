@@ -113,7 +113,7 @@
   {% block content %}{% endblock %}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-<script>
+<script nonce="{{ g.csp_nonce }}">
 console.log('Base.html general script block loaded and running');
 // Clear Add Dog form when modal is opened
 function attachAddDogModalReset() {
@@ -289,9 +289,9 @@ document.body.addEventListener('showAlert', function(event) {
 
 <!-- FullCalendar JS - Loaded before page-specific scripts -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-<script>
-    console.log('Type of FullCalendar immediately after its script tag in base.html:', typeof FullCalendar);
-</script>
+<script nonce="{{ g.csp_nonce }}">
+        console.log('Type of FullCalendar immediately after its script tag in base.html:', typeof FullCalendar);
+    </script>
 
 {# Block for page-specific scripts - calendar_view.html script will be injected here #}
 {% block scripts %}{% endblock %}
@@ -302,7 +302,7 @@ document.body.addEventListener('showAlert', function(event) {
 {# Custom global JS - if any - keep commented if not used #}
 {# <script src="{{ url_for('static', filename='global.js') }}"></script> #}
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
 // HTMX CSRF support: add CSRF token to all HTMX AJAX requests
 document.body.addEventListener('htmx:configRequest', function(event) {
     var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;

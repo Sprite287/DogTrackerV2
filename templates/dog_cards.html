@@ -29,9 +29,10 @@
                     hx-target="#dogCards"
                     hx-swap="outerHTML"
                     hx-confirm="Are you sure you want to delete this dog?"
-                    data-dog-id="{{ dog.id }}">Delete</button>
+                    data-dog-id="{{ dog.id }}"
+                    hx-vals='{"selected_rescue_id": "{{ selected_rescue_id if selected_rescue_id is not none else '' }}"}'>Delete</button>
         </div>
     </div>
 </div>
 {% endfor %}
-</div> 
+</div>

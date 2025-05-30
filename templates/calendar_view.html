@@ -89,7 +89,7 @@
 
 {% block scripts %}
 {{ super() }} {# Include scripts from base.html if any #}
-<script>
+<script nonce="{{ g.csp_nonce }}">
     console.log("Calendar_view.html script block executing.");
     console.log("Type of FullCalendar before DOMContentLoaded:", typeof FullCalendar);
 

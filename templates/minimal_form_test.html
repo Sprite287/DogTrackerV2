@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Form Test</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <h1>Minimal Form Test</h1>
+    <p>This form posts to /admin/run-audit-cleanup.</p>
+    
+    <form method="post" action="{{ url_for('admin_run_audit_cleanup') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="audit_action" value="cleanup">
+      <button type="submit">Run Audit Cleanup Now (Minimal Test)</button>
+    </form>
+
+    <hr>
+    <p>For comparison, this form posts to a dummy endpoint that just prints form data without CSRF.</p>
+    <form method="post" action="{{ url_for('receive_test_form') }}">
+        <input type="hidden" name="test_field" value="test_value">
+        <button type="submit">Submit to Dummy Endpoint</button>
+    </form>
+
+</body>
+</html>

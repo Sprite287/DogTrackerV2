@@ -6,26 +6,23 @@
 </div>
 
 <!-- Quick Stats Row -->
-<div class="row mb-4">
+<!-- Quick Stats Row -->
+<div class="row mb-4" id="dogStatsRow">
     <div class="col-12">
         <div class="card bg-light">
             <div class="card-body">
                 <div class="row text-center">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <h5 class="mb-1">{{ dogs|length }}</h5>
                         <small class="text-muted">Total Dogs</small>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h5>
                         <small class="text-muted">Adopted</small>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Not Adopted')|list|length }}</h5>
                         <small class="text-muted">Available</small>
-                    </div>
-                    <div class="col-md-3">
-                        <h5 class="mb-1">{{ recent_events|length if recent_events is defined else 0 }}</h5>
-                        <small class="text-muted">Recent Events</small>
                     </div>
                 </div>
             </div>
@@ -54,7 +51,7 @@
 {% if current_user.role == 'superadmin' %}
 <form method="get" class="mb-3" id="rescueFilterForm">
   <label for="rescueSelect" class="form-label">Filter by Rescue:</label>
-  <select name="rescue_id" id="rescueSelect" class="form-select" onchange="this.form.submit()">
+  <select name="rescue_id" id="rescueSelect" class="form-select">
     <option value="">All Rescues</option>
     {% for rescue in rescues %}
       <option value="{{ rescue.id }}" {% if rescue.id == selected_rescue_id %}selected{% endif %}>{{ rescue.name }}</option>
@@ -62,43 +59,18 @@
   </select>
 </form>
 {% endif %}
-<div class="row" id="dogCards">
-    {% if dogs|length == 0 %}
-      <div class="col-12">
-        <div class="alert alert-info text-center">No dogs found. Add your first dog!</div>
-      </div>
-    {% endif %}
-    {% for dog in dogs %}
-    <div class="col-md-4 mb-4" id="dog-card-{{ dog.id }}">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">{{ dog.name }}</h5>
-                <p class="card-text mb-1"><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
-                <p class="card-text mb-1"><strong>Age:</strong> {{ dog.age or 'N/A' }}</p>
-            </div>
-            <div class="card-footer d-flex justify-content-between">
-                <a href="/dog/{{ dog.id }}" class="btn btn-outline-primary btn-sm"
-                  data-dog-id="{{ dog.id }}"
-                  data-dog-name="{{ dog.name }}"
-                  data-dog-status="{{ dog.adoption_status or '' }}"
-                  data-dog-age="{{ dog.age or '' }}"
-                  data-dog-breed="{{ dog.breed or '' }}"
-                  data-dog-intake-date="{{ dog.intake_date or '' }}"
-                  data-dog-microchip-id="{{ dog.microchip_id or '' }}"
-                  data-dog-notes="{{ dog.notes or '' }}"
-                  data-dog-medical-info="{{ dog.medical_info or '' }}"
-                >View</a>
-                <button class="btn btn-outline-danger btn-sm"
-                        hx-post="/dog/{{ dog.id }}/delete"
-                        hx-target="#dogCards"
-                        hx-swap="outerHTML"
-                        hx-confirm="Are you sure you want to delete this dog?"
-                        data-dog-id="{{ dog.id }}">Delete</button>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
+{% include 'dog_cards.html' %}
+
+<script nonce="{{ g.csp_nonce }}">
+  document.addEventListener('DOMContentLoaded', function() {
+    var rescueSelect = document.getElementById('rescueSelect');
+    if (rescueSelect) {
+      rescueSelect.addEventListener('change', function() {
+        document.getElementById('rescueFilterForm').submit();
+      });
+    }
+  });
+</script>
 
 {# Add Dog Modal #}
 <div class="modal fade" id="addDogModal" tabindex="-1" aria-labelledby="addDogModalLabel" aria-hidden="true">
@@ -152,7 +124,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
   attachDogSearchFilter();
 });

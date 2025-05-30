@@ -381,7 +381,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Dog History page loaded for {{ dog.name|e }}");
 

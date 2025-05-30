@@ -7,9 +7,13 @@ from datetime import datetime, timedelta
 from contextlib import contextmanager
 import time as _time
 
+# Flask app instance, to be set by init_app
+_flask_app = None
+
 # --- Async Audit Batching ---
 class AuditBatcher:
-    def __init__(self, batch_size=50, flush_interval=30):
+    def __init__(self, app, batch_size=50, flush_interval=30):
+        self.app = app
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.queue = queue.Queue()
@@ -45,23 +49,24 @@ class AuditBatcher:
                 self._flush(batch)
 
     def _flush(self, batch):
-        start = _time.time()
-        compressed_batch = compress_audit_events(batch)
-        with db.session.no_autoflush:
-            try:
-                for event_dict in compressed_batch:
-                    log = AuditLog(**event_dict)
-                    db.session.add(log)
-                db.session.commit()
-                duration = _time.time() - start
-                self.last_flush_time = datetime.utcnow()
-                self.last_batch_size = len(batch)
-                self.last_flush_duration = duration
-                self.total_events_logged += len(compressed_batch)
-                print(f"[AuditBatcher] Flushed {len(compressed_batch)} audit events (compressed from {len(batch)}). Duration: {duration:.3f}s. Queue size: {self.queue.qsize()}")
-            except Exception as e:
-                db.session.rollback()
-                print(f"[AuditBatcher] Failed to flush batch: {e}")
+        with self.app.app_context():
+            start = _time.time()
+            compressed_batch = compress_audit_events(batch)
+            with db.session.no_autoflush:
+                try:
+                    for event_dict in compressed_batch:
+                        log = AuditLog(**event_dict)
+                        db.session.add(log)
+                    db.session.commit()
+                    duration = _time.time() - start
+                    self.last_flush_time = datetime.utcnow()
+                    self.last_batch_size = len(batch)
+                    self.last_flush_duration = duration
+                    self.total_events_logged += len(compressed_batch)
+                    print(f"[AuditBatcher] Flushed {len(compressed_batch)} audit events (compressed from {len(batch)}). Duration: {duration:.3f}s. Queue size: {self.queue.qsize()}")
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"[AuditBatcher] Failed to flush batch: {e}")
 
     def stop(self):
         self.running = False
@@ -76,8 +81,8 @@ class AuditBatcher:
             'total_events_logged': self.total_events_logged,
         }
 
-# Singleton batcher instance
-_audit_batcher = AuditBatcher()
+# Singleton batcher instance, initialized by init_audit
+_audit_batcher = None
 
 def compress_audit_events(events, window_seconds=60):
     """
@@ -143,6 +148,29 @@ def log_audit_event(
         occurrence_count=occurrence_count,
         last_occurrence=last_occurrence,
     )
+    if not _audit_batcher:
+        print("[AuditLog] AuditBatcher not initialized. Event not logged through batcher.")
+        # Fallback to synchronous logging if batcher isn't ready
+        if _flask_app:
+            with _flask_app.app_context():
+                try:
+                    log = AuditLog(**event_dict)
+                    db.session.add(log)
+                    db.session.commit()
+                    print("[AuditLog] Event logged synchronously with app context.")
+                except Exception as e_sync_ctx:
+                    print(f"[AuditLog] Failed to log event synchronously with app context: {e_sync_ctx}")
+            return # Exit after attempting sync log with context
+        else: # No flask_app, attempt without context (might fail if outside request)
+            try:
+                log = AuditLog(**event_dict)
+                db.session.add(log)
+                db.session.commit()
+                print("[AuditLog] Event logged synchronously (no app context available for fallback).")
+            except Exception as e_sync_no_ctx:
+                print(f"[AuditLog] Failed to log event synchronously (no app context): {e_sync_no_ctx}")
+        return # Exit after attempting sync log
+
     try:
         _audit_batcher.log(event_dict)
     except Exception as e:
@@ -172,7 +200,8 @@ def cleanup_old_audit_logs(retention_days=AUDIT_LOG_RETENTION_DAYS):
 
 # Optional: Periodic cleanup in a background thread
 class AuditCleanupThread(threading.Thread):
-    def __init__(self, interval_hours=24, retention_days=AUDIT_LOG_RETENTION_DAYS):
+    def __init__(self, app, interval_hours=24, retention_days=AUDIT_LOG_RETENTION_DAYS):
+        self.app = app
         super().__init__(daemon=True)
         self.interval = interval_hours * 3600
         self.retention_days = retention_days
@@ -180,11 +209,23 @@ class AuditCleanupThread(threading.Thread):
 
     def run(self):
         while self.running:
-            cleanup_old_audit_logs(self.retention_days)
+            with self.app.app_context():
+                cleanup_old_audit_logs(self.retention_days)
             time.sleep(self.interval)
 
     def stop(self):
         self.running = False
+
+_audit_cleanup_thread = None # Initialize as None
+
+def init_audit(app_instance, start_cleanup_thread=True, cleanup_interval_hours=24, audit_retention_days=AUDIT_LOG_RETENTION_DAYS, batcher_batch_size=50, batcher_flush_interval=30):
+    global _flask_app, _audit_batcher, _audit_cleanup_thread
+    _flask_app = app_instance
+    _audit_batcher = AuditBatcher(app=_flask_app, batch_size=batcher_batch_size, flush_interval=batcher_flush_interval)
+
+    if start_cleanup_thread:
+        _audit_cleanup_thread = AuditCleanupThread(app=_flask_app, interval_hours=cleanup_interval_hours, retention_days=audit_retention_days)
+        _audit_cleanup_thread.start()
 
 class AuditContext:
     """
@@ -229,5 +270,12 @@ class AuditContext:
         log_audit_event(**self.parent_event)
 
 def get_audit_system_stats():
-    """Return current audit system performance stats."""
-    return _audit_batcher.get_stats() 
+    if _audit_batcher:
+        return _audit_batcher.get_stats()
+    return {
+        'last_flush_time': None,
+        'last_batch_size': 0,
+        'last_flush_duration': 0,
+        'queue_size': 0,
+        'total_events_logged': 0,
+    }
