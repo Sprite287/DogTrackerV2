@@ -1,6 +1,6 @@
-@echo off
-REM To stop the Flask server, press Ctrl+C in the terminal where it is running.
-echo If the server is running in a separate window, close that window to stop the server.
-pause
+#!/bin/bash
+# To stop the Flask server, press Ctrl+C in the terminal where it is running.
+echo "If the server is running in a separate window, close that window to stop the server."
+read -p "Press any key to continue..."
 
-taskkill /F /IM python.exe 
+pkill -f "flask run" 

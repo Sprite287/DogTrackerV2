@@ -1,6 +1,14 @@
-# Blueprints Refactoring Phase Tree (REVISED)
+# Blueprints Refactoring Phase Tree (REVISED v2.0)
 
-**Project Context**: Refactoring a sophisticated 800+ line monolithic Flask application with enterprise-grade multi-tenancy, complex medicine management, comprehensive audit system, and HTMX-powered UI.
+**Project Context**: Refactoring a sophisticated 2,788-line monolithic Flask application with enterprise-grade multi-tenancy, complex medicine management, comprehensive audit system, and HTMX-powered UI.
+
+**Key Improvements in v2.0:**
+- ✅ Incremental URL migration strategy (reduces risk and complexity)
+- ✅ Phase R4C split into 3 sub-phases for risk mitigation
+- ✅ Phase R5 separated into 4 distinct blueprints for maintainability
+- ✅ Manual testing checklists added for each phase
+- ✅ Current URLs preserved (no user experience disruption)
+- ✅ Git commit strategy defined for each phase
 
 ---
 
@@ -95,13 +103,13 @@
 
 **Key Deliverables:**
 
-**Authentication Routes Migration (URL Prefix `/auth`):**
+**Authentication Routes Migration (Keep Current URLs):**
 - **Core Authentication Routes:**
-  - `/login` → `/auth/login`
-  - `/logout` → `/auth/logout`
-  - `/register-rescue` → `/auth/register-rescue`
-  - All password reset flows → `/auth/reset-password*`
-  - Email verification → `/auth/verify-email*`
+  - `/login` (stays `/login` but in auth blueprint)
+  - `/logout` (stays `/logout` but in auth blueprint)
+  - `/register-rescue` (stays `/register-rescue` but in auth blueprint)
+  - All password reset flows (keep current URLs)
+  - Email verification (keep current URLs)
 
 **Authentication Configuration Updates:**
 - **Update Flask-Login Configuration:**
@@ -121,11 +129,29 @@
   - User registration and rescue creation workflows
   - Rate limiting and security event handling
 
-**Comprehensive Authentication Testing:**
-- Test complete registration workflow (rescue + first user creation)
-- Verify login/logout functionality with session management
-- Test password reset flow end-to-end
-- Validate audit logging captures all authentication events
+**Template URL Migration (Phase R3):**
+- **Authentication Template Updates:**
+  - Update all auth-related `url_for()` calls to use `auth.` prefix
+  - Update `base.html` login/logout navigation links
+  - Update authentication form action URLs
+  - Update redirect URLs in authentication logic
+  - Test all authentication flows with new URL structure
+
+**Manual Testing Checklist (Phase R3):**
+- [ ] All routes respond correctly
+- [ ] Permission decorators work properly
+- [ ] Audit logging captures all auth events
+- [ ] CSRF protection functional
+- [ ] Rate limiting works on auth routes
+- [ ] Session management across blueprint boundaries
+- [ ] Complete registration workflow (rescue + first user creation)
+- [ ] Login/logout functionality with session management
+- [ ] Password reset flow end-to-end
+- [ ] Email verification process
+- [ ] Flask-Login configuration with blueprint routes
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R3: Authentication blueprint migration - All tests passed`
 
 **Success Criteria:** Complete auth system works in blueprint, all security features intact.
 
@@ -137,8 +163,10 @@
 
 **Phase Structure (Sequential Sub-phases):**
 - **Phase R4A**: Dogs Blueprint Migration (Medium Complexity)
-- **Phase R4B**: Appointments Blueprint Migration (Medium-High Complexity)
-- **Phase R4C**: Medicines Blueprint Migration (HIGHEST COMPLEXITY)
+- **Phase R4B**: Appointments Blueprint Migration (Medium-High Complexity)  
+- **Phase R4C-1**: Medicine Preset Management (EXTREME Risk)
+- **Phase R4C-2**: Dog Medicine Assignment (High Risk)
+- **Phase R4C-3**: Medicine Reminder Integration (Medium-High Risk)
 
 #### **Phase R4A: Dogs Blueprint Migration**
 
@@ -178,6 +206,29 @@
 - Note categorization and timeline integration
 - Permission checking for note creation/editing
 
+**Template URL Migration (Phase R4A):**
+- **Dog Template Updates:**
+  - Update all dog-related `url_for()` calls to use `dogs.` prefix
+  - Update HTMX endpoint URLs (`hx-get`, `hx-post`, `hx-target`)
+  - Update `dog_details.js` endpoint references
+  - Update modal form action URLs
+  - Test dog modal behaviors and dynamic updates
+
+**Manual Testing Checklist (Phase R4A):**
+- [ ] All dog routes respond correctly
+- [ ] Permission decorators work for dog operations
+- [ ] Audit logging captures dog CRUD events
+- [ ] Multi-tenant data isolation maintained
+- [ ] Dog CRUD operations (create, read, update, delete)
+- [ ] Dog history timeline generation and filtering
+- [ ] Dog add/edit modals with HTMX form submission
+- [ ] Dog notes CRUD functionality
+- [ ] `_get_dog_history_events()` function works correctly
+- [ ] Dog list filtering and search
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R4A: Dogs blueprint migration - All tests passed`
+
 #### **Phase R4B: Appointments Blueprint Migration**
 
 **Appointment Management Routes:**
@@ -210,22 +261,42 @@
   - Form validation with error display
   - Appointment list refresh after operations
 
-#### **Phase R4C: Medicines Blueprint Migration (HIGHEST COMPLEXITY)**
+**Template URL Migration (Phase R4B):**
+- **Appointment Template Updates:**
+  - Update all appointment-related `url_for()` calls to use `appointments.` prefix
+  - Update appointment modal HTMX endpoints
+  - Update calendar integration URLs
+  - Update appointment form action URLs
+  - Test appointment modal behaviors and dynamic updates
 
-**⚠️ WARNING: This is the most complex phase due to sophisticated hybrid medicine management system.**
+**Manual Testing Checklist (Phase R4B):**
+- [ ] All appointment routes respond correctly
+- [ ] Permission decorators work for appointment operations
+- [ ] Audit logging captures appointment events
+- [ ] Appointment CRUD operations (create, read, update, delete)
+- [ ] Appointment type management and filtering
+- [ ] Reminder generation on appointment creation
+- [ ] Appointment recurrence handling
+- [ ] Calendar integration and event generation
+- [ ] Dynamic appointment type dropdown population
+- [ ] Date/time validation and conflict checking
+- [ ] Appointment list filtering
+- [ ] No broken links or 404 errors
 
-**Medicine Management Routes:**
-- **Dog Medicine CRUD:**
-  - `/dog/<int:dog_id>/medicines/*` (dog-specific medicine routes)
-  - Complex medicine assignment with preset selection
-  - Medicine schedule management with reminders
-  
-- **Medicine Preset Management (COMPLEX):**
+**Git Commit:** `Phase R4B: Appointments blueprint migration - All tests passed`
+
+#### **Phase R4C-1: Medicine Preset Management (EXTREME RISK)**
+
+**⚠️ WARNING: This is the most complex sub-phase due to sophisticated hybrid preset system with global vs rescue-specific presets.**
+
+**Medicine Preset Management Routes:**
+- **Preset Management Interface:**
   - `/rescue/medicines/manage` (preset management interface)
   - Global vs rescue-specific preset handling
   - Preset activation/deactivation system with audit trails
+  - Category management and organization
 
-**Extremely Complex Business Logic:**
+**Extremely Complex Preset Business Logic:**
 - **Hybrid Preset System:**
   - Global presets available to all rescues (read-only for non-superadmins)
   - Rescue-specific presets (full CRUD for rescue admins)
@@ -236,46 +307,151 @@
   - Staff vs admin permission checking for preset management
   - Superadmin vs rescue admin access patterns
   - Audit logging for every preset activation/deactivation
-  
-- **Medicine Assignment Complexity:**
-  - Preset selection with automatic form population
-  - Dosage instructions and suggested units logic
-  - Veterinary terminology and form validation
-  - Medicine schedule generation with automatic reminders
+  - Permission denial logging for unauthorized preset access
 
-**HTMX Integration Challenges:**
-- **Complex Medicine Modals:**
-  - Dynamic preset dropdown with category grouping
-  - Form field population based on preset selection
-  - Dosage instructions auto-population
-  - Unit and form field coordination
-  
+**HTMX Preset Management Interface:**
 - **Preset Management Interface:**
   - Accordion-based category organization
   - Toggle switches for preset activation/deactivation
   - Real-time audit log generation
   - HTMX-powered preset list updates
+  - Dynamic category management
 
-**Audit Integration (CRITICAL):**
+**Preset Audit Integration (CRITICAL):**
 - Every preset activation/deactivation must be audit logged
-- Medicine assignment/modification audit trails
 - Permission denial logging for unauthorized preset access
-- Audit log integration testing across all medicine operations
+- Audit log integration testing across all preset operations
 
-**Medicine Reminder System:**
-- Automatic reminder generation based on medicine schedules
-- Medicine frequency interpretation (SID, BID, TID, QID, etc.)
-- Integration with calendar system and dashboard alerts
+**Manual Testing Checklist (Phase R4C-1):**
+- [ ] All preset management routes respond correctly
+- [ ] Permission decorators work for preset operations
+- [ ] Audit logging captures all preset events
+- [ ] Global vs rescue-specific preset handling
+- [ ] Preset activation/deactivation functionality
+- [ ] Category organization and dropdown grouping
+- [ ] Permission checking (staff vs admin vs superadmin)
+- [ ] Accordion-based category organization
+- [ ] Toggle switches for preset activation/deactivation
+- [ ] Real-time audit log generation
+- [ ] HTMX-powered preset list updates
+- [ ] No broken links or 404 errors
 
-**Success Criteria for R4C:** All medicine functionality works, audit trails intact, permissions enforced, HTMX modals functional.
+**Git Commit:** `Phase R4C-1: Medicine preset management - All tests passed`
+
+**Success Criteria:** All preset functionality works, audit trails intact, permissions enforced.
 
 ---
 
-### **Phase R5: Administrative & Support Systems ⚠️ PLANNED**
+#### **Phase R4C-2: Dog Medicine Assignment (HIGH RISK)**
 
-**Objective:** Move specialized administrative functionality and support systems to dedicated blueprints while maintaining enterprise-grade audit integration and permission controls.
+**Objective:** Implement dog medicine assignment system with preset integration while maintaining complex business logic.
 
-**Key Deliverables:**
+**Dog Medicine Management Routes:**
+- **Dog Medicine CRUD:**
+  - `/dog/<int:dog_id>/medicines/*` (dog-specific medicine routes)
+  - Complex medicine assignment with preset selection
+  - Medicine schedule management
+  - Medicine status tracking
+
+**Medicine Assignment Complexity:**
+- **Preset Integration:**
+  - Preset selection with automatic form population
+  - Dosage instructions and suggested units logic
+  - Veterinary terminology and form validation
+  - Custom medicine vs preset medicine handling
+  
+- **Medicine Schedule Management:**
+  - Medicine frequency handling (SID, BID, TID, QID, etc.)
+  - Start/end date management
+  - Medicine status tracking (active, completed, discontinued)
+  - Dosage and unit coordination
+
+**HTMX Medicine Modals:**
+- **Complex Medicine Assignment Modals:**
+  - Dynamic preset dropdown with category grouping
+  - Form field population based on preset selection
+  - Dosage instructions auto-population
+  - Unit and form field coordination
+  - Medicine assignment form validation
+
+**Template URL Migration (Phase R4C-2):**
+- **Medicine Assignment Template Updates:**
+  - Update medicine assignment `url_for()` calls to use `medicines.` prefix
+  - Update dog medicine modal HTMX endpoints
+  - Update medicine form action URLs
+  - Test medicine modal behaviors and dynamic updates
+
+**Manual Testing Checklist (Phase R4C-2):**
+- [ ] All dog medicine routes respond correctly
+- [ ] Permission decorators work for medicine operations
+- [ ] Audit logging captures medicine assignment events
+- [ ] Dog medicine CRUD operations
+- [ ] Preset selection with automatic form population
+- [ ] Dosage instructions and suggested units logic
+- [ ] Medicine schedule management
+- [ ] Medicine status tracking
+- [ ] Dynamic preset dropdown with category grouping
+- [ ] Form field population based on preset selection
+- [ ] Custom medicine vs preset medicine handling
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R4C-2: Dog medicine assignment - All tests passed`
+
+**Success Criteria:** All dog medicine assignment functionality works, preset integration functional.
+
+---
+
+#### **Phase R4C-3: Medicine Reminder Integration (MEDIUM-HIGH RISK)**
+
+**Objective:** Complete medicine system with reminder generation and calendar integration.
+
+**Medicine Reminder System:**
+- **Automatic Reminder Generation:**
+  - Reminder generation based on medicine schedules
+  - Medicine frequency interpretation (SID, BID, TID, QID, etc.)
+  - Integration with calendar system and dashboard alerts
+  - Reminder status management (pending, acknowledged, dismissed)
+
+**Calendar Integration:**
+- **Medicine Calendar Events:**
+  - Medicine schedule event generation
+  - Calendar display integration
+  - Reminder due date calculation
+  - Medicine timeline integration
+
+**Cross-System Integration:**
+- **Medicine History Integration:**
+  - Medicine events in dog history timeline
+  - Medicine reminder tracking
+  - Medicine audit trail integration
+  - Complete medicine workflow testing
+
+**Template URL Migration (Phase R4C-3):**
+- **Medicine Reminder Template Updates:**
+  - Update medicine reminder `url_for()` calls
+  - Update calendar integration URLs
+  - Test reminder generation and display
+
+**Manual Testing Checklist (Phase R4C-3):**
+- [ ] All medicine reminder routes respond correctly
+- [ ] Automatic reminder generation from medicine schedules
+- [ ] Medicine frequency interpretation works correctly
+- [ ] Calendar integration for medicine events
+- [ ] Reminder status management
+- [ ] Medicine events appear in dog history timeline
+- [ ] Complete medicine workflow (preset → assignment → reminder)
+- [ ] Cross-system integration testing
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R4C-3: Medicine reminder integration - All tests passed`
+
+**Success Criteria:** Complete medicine system functional, reminders generated correctly, calendar integration works.
+
+---
+
+### **Phase R5A: Admin Blueprint (Superadmin Functions) ⚠️ PLANNED**
+
+**Objective:** Move superadmin-only functionality to dedicated admin blueprint while maintaining enterprise-grade audit integration.
 
 **Admin Blueprint (Superadmin Functions):**
 - **Administrative Routes:**
@@ -290,6 +466,23 @@
   - System monitoring and audit statistics
   - Bulk audit operations and reporting
 
+**Manual Testing Checklist (Phase R5A):**
+- [ ] All admin routes respond correctly
+- [ ] Superadmin permission decorators work
+- [ ] Audit log viewing and filtering
+- [ ] System cleanup functions
+- [ ] Cross-rescue user management
+- [ ] Audit system performance monitoring
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R5A: Admin blueprint migration - All tests passed`
+
+---
+
+### **Phase R5B: API Blueprint (HTMX Endpoints) ⚠️ PLANNED**
+
+**Objective:** Consolidate all API endpoints used by HTMX into dedicated API blueprint.
+
 **API Blueprint (HTMX Endpoints):**
 - **API Endpoint Consolidation:**
   - `/api/appointment/<int:appointment_id>` (appointment data for modals)
@@ -302,6 +495,30 @@
   - Audit logging for API access and data retrieval
   - Rate limiting for API endpoints
 
+**Template URL Migration (Phase R5B):**
+- **API Template Updates:**
+  - Update all API `url_for()` calls to use `api.` prefix
+  - Update HTMX endpoint references throughout templates
+  - Test all HTMX modal functionality
+
+**Manual Testing Checklist (Phase R5B):**
+- [ ] All API routes respond correctly
+- [ ] Permission decorators work for API operations
+- [ ] Audit logging for API access
+- [ ] Rate limiting functional on API endpoints
+- [ ] HTMX modal data loading
+- [ ] Calendar event API functionality
+- [ ] API security and permissions
+- [ ] No broken API endpoints
+
+**Git Commit:** `Phase R5B: API blueprint migration - All tests passed`
+
+---
+
+### **Phase R5C: Staff Blueprint (User Management) ⚠️ PLANNED**
+
+**Objective:** Move user management functionality to dedicated staff blueprint.
+
 **Staff Blueprint (User Management):**
 - **Staff Management Routes:**
   - `/staff-management` (staff listing and management)
@@ -313,6 +530,30 @@
   - Rescue-specific user filtering
   - User invitation and onboarding workflows
 
+**Template URL Migration (Phase R5C):**
+- **Staff Template Updates:**
+  - Update all staff management `url_for()` calls to use `staff.` prefix
+  - Update user management form action URLs
+  - Test staff management functionality
+
+**Manual Testing Checklist (Phase R5C):**
+- [ ] All staff management routes respond correctly
+- [ ] Permission decorators work for staff operations
+- [ ] User CRUD operations within rescue context
+- [ ] Role assignment and permission management
+- [ ] User validation and role checking
+- [ ] Rescue-specific user filtering
+- [ ] User invitation workflows
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R5C: Staff blueprint migration - All tests passed`
+
+---
+
+### **Phase R5D: Rescue Blueprint (Organizational Management) ⚠️ PLANNED**
+
+**Objective:** Move rescue management functionality to dedicated rescue blueprint.
+
 **Rescue Blueprint (Organizational Management):**
 - **Rescue Management Routes:**
   - `/rescue-info` (rescue information and settings)
@@ -323,6 +564,24 @@
   - Rescue data filtering and validation
   - Rescue registration workflow support
   - Organizational settings management
+
+**Template URL Migration (Phase R5D):**
+- **Rescue Template Updates:**
+  - Update all rescue management `url_for()` calls to use `rescue.` prefix
+  - Update rescue info form action URLs
+  - Test rescue management functionality
+
+**Manual Testing Checklist (Phase R5D):**
+- [ ] All rescue management routes respond correctly
+- [ ] Permission decorators work for rescue operations
+- [ ] Rescue information and settings functionality
+- [ ] Rescue configuration and customization
+- [ ] Multi-tenancy data filtering
+- [ ] Rescue registration workflow
+- [ ] Organizational settings management
+- [ ] No broken links or 404 errors
+
+**Git Commit:** `Phase R5D: Rescue blueprint migration - All tests passed`
 
 ---
 
@@ -346,14 +605,13 @@
   - Date filtering and event categorization
   - Integration with appointment and medicine reminder generation
 
-**Comprehensive URL Pattern Migration:**
-- **Template URL Updates (MASSIVE EFFORT):**
-  - Update ALL `url_for()` calls throughout templates:
-    - `base.html` navigation (core navigation links)
-    - All modal form action URLs
-    - HTMX endpoint URLs (`hx-get`, `hx-post`, `hx-delete`)
-    - Redirect URLs in route logic
-    - JavaScript file URL references (`static/dog_details.js`)
+**Final URL Pattern Validation:**
+- **Comprehensive URL Review:**
+  - Verify all template URLs use blueprint prefixes correctly
+  - Validate all HTMX endpoint URLs work across blueprints
+  - Test all modal form action URLs
+  - Verify redirect URLs in route logic work properly
+  - Validate JavaScript file URL references work correctly
 
 **JavaScript & Static File Updates:**
 - **JavaScript URL Reference Updates:**
@@ -369,11 +627,31 @@
   - Admin functions → Audit log viewing → Permission enforcement
   - Full calendar integration with all reminder types
 
+**Calendar Template URL Migration (Phase R6):**
+- **Calendar Template Updates:**
+  - Update all calendar-related `url_for()` calls to use `calendar.` prefix
+  - Update reminder management URLs
+  - Update calendar API endpoint references
+  - Test calendar integration across all blueprints
+
+**Manual Testing Checklist (Phase R6):**
+- [ ] All calendar routes respond correctly
+- [ ] Calendar integration with appointments
+- [ ] Calendar integration with medicine reminders
+- [ ] Reminder acknowledgment and dismissal
+- [ ] Calendar event generation
+- [ ] FullCalendar integration functional
+- [ ] Cross-blueprint calendar functionality
+- [ ] Final URL validation across all templates
+- [ ] No broken links or 404 errors
+
 **Blueprint Integration Testing:**
 - Verify all permission decorators work across blueprint boundaries
 - Test complete audit logging integration across all blueprints
 - Performance testing with new blueprint structure
 - Multi-tenancy data isolation verification across all blueprints
+
+**Git Commit:** `Phase R6: Calendar blueprint and final URL migration - All tests passed`
 
 ---
 
@@ -431,20 +709,20 @@
 ```
 Phase R1 → Phase R2 → Phase R3
     ↓         ↓         ↓
-Phase R4A → Phase R4B → Phase R4C
-    ↓         ↓         ↓
-Phase R5 (Admin/API/Staff/Rescue)
-    ↓
-Phase R6 (Calendar + URL Migration)
+Phase R4A → Phase R4B → Phase R4C-1 → Phase R4C-2 → Phase R4C-3
+    ↓         ↓         ↓         ↓         ↓
+Phase R5A → Phase R5B → Phase R5C → Phase R5D
+    ↓         ↓         ↓         ↓
+Phase R6 (Calendar)
     ↓
 Phase R7 (Production Readiness)
 ```
 
 **Revised Risk Assessment:**
-- **🟢 Low Risk**: Phases R1, R2, R7
-- **🟡 Medium Risk**: Phases R3, R4A, R5, R6 (URL updates)
-- **🔴 High Risk**: Phases R4B (reminder integration), R4C (medicine complexity)
-- **🚨 EXTREME RISK**: Phase R4C (medicines) - most complex system in application
+- **🟢 Low Risk**: Phases R1, R2, R5B, R5C, R5D, R6, R7
+- **🟡 Medium Risk**: Phases R3, R4A, R4C-3, R5A
+- **🔴 High Risk**: Phases R4B (reminder integration), R4C-2 (medicine assignment)
+- **🚨 EXTREME RISK**: Phase R4C-1 (medicine preset management) - most complex system in application
 
 **Success Metrics:**
 - All existing functionality works identically after migration
@@ -462,4 +740,16 @@ Phase R7 (Production Readiness)
 - Configuration rollback for URL patterns
 - Template rollback procedures for URL changes
 
-This refactoring transforms your sophisticated monolithic application into a truly scalable, maintainable architecture while preserving all the complex business logic and enterprise-grade features you've built.
+**Git Strategy:**
+- Each phase = separate commit after manual testing passes
+- Commit message format: `Phase RX: [Description] - All tests passed`
+- Tag major milestones: `v1.0-R4C-complete`, `v1.0-production-ready`
+- Rollback strategy: Git revert to previous phase if critical issues found
+
+**URL Strategy:**
+- Current URLs preserved (no user experience disruption)
+- Blueprint namespacing for internal organization only
+- Template URLs updated incrementally per phase (reduced risk)
+- HTMX endpoints updated as blueprints are migrated
+
+This refactoring transforms your sophisticated monolithic application into a truly scalable, maintainable architecture while preserving all the complex business logic and enterprise-grade features you've built. The incremental approach with phase-specific testing ensures minimal risk and maximum confidence in each migration step.

@@ -104,7 +104,7 @@
 <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-labelledby="addMedicineModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" hx-post="/dog/{{ dog.id }}/medicine/add" hx-target="#medicines-list" hx-swap="outerHTML" action="/dog/{{ dog.id }}/medicine/add">
+      <form method="POST" hx-post="/dog/{{ dog.id }}/medicine/add" hx-target="#medicines-list" hx-swap="outerHTML" hx-trigger="submit" action="/dog/{{ dog.id }}/medicine/add">
         <div class="modal-header">
           <h5 class="modal-title" id="addMedicineModalLabel">Add Medicine</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -174,7 +174,7 @@
           <div class="mb-3">
             <label for="addMedFrequency" class="form-label">Frequency</label>
             <select class="form-select" id="addMedFrequency" name="med_frequency">
-              <option value="SID">Once daily (SID)</option>
+              <option value="SID" selected>Once daily (SID)</option>
               <option value="BID">Twice daily (BID)</option>
               <option value="TID">Three times daily (TID)</option>
               <option value="QID">Four times daily (QID)</option>
@@ -222,7 +222,7 @@
 <div class="modal fade" id="editMedicineModal" tabindex="-1" aria-labelledby="editMedicineModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" hx-post="" hx-target="#medicines-list" hx-swap="outerHTML" action="">
+      <form method="POST" hx-post="" hx-target="#medicines-list" hx-swap="outerHTML" hx-trigger="submit" action="">
         <input type="hidden" id="editMedId" name="medicine_id" value="">
         <div class="modal-header">
           <h5 class="modal-title" id="editMedicineModalLabel">Edit Medicine</h5>
@@ -293,7 +293,7 @@
           <div class="mb-3">
             <label for="editMedFrequency" class="form-label">Frequency</label>
             <select class="form-select" id="editMedFrequency" name="med_frequency">
-              <option value="SID">Once daily (SID)</option>
+              <option value="SID" selected>Once daily (SID)</option>
               <option value="BID">Twice daily (BID)</option>
               <option value="TID">Three times daily (TID)</option>
               <option value="QID">Four times daily (QID)</option>

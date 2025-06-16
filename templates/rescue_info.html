@@ -1,6 +1,231 @@
 {% extends "base.html" %}
 {% block title %}Rescue Info{% endblock %}
 {% block content %}
-  <h1>Rescue Info</h1>
-  <p>This page will display rescue organization information. (Coming soon!)</p>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="mb-4">
+        <i class="bi bi-building"></i> Rescue Information
+      </h1>
+      
+      {% if current_user.role == 'superadmin' %}
+      <form method="get" class="mb-4" id="rescueSelectForm">
+        <div class="row align-items-end">
+          <div class="col-md-6">
+            <label for="rescueSelect" class="form-label">Select Rescue:</label>
+            <select name="rescue_id" id="rescueSelect" class="form-select">
+              <option value="">Choose a rescue...</option>
+              {% for rescue_option in rescues %}
+                <option value="{{ rescue_option.id }}" {% if rescue_option.id == selected_rescue_id %}selected{% endif %}>
+                  {{ rescue_option.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </form>
+      {% endif %}
+      
+      {% if rescue %}
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">{{ rescue.name }}</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h5><i class="bi bi-info-circle"></i> Organization Details</h5>
+              <table class="table table-borderless">
+                <tr>
+                  <td><strong>Organization Name:</strong></td>
+                  <td>{{ rescue.name }}</td>
+                </tr>
+                {% if current_user.role == 'superadmin' %}
+                <tr>
+                  <td><strong>Status:</strong></td>
+                  <td>
+                    <span class="badge {% if rescue.status == 'approved' %}bg-success{% elif rescue.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                      {{ rescue.status.title() }}
+                    </span>
+                  </td>
+                </tr>
+                {% if rescue.registration_date %}
+                <tr>
+                  <td><strong>Registration Date:</strong></td>
+                  <td>{{ rescue.registration_date.strftime('%B %d, %Y') }}</td>
+                </tr>
+                {% endif %}
+                {% if rescue.approved_date %}
+                <tr>
+                  <td><strong>Approved Date:</strong></td>
+                  <td>{{ rescue.approved_date.strftime('%B %d, %Y') }}</td>
+                </tr>
+                {% endif %}
+                {% endif %}
+                <tr>
+                  <td><strong>Total Dogs:</strong></td>
+                  <td>{{ rescue.dogs|length }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Total Staff:</strong></td>
+                  <td>{{ rescue.users|length }}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div class="col-md-6">
+              <h5><i class="bi bi-telephone"></i> Contact Information</h5>
+              <table class="table table-borderless">
+                {% if rescue.address %}
+                <tr>
+                  <td><strong>Location:</strong></td>
+                  <td>{{ rescue.address }}</td>
+                </tr>
+                {% endif %}
+                {% if rescue.phone %}
+                <tr>
+                  <td><strong>Phone Number:</strong></td>
+                  <td>
+                    <a href="tel:{{ rescue.phone }}" class="text-decoration-none">{{ rescue.phone }}</a>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if rescue.email %}
+                <tr>
+                  <td><strong>Email:</strong></td>
+                  <td>
+                    <a href="mailto:{{ rescue.email }}" class="text-decoration-none">{{ rescue.email }}</a>
+                  </td>
+                </tr>
+                {% endif %}
+              </table>
+            </div>
+          </div>
+          
+          {% if rescue.primary_contact_name or rescue.primary_contact_email or rescue.primary_contact_phone %}
+          <hr>
+          <div class="row">
+            <div class="col-md-6">
+              <h5><i class="bi bi-person-badge"></i> Primary Contact</h5>
+              <table class="table table-borderless">
+                {% if rescue.primary_contact_name %}
+                <tr>
+                  <td><strong>Contact Person:</strong></td>
+                  <td>{{ rescue.primary_contact_name }}</td>
+                </tr>
+                {% endif %}
+                {% if rescue.primary_contact_email %}
+                <tr>
+                  <td><strong>Contact Email:</strong></td>
+                  <td>
+                    <a href="mailto:{{ rescue.primary_contact_email }}" class="text-decoration-none">{{ rescue.primary_contact_email }}</a>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if rescue.primary_contact_phone %}
+                <tr>
+                  <td><strong>Contact Phone:</strong></td>
+                  <td>
+                    <a href="tel:{{ rescue.primary_contact_phone }}" class="text-decoration-none">{{ rescue.primary_contact_phone }}</a>
+                  </td>
+                </tr>
+                {% endif %}
+              </table>
+            </div>
+            
+            <div class="col-md-6">
+              <h5><i class="bi bi-people"></i> Staff Overview</h5>
+              <table class="table table-borderless">
+                {% set owner_count = rescue.users|selectattr('role', 'equalto', 'owner')|list|length %}
+                {% set admin_count = rescue.users|selectattr('role', 'equalto', 'admin')|list|length %}
+                {% set staff_count = rescue.users|selectattr('role', 'equalto', 'staff')|list|length %}
+                {% if owner_count > 0 %}
+                <tr>
+                  <td><strong>Owners:</strong></td>
+                  <td>{{ owner_count }}</td>
+                </tr>
+                {% endif %}
+                {% if admin_count > 0 %}
+                <tr>
+                  <td><strong>Administrators:</strong></td>
+                  <td>{{ admin_count }}</td>
+                </tr>
+                {% endif %}
+                {% if staff_count > 0 %}
+                <tr>
+                  <td><strong>Staff Members:</strong></td>
+                  <td>{{ staff_count }}</td>
+                </tr>
+                {% endif %}
+              </table>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if current_user.role == 'superadmin' %}
+          <hr>
+          <div class="row">
+            <div class="col-12">
+              <h5><i class="bi bi-shield-check"></i> Administrative Information</h5>
+              <table class="table table-borderless">
+                <tr>
+                  <td><strong>Data Processing Consent:</strong></td>
+                  <td>
+                    {% if rescue.data_consent %}
+                      <span class="badge bg-success">Given</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Not Given</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Marketing Consent:</strong></td>
+                  <td>
+                    {% if rescue.marketing_consent %}
+                      <span class="badge bg-success">Given</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Not Given</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        {% if current_user.role == 'superadmin' %}
+          Please select a rescue from the dropdown above to view its information.
+        {% else %}
+          No rescue information available. Please contact your administrator.
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ g.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    const rescueSelect = document.getElementById('rescueSelect');
+    if (rescueSelect) {
+        console.log('Rescue select found, adding event listener');
+        rescueSelect.addEventListener('change', function() {
+            console.log('Rescue selected:', this.value);
+            if (this.value) {
+                console.log('Submitting form...');
+                this.form.submit();
+            } else {
+                console.log('Empty value selected, reloading page...');
+                window.location.href = '/rescue-info';
+            }
+        });
+    } else {
+        console.log('Rescue select NOT found');
+    }
+});
+</script>
 {% endblock %} 

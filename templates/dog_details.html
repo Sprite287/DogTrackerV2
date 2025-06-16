@@ -392,7 +392,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 form.querySelector('#editMedDosage').value = medDetails.dosage || '';
-                form.querySelector('#editMedFrequency').value = medDetails.frequency || 'SID';
+                
+                // Map frequency values to dropdown options
+                let frequencyValue = medDetails.frequency || '';
+                if (frequencyValue.trim() === '') {
+                    frequencyValue = 'SID';
+                } else if (frequencyValue.toLowerCase() === 'daily') {
+                    frequencyValue = 'SID';
+                } else if (frequencyValue.toLowerCase() === 'twice daily') {
+                    frequencyValue = 'BID';
+                }
+                
+                form.querySelector('#editMedFrequency').value = frequencyValue;
                 form.querySelector('#editMedStart').value = medDetails.start_date || '';
                 form.querySelector('#editMedEnd').value = medDetails.end_date || '';
                 form.querySelector('#editMedStatus').value = medDetails.status || 'active';

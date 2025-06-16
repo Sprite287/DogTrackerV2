@@ -31,7 +31,7 @@ import warnings
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://doguser:dogpassword@localhost:5432/dogtracker')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://doguser:dogpass123@localhost:5432/dogtracker')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit for request size
@@ -114,8 +114,8 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'DogTracker
 
 mail = Mail(app)
 
-# Initialize Audit System
-init_audit(app)
+# Initialize Audit System (disable cleanup thread during migration)
+init_audit(app, start_cleanup_thread=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -613,6 +613,17 @@ def add_dog():
     medical_info = bleach.clean(medical_info)
     # Use current user's rescue_id
     rescue_id = current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id')
+    
+    # Validate rescue_id for superadmins
+    if current_user.role == 'superadmin' and not rescue_id:
+        error_msg = 'Please select a rescue for this dog.'
+        if request.headers.get('HX-Request'):
+            cards = render_dog_cards_html()
+            resp = make_response(cards)
+            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": error_msg, "category": "danger"}})
+            return resp
+        flash(error_msg, 'danger')
+        return redirect(url_for('dog_list_page'))
     dog = Dog(name=name, age=age, breed=breed, adoption_status=adoption_status,
               intake_date=intake_date, microchip_id=microchip_id, notes=notes,
               medical_info=medical_info, rescue_id=rescue_id)
@@ -1006,11 +1017,11 @@ def edit_appointment(dog_id, appointment_id):
     print('appointment_id:', appointment_id)
     print('Form data:', dict(request.form))
     
+    # Get the appointment directly from the database
+    appt = Appointment.query.filter_by(id=appointment_id, dog_id=dog_id).first_or_404()
+    
     # Store old start_datetime to check if it changed for reminder regeneration
-    old_start_datetime = dog.appointments.filter_by(id=appointment_id).first().start_datetime 
-
-    # Update appointment fields from form
-    appt = dog.appointments.filter_by(id=appointment_id).first()
+    old_start_datetime = appt.start_datetime
     appt_type_id = request.form.get('appt_type_id')
     appt_title = request.form.get('appt_title', '').strip()
     appt_notes = request.form.get('appt_notes', '').strip()
@@ -1256,7 +1267,7 @@ def add_medicine(dog_id):
 
     med = DogMedicine(
         dog_id=dog.id,
-        rescue_id=dog.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id'),
+        rescue_id=dog.rescue_id,
         medicine_id=final_preset_id,
         custom_name=None,
         dosage=med_dosage,
@@ -1335,6 +1346,11 @@ def add_medicine(dog_id):
 @app.route('/dog/<int:dog_id>/medicine/edit/<int:medicine_id>', methods=['POST'])
 @login_required
 def edit_medicine(dog_id, medicine_id):
+    print('--- Edit Medicine Debug ---')
+    print('dog_id:', dog_id)
+    print('medicine_id:', medicine_id)
+    print('Form data:', dict(request.form))
+    
     dog = Dog.query.get_or_404(dog_id)
     if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
         abort(403)
@@ -1360,6 +1376,12 @@ def edit_medicine(dog_id, medicine_id):
     end_date = None
 
     # Validation
+    print('Starting validation...')
+    print(f'med_preset_id_str: "{med_preset_id_str}"')
+    print(f'med_dosage: "{med_dosage}"')
+    print(f'med_unit: "{med_unit}"')
+    print(f'med_frequency: "{med_frequency}"')
+    print(f'med_status: "{med_status}"')
     if med_dosage and len(med_dosage) > 50:
         error_message = 'Dosage must be 50 characters or less.'
     elif med_unit and len(med_unit) > 50:
@@ -1393,6 +1415,7 @@ def edit_medicine(dog_id, medicine_id):
         error_message = 'Status is required.'
 
     if error_message:
+        print(f'Validation failed: {error_message}')
         response = make_response(render_template('partials/modal_form_error.html', message=error_message))
         response.status_code = 200 # Keep 200 for HTMX to process swap
         response.headers['HX-Retarget'] = '#editMedicineModalError'
@@ -1418,7 +1441,9 @@ def edit_medicine(dog_id, medicine_id):
     med.end_date = end_date
     med.status = med_status
     med.notes = med_notes
+    print('Medicine updated successfully, committing to database...')
     db.session.commit()
+    print('Database commit successful')
     # --- AUDIT LOG ---
     log_audit_event(
         user_id=temp_user_id,
@@ -1482,6 +1507,10 @@ def edit_medicine(dog_id, medicine_id):
     medicine_presets_data = MedicinePreset.query.filter(
         (MedicinePreset.rescue_id == dog.rescue_id) | (MedicinePreset.rescue_id == None)
     ).all()
+    print('Returning medicines_list.html template...')
+    print(f'Dog has {len(dog.medicines)} medicines')
+    for med_item in dog.medicines:
+        print(f'  Medicine ID: {med_item.id}, Dosage: {med_item.dosage}, Status: {med_item.status}')
     return render_template('partials/medicines_list.html', dog=dog, medicine_presets=medicine_presets_data)
 
 @app.route('/dog/<int:dog_id>/medicine/delete/<int:medicine_id>', methods=['POST'])
@@ -1543,6 +1572,7 @@ def api_get_appointment(appointment_id):
 def api_get_medicine(medicine_id):
     from models import DogMedicine
     med = DogMedicine.query.get_or_404(medicine_id)
+    print(f'API: Medicine {medicine_id} frequency: "{med.frequency}"')
     return jsonify({
         'id': med.id,
         'medicine_id': med.medicine_id,
@@ -2251,12 +2281,38 @@ def staff_management():
     # Sort by role (owner, admin, staff) then by name
     role_order = {'owner': 0, 'admin': 1, 'staff': 2}
     staff_users = sorted(staff_users, key=lambda u: (role_order.get(u.role, 99), u.name.lower()))
-    return render_template('staff_management.html', staff_users=staff_users)
+    
+    # Pass rescues data if superadmin
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        return render_template('staff_management.html', staff_users=staff_users, rescues=rescues)
+    else:
+        return render_template('staff_management.html', staff_users=staff_users)
 
 @app.route('/rescue-info')
 @login_required
 def rescue_info():
-    return render_template('rescue_info.html')
+    print('--- Rescue Info Debug ---')
+    print(f'User role: {current_user.role}')
+    print(f'Request args: {dict(request.args)}')
+    
+    if current_user.role == 'superadmin':
+        rescue_id = request.args.get('rescue_id', type=int)
+        print(f'rescue_id from request: {rescue_id}')
+        selected_rescue_id = rescue_id
+        if rescue_id:
+            rescue = Rescue.query.get_or_404(rescue_id)
+            print(f'Found rescue: {rescue.name} (ID: {rescue.id})')
+        else:
+            print('No rescue_id provided')
+            rescue = None
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        print(f'Total rescues available: {len(rescues)}')
+        return render_template('rescue_info.html', rescue=rescue, rescues=rescues, selected_rescue_id=selected_rescue_id)
+    else:
+        rescue = current_user.rescue
+        print(f'Regular user rescue: {rescue.name if rescue else "None"}')
+        return render_template('rescue_info.html', rescue=rescue)
 
 # --- Appointment List ---
 @app.route('/appointments')
@@ -2380,9 +2436,15 @@ def add_rescue_medicine_preset():
         notes = bleach.clean(notes)
         default_dosage_instructions = bleach.clean(default_dosage_instructions)
 
+        # Validate rescue_id for superadmins
+        rescue_id = current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id')
+        if current_user.role == 'superadmin' and not rescue_id:
+            flash('Please select a rescue for this medicine preset.', 'danger')
+            return redirect(url_for('add_rescue_medicine_preset'))
+
         from models import MedicinePreset, RescueMedicineActivation
         preset = MedicinePreset(
-            rescue_id=current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id'),
+            rescue_id=rescue_id,
             name=name,
             category=category,
             default_dosage_instructions=default_dosage_instructions,
@@ -2393,12 +2455,18 @@ def add_rescue_medicine_preset():
         db.session.add(preset)
         db.session.commit()
         # Activate for this rescue
-        activation = RescueMedicineActivation(rescue_id=current_user.rescue_id, medicine_preset_id=preset.id, is_active=True)
+        activation = RescueMedicineActivation(rescue_id=rescue_id, medicine_preset_id=preset.id, is_active=True)
         db.session.add(activation)
         db.session.commit()
         flash('Preset created and activated!', 'success')
         return redirect(url_for('manage_rescue_medicines'))
-    return render_template('add_edit_rescue_medicine_preset.html', preset=None)
+    
+    # For GET requests, pass rescues data if superadmin
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        return render_template('add_edit_rescue_medicine_preset.html', preset=None, rescues=rescues)
+    else:
+        return render_template('add_edit_rescue_medicine_preset.html', preset=None)
 
 @app.route('/rescue/medicines/edit/<int:preset_id>', methods=['GET', 'POST'])
 @roles_required(['admin', 'owner', 'superadmin'])
@@ -2487,6 +2555,9 @@ def add_staff_member():
     rescue_id = current_user.rescue_id if current_user.role != 'superadmin' else request.form.get('rescue_id')
     if current_user.role != 'superadmin' and not rescue_id:
         return jsonify({'success': False, 'error': 'Rescue not specified.'}), 400
+    # Validate rescue_id for superadmins
+    if current_user.role == 'superadmin' and not rescue_id:
+        return jsonify({'success': False, 'error': 'Please select a rescue for this staff member.'}), 400
     password = secrets.token_urlsafe(8)
     user = User(
         name=name,

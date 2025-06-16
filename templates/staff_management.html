@@ -22,6 +22,17 @@
               <label for="staffEmail" class="form-label">Email</label>
               <input type="email" class="form-control" id="staffEmail" name="email" required>
             </div>
+            {% if current_user.role == 'superadmin' %}
+            <div class="mb-3">
+              <label for="staffRescue" class="form-label">Rescue*</label>
+              <select class="form-control" id="staffRescue" name="rescue_id" required>
+                <option value="">Select a rescue...</option>
+                {% for rescue in rescues %}
+                  <option value="{{ rescue.id }}">{{ rescue.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
             <div class="mb-3">
               <label for="staffRole" class="form-label">Role</label>
               <select class="form-select" id="staffRole" name="role" required>

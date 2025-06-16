@@ -1,3 +1,3 @@
-@echo off
-call stop_server.bat
-call start_server.bat 
+#!/bin/bash
+./stop_server.bat
+./start_server.bat 
