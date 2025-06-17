@@ -2,7 +2,7 @@
     {% if is_filtered %}
         <div class="alert alert-info" role="alert">
             <i class="bi bi-funnel"></i> Showing {{ history_events|length }} filtered results out of {{ total_events }} total events.
-            <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="alert-link">Clear filters</a>
+            <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="alert-link">Clear filters</a>
         </div>
     {% endif %}
     
@@ -54,11 +54,11 @@
                             <!-- Phase 5B: Contextual Links -->
                             <div class="btn-group btn-group-sm" role="group">
                                 {% if event.source_model == 'Appointment' %}
-                                    <a href="{{ url_for('dog_details', dog_id=dog.id) }}#appointments" class="btn btn-outline-success btn-sm">
+                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#appointments" class="btn btn-outline-success btn-sm">
                                         <i class="bi bi-calendar-event"></i> View Appointments
                                     </a>
                                 {% elif event.source_model == 'DogMedicine' %}
-                                    <a href="{{ url_for('dog_details', dog_id=dog.id) }}#medicines" class="btn btn-outline-warning btn-sm">
+                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#medicines" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-capsule"></i> View Medicines
                                     </a>
                                 {% elif event.source_model == 'DogNote' %}

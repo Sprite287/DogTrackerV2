@@ -2,6 +2,7 @@
 {% block content %}
 <h2>{{ 'Edit' if preset else 'Add' }} Rescue Medicine Preset</h2>
 <form method="post">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"/>
   {% if current_user.role == 'superadmin' %}
   <div class="mb-3">
     <label for="rescue_id" class="form-label">Rescue*</label>
@@ -38,6 +39,6 @@
     <textarea class="form-control" id="notes" name="notes">{{ preset.notes if preset else '' }}</textarea>
   </div>
   <button type="submit" class="btn btn-primary">{{ 'Update' if preset else 'Add' }} Preset</button>
-  <a href="{{ url_for('manage_rescue_medicines') }}" class="btn btn-secondary">Cancel</a>
+  <a href="{{ url_for('medicines.manage_rescue_medicines') }}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %} 

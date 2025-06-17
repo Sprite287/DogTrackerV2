@@ -12,9 +12,9 @@
         var button = event.relatedTarget;
         var dogId = button ? button.getAttribute('data-dog-id') : null;
         var form = addAppointmentModal.querySelector('form');
-        if (dogId) {
-          form.setAttribute('action', `/dog/${dogId}/appointment/add`);
-          form.setAttribute('hx-post', `/dog/${dogId}/appointment/add`);
+        if (dogId && window.appointmentUrls) {
+          form.setAttribute('action', window.appointmentUrls.add);
+          form.setAttribute('hx-post', window.appointmentUrls.add);
         }
         form.reset();
       });
@@ -29,11 +29,12 @@
         var dogId = button ? button.getAttribute('data-dog-id') : null;
         var form = editAppointmentModal.querySelector('form');
         console.log('Edit Appointment Modal opened. dogId:', dogId, 'apptId:', apptId, 'form:', form);
-        if (dogId && apptId) {
-          form.setAttribute('action', `/dog/${dogId}/appointment/edit/${apptId}`);
-          form.setAttribute('hx-post', `/dog/${dogId}/appointment/edit/${apptId}`);
+        if (dogId && apptId && window.appointmentUrls) {
+          const editUrl = window.appointmentUrls.editTemplate + apptId;
+          form.setAttribute('action', editUrl);
+          form.setAttribute('hx-post', editUrl);
           form.querySelector('#editApptId').value = apptId;
-          console.log('Setting edit form action:', `/dog/${dogId}/appointment/edit/${apptId}`);
+          console.log('Setting edit form action:', editUrl);
           // Remove and re-add the form to force HTMX to re-initialize
           const parent = form.parentNode;
           const next = form.nextSibling;
@@ -44,7 +45,8 @@
             parent.appendChild(form);
           }
           // Fetch appointment data and fill fields
-          fetch(`/api/appointment/${apptId}`)
+          const apiUrl = window.appointmentUrls.apiGetTemplate + apptId;
+          fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
               // Fill select options for type
@@ -74,9 +76,9 @@
         var button = event.relatedTarget;
         var dogId = button ? button.getAttribute('data-dog-id') : null;
         var form = addMedicineModal.querySelector('form');
-        if (dogId) {
-          form.setAttribute('action', `/dog/${dogId}/medicine/add`);
-          form.setAttribute('hx-post', `/dog/${dogId}/medicine/add`);
+        if (dogId && window.medicineUrls) {
+          form.setAttribute('action', window.medicineUrls.add);
+          form.setAttribute('hx-post', window.medicineUrls.add);
         }
         form.reset();
       });
@@ -90,12 +92,13 @@
         var medId = button ? button.getAttribute('data-id') : null;
         var dogId = button ? button.getAttribute('data-dog-id') : null;
         var form = editMedicineModal.querySelector('form');
-        if (dogId && medId) {
-          form.setAttribute('action', `/dog/${dogId}/medicine/edit/${medId}`);
-          form.setAttribute('hx-post', `/dog/${dogId}/medicine/edit/${medId}`);
+        if (dogId && medId && window.medicineUrls) {
+          const editUrl = window.medicineUrls.editTemplate + medId;
+          form.setAttribute('action', editUrl);
+          form.setAttribute('hx-post', editUrl);
           form.querySelector('#editMedId').value = medId;
           // Fetch medicine data and fill fields
-          fetch(`/api/medicine/${medId}`)
+          fetch(window.medicineUrls.apiGetTemplate + medId)
             .then(res => res.json())
             .then(data => {
               // Fill select options for preset

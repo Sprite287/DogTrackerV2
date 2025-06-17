@@ -210,3 +210,193 @@ def render_dog_cards():
     else:
         dogs = []
     return render_template('dog_cards.html', dogs=dogs)
+
+
+# Phase R4C-3: Medicine Frequency Interpretation Engine
+
+def parse_medicine_frequency(frequency_text):
+    """
+    Parse medical frequency abbreviations into structured data.
+    
+    Args:
+        frequency_text (str): The frequency text (e.g., "BID", "twice daily", "2x daily")
+        
+    Returns:
+        dict: {
+            'times_per_day': int,
+            'is_as_needed': bool,
+            'parsed_from': str,
+            'display_name': str
+        }
+    """
+    if not frequency_text:
+        return {'times_per_day': 1, 'is_as_needed': False, 'parsed_from': 'default', 'display_name': 'Once daily'}
+    
+    # Normalize input
+    freq_lower = frequency_text.lower().strip()
+    
+    # Medical abbreviation mappings
+    frequency_mappings = {
+        # Standard medical abbreviations
+        'sid': {'times_per_day': 1, 'display_name': 'Once daily (SID)'},
+        'qd': {'times_per_day': 1, 'display_name': 'Once daily (QD)'},
+        'od': {'times_per_day': 1, 'display_name': 'Once daily (OD)'},
+        'bid': {'times_per_day': 2, 'display_name': 'Twice daily (BID)'},
+        'tid': {'times_per_day': 3, 'display_name': 'Three times daily (TID)'},
+        'qid': {'times_per_day': 4, 'display_name': 'Four times daily (QID)'},
+        'q6h': {'times_per_day': 4, 'display_name': 'Every 6 hours (Q6H)'},
+        'q8h': {'times_per_day': 3, 'display_name': 'Every 8 hours (Q8H)'},
+        'q12h': {'times_per_day': 2, 'display_name': 'Every 12 hours (Q12H)'},
+        
+        # As needed
+        'prn': {'times_per_day': 0, 'is_as_needed': True, 'display_name': 'As needed (PRN)'},
+        'as needed': {'times_per_day': 0, 'is_as_needed': True, 'display_name': 'As needed'},
+        
+        # Common text variations
+        'once daily': {'times_per_day': 1, 'display_name': 'Once daily'},
+        'once a day': {'times_per_day': 1, 'display_name': 'Once daily'},
+        'daily': {'times_per_day': 1, 'display_name': 'Once daily'},
+        'twice daily': {'times_per_day': 2, 'display_name': 'Twice daily'},
+        'twice a day': {'times_per_day': 2, 'display_name': 'Twice daily'},
+        'three times daily': {'times_per_day': 3, 'display_name': 'Three times daily'},
+        'three times a day': {'times_per_day': 3, 'display_name': 'Three times daily'},
+        'four times daily': {'times_per_day': 4, 'display_name': 'Four times daily'},
+        'four times a day': {'times_per_day': 4, 'display_name': 'Four times daily'},
+    }
+    
+    # Check for exact matches first
+    if freq_lower in frequency_mappings:
+        result = frequency_mappings[freq_lower].copy()
+        result['parsed_from'] = 'exact_match'
+        result.setdefault('is_as_needed', False)
+        return result
+    
+    # Pattern matching for "Nx daily", "X times daily", etc.
+    import re
+    
+    # Pattern: "2x daily", "3x a day", etc.
+    pattern1 = re.search(r'(\d+)x?\s*(?:times?\s*)?(?:per\s+day|daily|a\s+day)', freq_lower)
+    if pattern1:
+        times = int(pattern1.group(1))
+        return {
+            'times_per_day': times,
+            'is_as_needed': False,
+            'parsed_from': 'pattern_match',
+            'display_name': f'{times} times daily'
+        }
+    
+    # Pattern: "every X hours"
+    pattern2 = re.search(r'every\s+(\d+)\s*hours?', freq_lower)
+    if pattern2:
+        hours = int(pattern2.group(1))
+        times_per_day = 24 // hours if hours > 0 else 1
+        return {
+            'times_per_day': times_per_day,
+            'is_as_needed': False,
+            'parsed_from': 'pattern_match',
+            'display_name': f'Every {hours} hours ({times_per_day}x daily)'
+        }
+    
+    # Default fallback - treat as once daily
+    return {
+        'times_per_day': 1,
+        'is_as_needed': False,
+        'parsed_from': 'fallback',
+        'display_name': f'Once daily (from "{frequency_text}")'
+    }
+
+
+def generate_daily_medicine_reminders(dog_medicine, user_id):
+    """
+    Generate daily recurring reminders based on medicine frequency.
+    
+    Args:
+        dog_medicine: DogMedicine instance
+        user_id: User ID for reminder creation
+        
+    Returns:
+        list: Created Reminder instances
+    """
+    from models import Reminder
+    from datetime import datetime, timedelta, time
+    
+    if not dog_medicine.start_date:
+        return []
+    
+    # Parse frequency
+    frequency_data = parse_medicine_frequency(dog_medicine.frequency)
+    
+    # Skip if it's PRN (as needed)
+    if frequency_data.get('is_as_needed', False):
+        return []
+    
+    times_per_day = frequency_data.get('times_per_day', 1)
+    
+    # Calculate end date (default to 30 days if no end date specified)
+    end_date = dog_medicine.end_date
+    if not end_date:
+        end_date = dog_medicine.start_date + timedelta(days=30)
+    
+    # Calculate date range
+    current_date = dog_medicine.start_date
+    created_reminders = []
+    
+    # Default reminder times based on frequency
+    if times_per_day == 1:
+        reminder_times = [time(9, 0)]  # 9 AM
+    elif times_per_day == 2:
+        reminder_times = [time(9, 0), time(21, 0)]  # 9 AM, 9 PM
+    elif times_per_day == 3:
+        reminder_times = [time(9, 0), time(15, 0), time(21, 0)]  # 9 AM, 3 PM, 9 PM
+    elif times_per_day == 4:
+        reminder_times = [time(9, 0), time(15, 0), time(21, 0), time(1, 0)]  # 9 AM, 3 PM, 9 PM, 1 AM
+    else:
+        # For frequencies > 4, distribute evenly across 24 hours
+        hours_between = 24 / times_per_day
+        reminder_times = []
+        for i in range(times_per_day):
+            hour = int(9 + (i * hours_between)) % 24  # Start at 9 AM and distribute
+            reminder_times.append(time(hour, 0))
+    
+    # Get medicine name for reminder message
+    medicine_name = 'Medicine'
+    if dog_medicine.medicine_id:
+        from models import MedicinePreset
+        preset = MedicinePreset.query.get(dog_medicine.medicine_id)
+        if preset:
+            medicine_name = preset.name
+    elif dog_medicine.custom_name:
+        medicine_name = dog_medicine.custom_name
+    
+    # Generate reminders for each day in the range
+    while current_date <= end_date:
+        for reminder_time in reminder_times:
+            reminder_datetime = datetime.combine(current_date, reminder_time)
+            
+            # Skip if the reminder time is in the past
+            if reminder_datetime < datetime.now():
+                continue
+            
+            # Create reminder message
+            dosage_info = f"{dog_medicine.dosage} {dog_medicine.unit}" if dog_medicine.dosage and dog_medicine.unit else ""
+            reminder_message = f"Give {dog_medicine.dog.name} their {medicine_name}"
+            if dosage_info:
+                reminder_message += f" ({dosage_info})"
+            reminder_message += f" - {frequency_data['display_name']}"
+            
+            # Create reminder
+            reminder = Reminder(
+                message=reminder_message,
+                due_datetime=reminder_datetime,
+                status='pending',
+                reminder_type='medicine_daily',
+                dog_id=dog_medicine.dog_id,
+                dog_medicine_id=dog_medicine.id,
+                user_id=user_id
+            )
+            
+            created_reminders.append(reminder)
+        
+        current_date += timedelta(days=1)
+    
+    return created_reminders

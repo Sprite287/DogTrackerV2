@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Manage Available Medicines</h2>
 
-<a href="{{ url_for('add_rescue_medicine_preset') }}" class="btn btn-success mb-2">Add New Preset</a>
+<a href="{{ url_for('medicines.add_rescue_medicine_preset') }}" class="btn btn-success mb-2">Add New Preset</a>
 
 <div class="accordion" id="medicineAccordion">
   {% set categories = rescue_presets|groupby('category') %}
@@ -28,8 +28,8 @@
               </td>
               <td>
                 {% if (preset.rescue_id == current_user.rescue_id) or current_user.role == 'superadmin' %}
-                  <a href="{{ url_for('edit_rescue_medicine_preset', preset_id=preset.id) }}" class="btn btn-sm btn-primary">Edit</a>
-                  <form method="post" action="{{ url_for('delete_rescue_medicine_preset', preset_id=preset.id) }}" style="display:inline;" onsubmit="return confirm('Delete this preset?');">
+                  <a href="{{ url_for('medicines.edit_rescue_medicine_preset', preset_id=preset.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                  <form method="post" action="{{ url_for('medicines.delete_rescue_medicine_preset', preset_id=preset.id) }}" style="display:inline;" onsubmit="return confirm('Delete this preset?');">
                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                   </form>
                 {% endif %}
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
     checkbox.addEventListener('change', function() {
       const presetId = this.getAttribute('data-preset-id');
       const activate = this.checked;
-      fetch('/rescue/medicines/toggle_activation', {
+      fetch('{{ url_for('medicines.toggle_medicine_activation') }}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

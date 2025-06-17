@@ -12,8 +12,8 @@
 </style>
 <div class="container mt-4">
   <div class="mb-3">
-    <a href="{{ url_for('dog_list_page') }}" class="btn btn-secondary">&larr; Back to Dog List</a>
-    <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-info ms-2">
+    <a href="{{ url_for('dogs.dog_list_page') }}" class="btn btn-secondary">&larr; Back to Dog List</a>
+    <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-outline-info ms-2">
       <i class="bi bi-clock-history"></i> Back to History
     </a>
   </div>
@@ -21,7 +21,7 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <h3 class="mb-0">{{ dog.name }}</h3>
       <div class="ms-auto">
-        <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-info btn-lg me-2">View Care History</a>
+        <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-info btn-lg me-2">View Care History</a>
         
         <!-- Phase 5C: Export Options -->
         <div class="btn-group me-2" role="group">
@@ -31,18 +31,18 @@
             <ul class="dropdown-menu">
                 <li><h6 class="dropdown-header">Quick Exports</h6></li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_care_summary', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_care_summary', dog_id=dog.id) }}">
                         <i class="bi bi-file-earmark-text text-primary"></i> Care Summary Report
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_medication_log', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_medication_log', dog_id=dog.id) }}">
                         <i class="bi bi-capsule text-warning"></i> Medication Log
                     </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('dog_history', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}">
                         <i class="bi bi-clock-history text-info"></i> More Export Options
                     </a>
                 </li>
@@ -85,7 +85,7 @@
             </h4>
             <div>
               <span class="badge bg-secondary">{{ recent_history_events|length }} of latest events</span>
-              <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm ms-2">
+              <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm ms-2">
                 View Full History
               </a>
             </div>
@@ -123,7 +123,7 @@
               {% endfor %}
             </div>
             <div class="text-center mt-3">
-              <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-primary">
+              <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-primary">
                 <i class="bi bi-arrow-right-circle"></i> View Complete Care History
               </a>
             </div>
@@ -172,7 +172,7 @@
           </div>
           <hr>
           <div class="d-grid gap-2">
-            <a href="{{ url_for('dog_history', dog_id=dog.id) }}" class="btn btn-outline-info btn-sm">
+            <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-outline-info btn-sm">
               <i class="bi bi-journal-text"></i> Care History
             </a>
             <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
@@ -219,6 +219,17 @@
 <script type="text/javascript" nonce="{{ g.csp_nonce }}">
 /* eslint-disable */
 window.appointmentTypes = {{ appointment_types|tojson|safe }};
+window.appointmentUrls = {
+    add: '{{ url_for("appointments.add_appointment", dog_id=dog.id) }}',
+    editTemplate: '/dog/{{ dog.id }}/appointment/edit/',
+    apiGetTemplate: '/api/appointment/'
+};
+window.medicineUrls = {
+    add: '{{ url_for("medicines.add_medicine", dog_id=dog.id) }}',
+    editTemplate: '{{ url_for("medicines.edit_medicine", dog_id=dog.id, medicine_id=1) }}'.replace('/1', '/'),
+    deleteTemplate: '{{ url_for("medicines.delete_medicine", dog_id=dog.id, medicine_id=1) }}'.replace('/1', '/'),
+    apiGetTemplate: '{{ url_for("medicines.api_get_medicine", medicine_id=1) }}'.replace('/1', '/')
+};
 {# The following line was causing an error because 'medicine_presets' is no longer passed. #}
 {# It has been replaced by 'medicine_presets_categorized'. #}
 {# window.medicinePresets = {{ medicine_presets|tojson|safe }}; #}
@@ -365,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const actionUrl = `/dog/${dogId}/medicine/edit/${medicineId}`;
+            const actionUrl = window.medicineUrls.editTemplate + medicineId;
             form.setAttribute('action', actionUrl);
             form.setAttribute('hx-post', actionUrl);
             
@@ -375,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                const response = await fetch(`/api/medicine/${medicineId}`);
+                const response = await fetch(window.medicineUrls.apiGetTemplate + medicineId);
                 if (!response.ok) {
                     const errorDisplay = this.querySelector('#editMedicineModalError'); 
                     if(errorDisplay) errorDisplay.textContent = 'Could not load medicine details.';

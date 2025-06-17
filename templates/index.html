@@ -76,7 +76,7 @@
 <div class="modal fade" id="addDogModal" tabindex="-1" aria-labelledby="addDogModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="addDogForm" hx-post="/dog/add" hx-target="#dogCards" hx-swap="outerHTML">
+      <form id="addDogForm" hx-post="{{ url_for('dogs.add_dog') }}" hx-target="#dogCards" hx-swap="outerHTML">
         <div class="modal-header">
           <h5 class="modal-title" id="addDogModalLabel">Add Dog</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

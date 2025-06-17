@@ -7,10 +7,10 @@
     <!-- Simplified Navigation Section -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <a href="{{ url_for('dog_details', dog_id=dog.id) }}" class="btn btn-secondary me-2">
+            <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" class="btn btn-secondary me-2">
                 <i class="bi bi-arrow-left"></i> Back to {{ dog.name }}'s Details
             </a>
-            <a href="{{ url_for('dog_history_overview') }}" class="btn btn-outline-info">
+            <a href="{{ url_for('dogs.dog_history_overview') }}" class="btn btn-outline-info">
                 <i class="bi bi-clock-history"></i> History Overview
             </a>
         </div>
@@ -33,24 +33,24 @@
             <ul class="dropdown-menu">
                 <li><h6 class="dropdown-header">CSV Downloads</h6></li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_dog_history', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_dog_history', dog_id=dog.id) }}">
                         <i class="bi bi-file-earmark-spreadsheet text-success"></i> Full History CSV
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_medical_summary', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_medical_summary', dog_id=dog.id) }}">
                         <i class="bi bi-file-earmark-medical text-warning"></i> Medical Summary CSV
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_medication_log', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_medication_log', dog_id=dog.id) }}">
                         <i class="bi bi-capsule text-info"></i> Medication Log CSV
                     </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Text Reports</h6></li>
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('export_care_summary', dog_id=dog.id) }}">
+                    <a class="dropdown-item" href="{{ url_for('dogs.export_care_summary', dog_id=dog.id) }}">
                         <i class="bi bi-file-earmark-text text-primary"></i> Comprehensive Care Summary
                     </a>
                 </li>
@@ -289,7 +289,7 @@
                     
                     <!-- Quick Actions -->
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-arrow-left-circle"></i> Back to Dog Details
                         </a>
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
@@ -300,10 +300,10 @@
                                 <i class="bi bi-plus"></i> Quick Add
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('dog_details', dog_id=dog.id) }}#appointments">
+                                <li><a class="dropdown-item" href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#appointments">
                                     <i class="bi bi-calendar-plus"></i> New Appointment
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('dog_details', dog_id=dog.id) }}#medicines">
+                                <li><a class="dropdown-item" href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#medicines">
                                     <i class="bi bi-capsule-pill"></i> New Medicine
                                 </a></li>
                             </ul>
@@ -319,15 +319,15 @@
         {% if total_events > per_page %}
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=page-1) if page > 1 else '#' }}">Previous</a>
+                    <a class="page-link" href="{{ url_for('dogs.dog_history', dog_id=dog.id, page=page-1) if page > 1 else '#' }}">Previous</a>
                 </li>
                 {% for p in range(1, (total_events // per_page) + (1 if total_events % per_page > 0 else 0) + 1) %}
                     <li class="page-item {% if p == page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=p) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('dogs.dog_history', dog_id=dog.id, page=p) }}">{{ p }}</a>
                     </li>
                 {% endfor %}
                 <li class="page-item {% if page * per_page >= total_events %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('dog_history', dog_id=dog.id, page=page+1) if page * per_page < total_events else '#' }}">Next</a>
+                    <a class="page-link" href="{{ url_for('dogs.dog_history', dog_id=dog.id, page=page+1) if page * per_page < total_events else '#' }}">Next</a>
                 </li>
             </ul>
         {% endif %}
@@ -344,7 +344,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addDogNoteForm" 
-                  hx-post="{{ url_for('add_dog_note', dog_id=dog.id) }}" 
+                  hx-post="{{ url_for('dogs.add_dog_note', dog_id=dog.id) }}" 
                   hx-target="#history-timeline-list" 
                   hx-swap="innerHTML">
                 <div class="modal-body">
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (endDate) params.set('end_date', endDate);
         if (searchQuery.trim()) params.set('search_query', searchQuery.trim());
         
-        const url = `{{ url_for('api_dog_history_events', dog_id=dog.id) }}?${params.toString()}`;
+        const url = `{{ url_for('dogs.api_dog_history_events', dog_id=dog.id) }}?${params.toString()}`;
         
         // Show loading state
         filterStatus.textContent = 'Applying filters...';
@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
         filterStatus.textContent = 'Clearing filters...';
         
         // Load unfiltered results
-        const url = `{{ url_for('dog_history', dog_id=dog.id) }}`;
+        const url = `{{ url_for('dogs.dog_history', dog_id=dog.id) }}`;
         window.location.href = url;
     }
 

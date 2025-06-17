@@ -21,7 +21,7 @@
       <td style="text-align:center;">
         <button class="btn btn-sm btn-primary me-1 js-edit-trigger" data-bs-target="#editAppointmentModal-{{ appt.id }}">Edit</button>
         <button class="btn btn-sm btn-danger"
-                hx-post="/dog/{{ dog.id }}/appointment/delete/{{ appt.id }}"
+                hx-post="{{ url_for('appointments.delete_appointment', dog_id=dog.id, appointment_id=appt.id) }}"
                 hx-target="#appointments-list"
                 hx-swap="outerHTML"
                 hx-confirm="Are you sure you want to delete this appointment?">Delete</button>
@@ -38,7 +38,7 @@
   <div class="modal fade" id="editAppointmentModal-{{ appt.id }}" tabindex="-1" aria-labelledby="editAppointmentModalLabel-{{ appt.id }}" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
-        <form method="POST" hx-post="/dog/{{ dog.id }}/appointment/edit/{{ appt.id }}" hx-target="#appointments-list" hx-swap="outerHTML" hx-trigger="submit" action="/dog/{{ dog.id }}/appointment/edit/{{ appt.id }}">
+        <form method="POST" hx-post="{{ url_for('appointments.edit_appointment', dog_id=dog.id, appointment_id=appt.id) }}" hx-target="#appointments-list" hx-swap="outerHTML" hx-trigger="submit" action="{{ url_for('appointments.edit_appointment', dog_id=dog.id, appointment_id=appt.id) }}">
           <input type="hidden" name="appointment_id" value="{{ appt.id }}">
           <div class="modal-header">
             <h5 class="modal-title" id="editAppointmentModalLabel-{{ appt.id }}">Edit Appointment</h5>

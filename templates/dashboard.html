@@ -77,7 +77,7 @@
                                                         <small class="text-muted">
                                                             <i class="bi bi-clock me-1"></i>Due: {{ reminder.due_datetime.strftime('%b %d, %Y @ %I:%M %p') }}
                                                             {% if reminder.dog %}
-                                                                | <i class="bi bi-tag me-1"></i>Dog: <a href="{{ url_for('dog_details', dog_id=reminder.dog.id) }}" class="text-decoration-none">{{ reminder.dog.name }}</a>
+                                                                | <i class="bi bi-tag me-1"></i>Dog: <a href="{{ url_for('dogs.dog_details', dog_id=reminder.dog.id) }}" class="text-decoration-none">{{ reminder.dog.name }}</a>
                                                             {% endif %}
                                                         </small>
                                                     </div>
@@ -98,7 +98,7 @@
                                                             <!-- Phase 5C: History Integration -->
                                                             {% if reminder.dog %}
                                                                 <a class="btn btn-outline-info btn-sm" 
-                                                                   href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                                   href="{{ url_for('dogs.dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
                                                                    title="View related history for {{ reminder.dog.name }}">
                                                                     <i class="bi bi-clock-history"></i> History
                                                                 </a>
@@ -175,7 +175,7 @@
                                                         <p class="mb-1">{{ reminder.message }}</p>
                                                         <small class="text-muted">
                                                             {% if reminder.dog %}
-                                                                <i class="bi bi-tag me-1"></i>Dog: <a href="{{ url_for('dog_details', dog_id=reminder.dog.id) }}" class="text-decoration-none">{{ reminder.dog.name }}</a>
+                                                                <i class="bi bi-tag me-1"></i>Dog: <a href="{{ url_for('dogs.dog_details', dog_id=reminder.dog.id) }}" class="text-decoration-none">{{ reminder.dog.name }}</a>
                                                             {% endif %}
                                                             {% if reminder.appointment_id and reminder.appointment and reminder.appointment.description %}
                                                                 | Notes: {{ reminder.appointment.description }}
@@ -199,7 +199,7 @@
                                                             <!-- Phase 5C: History Integration -->
                                                             {% if reminder.dog %}
                                                                 <a class="btn btn-outline-info btn-sm" 
-                                                                   href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                                   href="{{ url_for('dogs.dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
                                                                    title="View related history for {{ reminder.dog.name }}">
                                                                     <i class="bi bi-clock-history"></i> History
                                                                 </a>
@@ -234,7 +234,7 @@
                     <i class="bi bi-plus-circle-fill text-primary mb-2" style="font-size: 2rem;"></i>
                     <h5 class="card-title">Add New Dog</h5>
                     <p class="card-text"><small>Register a new rescue dog.</small></p>
-                    <a href="{{ url_for('dog_list_page') }}" class="btn btn-primary mt-auto">Go to Dog List to Add</a>
+                    <a href="{{ url_for('dogs.dog_list_page') }}" class="btn btn-primary mt-auto">Go to Dog List to Add</a>
                 </div>
             </div>
         </div>
@@ -254,7 +254,7 @@
                     <i class="bi bi-list-ul text-info mb-2" style="font-size: 2rem;"></i>
                     <h5 class="card-title">View Dog List</h5>
                     <p class="card-text"><small>View and edit all current dogs.</small></p>
-                    <a href="{{ url_for('dog_list_page') }}" class="btn btn-info mt-auto">Open Dog List</a>
+                    <a href="{{ url_for('dogs.dog_list_page') }}" class="btn btn-info mt-auto">Open Dog List</a>
                 </div>
             </div>
         </div>

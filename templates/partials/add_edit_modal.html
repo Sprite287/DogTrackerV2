@@ -2,7 +2,7 @@
 <div class="modal fade" id="addAppointmentModal" tabindex="-1" aria-labelledby="addAppointmentModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" hx-post="/dog/{{ dog.id }}/appointment/add" hx-target="#appointments-list" hx-swap="outerHTML" action="/dog/{{ dog.id }}/appointment/add">
+      <form method="POST" hx-post="{{ url_for('appointments.add_appointment', dog_id=dog.id) }}" hx-target="#appointments-list" hx-swap="outerHTML" action="{{ url_for('appointments.add_appointment', dog_id=dog.id) }}">
         <div class="modal-header">
           <h5 class="modal-title" id="addAppointmentModalLabel">Add Appointment</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -104,7 +104,7 @@
 <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-labelledby="addMedicineModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" hx-post="/dog/{{ dog.id }}/medicine/add" hx-target="#medicines-list" hx-swap="outerHTML" hx-trigger="submit" action="/dog/{{ dog.id }}/medicine/add">
+      <form method="POST" hx-post="{{ url_for('medicines.add_medicine', dog_id=dog.id) }}" hx-target="#medicines-list" hx-swap="outerHTML" hx-trigger="submit" action="{{ url_for('medicines.add_medicine', dog_id=dog.id) }}">
         <div class="modal-header">
           <h5 class="modal-title" id="addMedicineModalLabel">Add Medicine</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

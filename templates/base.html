@@ -33,10 +33,10 @@
             Dogs
           </a>
           <ul class="dropdown-menu" aria-labelledby="dogListDropdown">
-            <li><a class="dropdown-item" href="{{ url_for('dog_list_page') }}">
+            <li><a class="dropdown-item" href="{{ url_for('dogs.dog_list_page') }}">
               <i class="bi bi-list"></i> View All Dogs
             </a></li>
-            <li><a class="dropdown-item" href="{{ url_for('dog_history_overview') }}">
+            <li><a class="dropdown-item" href="{{ url_for('dogs.dog_history_overview') }}">
               <i class="bi bi-clock-history"></i> Dog History Overview
             </a></li>
           </ul>
@@ -57,7 +57,7 @@
         {% endif %}
         {% if current_user.is_authenticated and current_user.role in ['admin', 'owner', 'superadmin'] %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('manage_rescue_medicines') }}">Manage Medicines</a>
+            <a class="nav-link" href="{{ url_for('medicines.manage_rescue_medicines') }}">Manage Medicines</a>
           </li>
         {% endif %}
         {% endif %}
@@ -237,7 +237,7 @@ document.body.addEventListener('showAlert', function(event) {
 <div class="modal fade" id="editDogModal" tabindex="-1" aria-labelledby="editDogModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="editDogForm" method="post" hx-post="{{ url_for('edit_dog') }}" hx-target="#dogCards" hx-swap="outerHTML">
+      <form id="editDogForm" method="post" hx-post="{{ url_for('dogs.edit_dog') }}" hx-target="#dogCards" hx-swap="outerHTML">
         <div class="modal-header">
           <h5 class="modal-title" id="editDogModalLabel">Edit Dog</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

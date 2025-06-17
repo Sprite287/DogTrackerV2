@@ -44,7 +44,7 @@
                                                     {{ reminder.message }}
                                                     <small class="text-muted d-block">Due: {{ reminder.due_datetime.strftime('%a, %b %d, %Y @ %I:%M %p UTC') }}</small>
                                                     {% if reminder.dog %}
-                                                    <small class="text-muted d-block">Dog: <a href="{{ url_for('dog_details', dog_id=reminder.dog.id) }}">{{ reminder.dog.name }}</a></small>
+                                                    <small class="text-muted d-block">Dog: <a href="{{ url_for('dogs.dog_details', dog_id=reminder.dog.id) }}">{{ reminder.dog.name }}</a></small>
                                                     {% endif %}
                                                 </span>
                                                 <div class="btn-group" role="group">
@@ -59,7 +59,7 @@
                                                     <!-- Phase 5C: History Integration -->
                                                     {% if reminder.dog %}
                                                         <a class="btn btn-sm btn-outline-info" 
-                                                           href="{{ url_for('dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
+                                                           href="{{ url_for('dogs.dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
                                                            title="View related history for {{ reminder.dog.name }}">
                                                             <i class="bi bi-clock-history"></i>
                                                         </a>
