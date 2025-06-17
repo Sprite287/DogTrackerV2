@@ -15,6 +15,11 @@ VENV/
 .vscode/
 .idea/
 
+# Sensitive files
+seeded_logins.txt
+*.log
+*.sqlite
+
 # OS generated files
 .DS_Store
 .DS_Store?

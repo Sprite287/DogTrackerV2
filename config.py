@@ -10,7 +10,7 @@ class Config:
     """Base configuration class with common settings."""
     
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://doguser:dogpass123@localhost:5432/dogtracker')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://username:password@localhost:5432/database_name')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Security Configuration

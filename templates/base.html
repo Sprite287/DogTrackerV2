@@ -42,17 +42,17 @@
           </ul>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('calendar_view') }}">Calendar & Reminders</a>
+          <a class="nav-link" href="{{ url_for('calendar.calendar_view') }}">Calendar & Reminders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('staff_management') }}">Staff Management</a>
+          <a class="nav-link" href="{{ url_for('staff.staff_management') }}">Staff Management</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('rescue_info') }}">Rescue Info</a>
+          <a class="nav-link" href="{{ url_for('rescue.rescue_info') }}">Rescue Info</a>
         </li>
         {% if current_user.role in ['superadmin', 'owner'] %}
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin_audit_logs') }}">Audit Logs</a>
+          <a class="nav-link" href="{{ url_for('admin.admin_audit_logs') }}">Audit Logs</a>
         </li>
         {% endif %}
         {% if current_user.is_authenticated and current_user.role in ['admin', 'owner', 'superadmin'] %}

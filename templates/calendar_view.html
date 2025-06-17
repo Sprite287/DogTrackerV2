@@ -2,6 +2,72 @@
 
 {% block title %}Appointments Calendar - DogTrackerV2{% endblock %}
 
+{% block head_extra %}
+<style>
+/* Improve FullCalendar styling for better readability */
+.fc-theme-standard td, .fc-theme-standard th {
+    border: 1px solid #ddd;
+}
+
+.fc-timegrid-slot {
+    height: 60px !important;
+}
+
+.fc-timegrid-slot-label {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+}
+
+.fc-timegrid-event {
+    font-size: 0.85rem;
+    padding: 2px 4px;
+}
+
+.fc-daygrid-event {
+    font-size: 0.8rem;
+    margin: 1px;
+    padding: 2px 4px;
+}
+
+.fc-event-title {
+    font-weight: 500;
+}
+
+.fc-col-header-cell {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.fc-timegrid-axis {
+    width: 80px;
+}
+
+.fc-scroller {
+    overflow-y: auto !important;
+    max-height: 600px;
+}
+
+/* Better spacing for time grid views */
+.fc-timegrid-divider {
+    padding: 0;
+}
+
+.fc-timegrid-body {
+    min-height: 500px;
+}
+
+/* Improve month view */
+.fc-daygrid-body {
+    font-size: 0.9rem;
+}
+
+.fc-daygrid-day-number {
+    padding: 8px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -12,7 +78,7 @@
     {% if current_user.role == 'superadmin' %}
     <form method="get" class="mb-3" id="rescueFilterForm">
         <label for="rescueSelect" class="form-label">Filter by Rescue:</label>
-        <select name="rescue_id" id="rescueSelect" class="form-select" onchange="this.form.submit()">
+        <select name="rescue_id" id="rescueSelect" class="form-select">
             <option value="">All Rescues</option>
             {% for rescue in rescues %}
                 <option value="{{ rescue.id }}" {% if rescue.id == selected_rescue_id %}selected{% endif %}>{{ rescue.name }}</option>
@@ -49,11 +115,11 @@
                                                 </span>
                                                 <div class="btn-group" role="group">
                                                     <button class="btn btn-sm btn-outline-success" 
-                                                            hx-post="{{ url_for('acknowledge_reminder', reminder_id=reminder.id) }}" 
+                                                            hx-post="{{ url_for('calendar.acknowledge_reminder', reminder_id=reminder.id) }}" 
                                                             hx-target="#reminder-{{ reminder.id }}" 
                                                             hx-swap="outerHTML">Done</button>
                                                     <button class="btn btn-sm btn-outline-secondary" 
-                                                            hx-post="{{ url_for('dismiss_reminder', reminder_id=reminder.id) }}" 
+                                                            hx-post="{{ url_for('calendar.dismiss_reminder', reminder_id=reminder.id) }}" 
                                                             hx-target="#reminder-{{ reminder.id }}" 
                                                             hx-swap="outerHTML">Dismiss</button>
                                                     <!-- Phase 5C: History Integration -->
@@ -81,7 +147,7 @@
         </div>
     {% endif %}
     
-    <div id="calendar" style="min-height: 600px;">
+    <div id="calendar" style="min-height: 700px;">
         <!-- Calendar will be rendered here -->
     </div>
 </div>
@@ -101,14 +167,49 @@
             var calendarEl = document.getElementById('calendar');
             if (calendarEl) {
                 try {
-                    var calendar = new FullCalendar.Calendar(calendarEl, {
+                    // Make calendar global so we can update it from the rescue filter
+                    window.calendar = new FullCalendar.Calendar(calendarEl, {
                         initialView: 'dayGridMonth',
+                        height: 'auto',
+                        aspectRatio: 1.5,
                         headerToolbar: {
                             left: 'prev,next today',
                             center: 'title',
                             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
                         },
-                        events: "{{ url_for('calendar_events_api') }}",
+                        slotMinTime: '06:00:00',
+                        slotMaxTime: '22:00:00',
+                        slotDuration: '01:00:00',
+                        allDaySlot: true,
+                        slotLabelInterval: '02:00:00',
+                        nowIndicator: true,
+                        expandRows: true,
+                        dayMaxEvents: 3,
+                        dayMaxEventRows: 3,
+                        moreLinkClick: 'popover',
+                        events: function(info, successCallback, failureCallback) {
+                            const baseUrl = "{{ url_for('api.calendar_events_api') }}";
+                            const rescueId = "{{ selected_rescue_id or '' }}";
+                            const url = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
+                            
+                            console.log(`[CALENDAR] Fetching events from: ${url} (rescueId: '${rescueId}')`);
+                            
+                            fetch(url)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log(`Loaded ${data.length} calendar events from ${url}`);
+                                    successCallback(data);
+                                })
+                                .catch(error => {
+                                    console.error('Error loading calendar events:', error);
+                                    failureCallback(error);
+                                });
+                        },
                         editable: false, 
                         selectable: false, 
                         eventClick: function(info) {
@@ -138,8 +239,32 @@
                             }
                         }
                     });
-                    calendar.render();
+                    window.calendar.render();
                     console.log("FullCalendar initialized and rendered.");
+                    
+                    // Add debugging for calendar events loading
+                    window.calendar.on('eventSourceSuccess', function(info) {
+                        console.log('Calendar events loaded successfully:', info);
+                    });
+                    window.calendar.on('eventSourceFailure', function(info) {
+                        console.error('Calendar events failed to load:', info);
+                    });
+                    
+                    // Set up rescue filter dropdown event listener (avoiding CSP inline handler issues)
+                    const rescueSelect = document.getElementById('rescueSelect');
+                    if (rescueSelect) {
+                        rescueSelect.addEventListener('change', function(event) {
+                            const selectedRescueId = event.target.value;
+                            console.log(`[CALENDAR] Rescue dropdown changed to: '${selectedRescueId}'`);
+                            
+                            // Update both calendar and reminders dynamically
+                            updateCalendarEvents(selectedRescueId);
+                            updateRemindersSection(selectedRescueId);
+                        });
+                        console.log('[CALENDAR] Rescue filter event listener attached');
+                    } else {
+                        console.log('[CALENDAR] Rescue select element not found (user might not be superadmin)');
+                    }
                 } catch (e) {
                     console.error("Error initializing FullCalendar:", e);
                 }
@@ -150,5 +275,165 @@
             console.error("FullCalendar object or FullCalendar.Calendar constructor is not defined when trying to initialize.");
         }
     });
+    
+    // Function to update calendar events when rescue filter changes
+    function updateCalendarEvents(rescueId) {
+        console.log(`[CALENDAR] Updating events for rescue ID: '${rescueId}'`);
+        
+        if (window.calendar) {
+            // Remove all existing event sources
+            window.calendar.removeAllEventSources();
+            
+            // Add new event source with the selected rescue ID
+            const baseUrl = "{{ url_for('api.calendar_events_api') }}";
+            const newUrl = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
+            
+            console.log(`[CALENDAR] Adding new event source: ${newUrl}`);
+            
+            window.calendar.addEventSource({
+                url: newUrl,
+                failure: function(error) {
+                    console.error('Failed to load events:', error);
+                },
+                success: function(data) {
+                    console.log(`[CALENDAR] Successfully loaded ${data.length} events`);
+                }
+            });
+            
+            // Also update the URL in the browser (optional, for bookmarking)
+            const currentUrl = new URL(window.location);
+            if (rescueId) {
+                currentUrl.searchParams.set('rescue_id', rescueId);
+            } else {
+                currentUrl.searchParams.delete('rescue_id');
+            }
+            window.history.replaceState({}, '', currentUrl);
+        } else {
+            console.error('[CALENDAR] Calendar object not found, cannot update events');
+        }
+    }
+    
+    // Function to update reminders section when rescue filter changes
+    function updateRemindersSection(rescueId) {
+        console.log(`[REMINDERS] Updating reminders for rescue ID: '${rescueId}'`);
+        
+        const baseUrl = "{{ url_for('api.calendar_reminders_api') }}";
+        const url = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
+        
+        console.log(`[REMINDERS] Fetching reminders from: ${url}`);
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`[REMINDERS] Loaded reminders data:`, data);
+                renderRemindersSection(data.grouped_reminders);
+            })
+            .catch(error => {
+                console.error('[REMINDERS] Error loading reminders:', error);
+                // Show error message in reminders section
+                const remindersSection = document.getElementById('upcoming-reminders-section');
+                if (remindersSection) {
+                    remindersSection.innerHTML = '<div class="alert alert-danger">Failed to load reminders. Please refresh the page.</div>';
+                }
+            });
+    }
+    
+    // Function to render the reminders HTML from API data
+    function renderRemindersSection(groupedReminders) {
+        const remindersSection = document.getElementById('upcoming-reminders-section');
+        if (!remindersSection) {
+            console.log('[REMINDERS] Reminders section not found');
+            return;
+        }
+        
+        // Base URLs for building dynamic links
+        const dogDetailsBaseUrl = "{{ url_for('dogs.dog_details', dog_id=1) }}".replace('/1', '');
+        const dogHistoryBaseUrl = "{{ url_for('dogs.dog_history', dog_id=1) }}".replace('/1', '');
+        const acknowledgeBaseUrl = "{{ url_for('calendar.acknowledge_reminder', reminder_id=1) }}".replace('/1', '');
+        const dismissBaseUrl = "{{ url_for('calendar.dismiss_reminder', reminder_id=1) }}".replace('/1', '');
+        
+        // Check if there are any reminders
+        const hasReminders = Object.keys(groupedReminders).length > 0;
+        
+        if (!hasReminders) {
+            remindersSection.innerHTML = `
+                <div class="alert alert-info mt-3" role="alert">
+                    No upcoming reminders in the next 7 days.
+                </div>
+            `;
+            return;
+        }
+        
+        // Build the accordion HTML
+        let html = `
+            <h2>Upcoming Reminders (Next 7 Days)</h2>
+            <div class="accordion" id="remindersAccordion">
+        `;
+        
+        let loopIndex = 1;
+        for (const [groupName, reminders] of Object.entries(groupedReminders)) {
+            if (reminders.length > 0) {
+                const groupId = groupName.replace(/\s+/g, '-').toLowerCase() + '-' + loopIndex;
+                html += `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-${groupId}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${groupId}" aria-expanded="false" aria-controls="collapse-${groupId}">
+                                ${groupName} <span class="badge bg-secondary ms-2">${reminders.length}</span>
+                            </button>
+                        </h2>
+                        <div id="collapse-${groupId}" class="accordion-collapse collapse" aria-labelledby="heading-${groupId}" data-bs-parent="#remindersAccordion">
+                            <div class="accordion-body p-0">
+                                <ul class="list-group list-group-flush">
+                `;
+                
+                for (const reminder of reminders) {
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center" id="reminder-${reminder.id}">
+                            <span>
+                                ${reminder.message}
+                                <small class="text-muted d-block">Due: ${reminder.due_datetime}</small>
+                                ${reminder.dog_name ? `<small class="text-muted d-block">Dog: <a href="${dogDetailsBaseUrl}/${reminder.dog_id}">${reminder.dog_name}</a></small>` : ''}
+                            </span>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-success" 
+                                        hx-post="${acknowledgeBaseUrl}/${reminder.id}" 
+                                        hx-target="#reminder-${reminder.id}" 
+                                        hx-swap="outerHTML">Done</button>
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        hx-post="${dismissBaseUrl}/${reminder.id}" 
+                                        hx-target="#reminder-${reminder.id}" 
+                                        hx-swap="outerHTML">Dismiss</button>
+                                ${reminder.dog_id ? `
+                                    <a class="btn btn-sm btn-outline-info" 
+                                       href="${dogHistoryBaseUrl}/${reminder.dog_id}${reminder.appointment_id ? '?filter_type=appointment' : (reminder.dog_medicine_id ? '?filter_type=medicine' : '')}"
+                                       title="View related history for ${reminder.dog_name}">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                loopIndex++;
+            }
+        }
+        
+        html += '</div>';
+        remindersSection.innerHTML = html;
+        
+        console.log(`[REMINDERS] Rendered ${Object.keys(groupedReminders).length} reminder groups`);
+    }
 </script>
 {% endblock %} 
