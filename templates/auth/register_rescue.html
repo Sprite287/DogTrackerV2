@@ -25,7 +25,7 @@
                         {% endif %}
                     {% endwith %}
 
-                    <form method="POST" action="{{ url_for('register_rescue') }}">
+                    <form method="POST" action="{{ url_for('auth.register_rescue') }}">
                         {{ form.hidden_tag() }}
                         
                         <!-- Rescue Information Section -->
@@ -195,7 +195,7 @@
                 <div class="card-footer text-center">
                     <p class="mb-0">
                         Already have an account? 
-                        <a href="{{ url_for('login') }}" class="text-decoration-none">
+                        <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
                             Sign in here
                         </a>
                     </p>

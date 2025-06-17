@@ -27,41 +27,51 @@ import bleach
 from flask_mail import Mail, Message
 import warnings
 
-# Load configuration from centralized config
-from config import config
-
 # Load environment variables from .env if present
 load_dotenv()
 
-# Initialize Flask app with centralized configuration
-config_name = os.getenv('FLASK_ENV', 'development')
 app = Flask(__name__)
-app.config.from_object(config[config_name])
-config[config_name].init_app(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://doguser:dogpass123@localhost:5432/dogtracker')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit for request size
 
-# Import blueprints
-from blueprints.main.routes import main_bp
-from blueprints.auth.routes import auth_bp
-from blueprints.dogs.routes import dogs_bp
-from blueprints.appointments.routes import appointments_bp
-from blueprints.medicines.routes import medicines_bp
-from blueprints.admin.routes import admin_bp
-from blueprints.api.routes import api_bp
-from blueprints.calendar.routes import calendar_bp
+# --- SECRET_KEY Validation ---
+import warnings # Add this import at the top of the file if not already present
+SECRET_KEY = app.config['SECRET_KEY']
+MIN_SECRET_KEY_LENGTH = 32
+WEAK_SECRET_KEYS = ['dev', 'secret', 'changeme', 'your-secret-key']
 
-# Register blueprints
-app.register_blueprint(main_bp)
-app.register_blueprint(auth_bp)
-app.register_blueprint(dogs_bp)
-app.register_blueprint(appointments_bp)
-app.register_blueprint(medicines_bp)
-app.register_blueprint(admin_bp)
-app.register_blueprint(api_bp)
-app.register_blueprint(calendar_bp)
+if not SECRET_KEY or len(SECRET_KEY) < MIN_SECRET_KEY_LENGTH:
+    warnings.warn(
+        f'SECURITY WARNING: SECRET_KEY is missing or too short (less than {MIN_SECRET_KEY_LENGTH} characters). ' 
+        'This is a serious security risk. Please set a strong, random SECRET_KEY environment variable.',
+        UserWarning
+    )
+    # In a production environment, you might want to raise an exception here to prevent startup
+    # raise RuntimeError("Critical security risk: SECRET_KEY is not configured properly.")
+elif SECRET_KEY in WEAK_SECRET_KEYS:
+    warnings.warn(
+        f'SECURITY WARNING: SECRET_KEY is set to a known weak value ("{SECRET_KEY}"). ' 
+        'This is a serious security risk. Please set a strong, random SECRET_KEY environment variable.',
+        UserWarning
+    )
+    # In a production environment, you might want to raise an exception here
+    # raise RuntimeError("Critical security risk: SECRET_KEY is set to a weak default.")
+else:
+    print("SECRET_KEY validation passed.") # Optional: for confirmation during startup
 
-# Register error handlers from core module
-from blueprints.core.errors import register_error_handlers
-register_error_handlers(app)
+# --- Security: Session Cookie Flags & Timeout ---
+is_dev = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG') == '1'
+app.config['SESSION_COOKIE_SECURE'] = not is_dev  # Only send cookies over HTTPS in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Mitigate CSRF
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes (in seconds)
+
+# Development settings to prevent caching issues
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 
 csrf = CSRFProtect(app)
 
@@ -71,7 +81,7 @@ migrate.init_app(app, db)
 
 # Initialize Flask-Login
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
@@ -103,11 +113,6 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'DogTracker <noreply@example.com>')
 
 mail = Mail(app)
-
-# Initialize mail and limiter for auth blueprint
-from blueprints.auth.routes import init_mail, init_limiter
-init_mail(mail)
-init_limiter(limiter)
 
 # Initialize Audit System (disable cleanup thread during migration)
 init_audit(app, start_cleanup_thread=False)
@@ -245,242 +250,244 @@ def render_dog_cards():
 def render_alert(message, category='success'):
     return render_template_string('<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" hx-swap-oob="true">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>', message=message, category=category)
 
-# Home route moved to blueprints/main/routes.py
-# @app.route('/')
-# def home_redirect():
+@app.route('/')
+def home_redirect():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
-# Authentication Routes moved to blueprints/auth/routes.py
-# @app.route('/login', methods=['GET', 'POST'])
-# @limiter.limit("5 per minute")
-# def login():
-#     if current_user.is_authenticated:
-#         return redirect(url_for('main.dashboard'))
-#     
-#     form = LoginForm()
-#     if form.validate_on_submit():
-#         user = User.query.filter_by(email=form.email.data).first()
-#         if user and user.check_password(form.password.data):
-#             if not user.is_active:
-#                 flash('Your account has been deactivated. Please contact support.', 'danger')
-#                 return render_template('auth/login.html', form=form)
-#             if not user.email_verified:
-#                 flash('Please verify your email before logging in. Check your inbox for the verification link.', 'warning')
-#                 return render_template('auth/login.html', form=form)
-#             login_user(user, remember=form.remember_me.data)
-#             user.last_login = datetime.utcnow()
-#             db.session.commit()
-#             # Log successful login
-#             log_audit_event(
-#                 user_id=user.id,
-#                 rescue_id=user.rescue_id,
-#                 action='login_success',
-#                 resource_type='User',
-#                 resource_id=user.id,
-#                 details={'email': user.email},
-#                 ip_address=request.remote_addr,
-#                 user_agent=request.headers.get('User-Agent'),
-#                 success=True
-#             )
-#             next_page = request.args.get('next')
-#             if not next_page or not next_page.startswith('/'):
-#                 next_page = url_for('main.dashboard')
-#             return redirect(next_page)
-#         else:
-#             # Log failed login attempt
-#             log_audit_event(
-#                 user_id=None,
-#                 rescue_id=None,
-#                 action='login_failed',
-#                 resource_type='User',
-#                 resource_id=None,
-#                 details={'email': form.email.data, 'reason': 'invalid_credentials'},
-#                 ip_address=request.remote_addr,
-#                 user_agent=request.headers.get('User-Agent'),
-#                 success=False
-#             )
-#             flash('Invalid email or password.', 'danger')
-#     return render_template('auth/login.html', form=form)
+# Authentication Routes
+@app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            if not user.is_active:
+                flash('Your account has been deactivated. Please contact support.', 'danger')
+                return render_template('auth/login.html', form=form)
+            if not user.email_verified:
+                flash('Please verify your email before logging in. Check your inbox for the verification link.', 'warning')
+                return render_template('auth/login.html', form=form)
+            login_user(user, remember=form.remember_me.data)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            # Log successful login
+            log_audit_event(
+                user_id=user.id,
+                rescue_id=user.rescue_id,
+                action='login_success',
+                resource_type='User',
+                resource_id=user.id,
+                details={'email': user.email},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=True
+            )
+            next_page = request.args.get('next')
+            if not next_page or not next_page.startswith('/'):
+                next_page = url_for('dashboard')
+            return redirect(next_page)
+        else:
+            # Log failed login attempt
+            log_audit_event(
+                user_id=None,
+                rescue_id=None,
+                action='login_failed',
+                resource_type='User',
+                resource_id=None,
+                details={'email': form.email.data, 'reason': 'invalid_credentials'},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=False
+            )
+            flash('Invalid email or password.', 'danger')
+    return render_template('auth/login.html', form=form)
 
-# @app.route('/logout')
-# @login_required
-# def logout():
-#     # Log logout
-#     log_audit_event(
-#         user_id=current_user.id,
-#         rescue_id=current_user.rescue_id,
-#         action='logout',
-#         resource_type='User',
-#         resource_id=current_user.id,
-#         details={'email': current_user.email},
-#         ip_address=request.remote_addr,
-#         user_agent=request.headers.get('User-Agent'),
-#         success=True
-#     )
-#     
-#     logout_user()
-#     flash('You have been logged out successfully.', 'info')
-#     return redirect(url_for('login'))
+@app.route('/logout')
+@login_required
+def logout():
+    # Log logout
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=current_user.rescue_id,
+        action='logout',
+        resource_type='User',
+        resource_id=current_user.id,
+        details={'email': current_user.email},
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
+    
+    logout_user()
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
 
-# @app.route('/register', methods=['GET', 'POST'])
-# def register():
-#     if current_user.is_authenticated:
-#         return redirect(url_for('main.dashboard'))
-#     
-#     form = RegistrationForm()
-#     if form.validate_on_submit():
-#         # This is for individual user registration (not rescue registration)
-#         # For now, redirect to rescue registration
-#         flash('Please register your rescue organization first.', 'info')
-#         return redirect(url_for('register_rescue'))
-#     
-#     return render_template('auth/register.html', form=form)
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # This is for individual user registration (not rescue registration)
+        # For now, redirect to rescue registration
+        flash('Please register your rescue organization first.', 'info')
+        return redirect(url_for('register_rescue'))
+    
+    return render_template('auth/register.html', form=form)
 
-# @app.route('/register-rescue', methods=['GET', 'POST'])
-# def register_rescue():
-#     if current_user.is_authenticated:
-#         return redirect(url_for('main.dashboard'))
-#     
-#     form = RescueRegistrationForm()
-#     if form.validate_on_submit():
-#         # Create rescue
-#         rescue = Rescue(
-#             name=form.rescue_name.data,
-#             address=form.rescue_address.data,
-#             phone=form.rescue_phone.data,
-#             email=form.rescue_email.data,
-#             primary_contact_name=form.contact_name.data,
-#             primary_contact_email=form.contact_email.data,
-#             primary_contact_phone=form.contact_phone.data,
-#             data_consent=form.data_consent.data,
-#             marketing_consent=form.marketing_consent.data,
-#             status='active'  # No admin approval needed
-#         )
-#         db.session.add(rescue)
-#         db.session.flush()  # Get the rescue ID
-#         
-#         # Create first user (admin of the rescue)
-#         user = User(
-#             name=form.contact_name.data,
-#             email=form.contact_email.data,
-#             role='admin',
-#             rescue_id=rescue.id,
-#             is_first_user=True,
-#             email_verified=False,  # Will need email verification
-#             data_consent=form.data_consent.data,
-#             marketing_consent=form.marketing_consent.data
-#         )
-#         user.set_password(form.contact_password.data)
-#         token = user.generate_email_verification_token()
-#         db.session.add(user)
-#         db.session.commit()
-#         
-#         # Send verification email
-#         verification_url = url_for('verify_email', token=token, _external=True)
-#         try:
-#             msg = Message(
-#                 subject="Verify your DogTracker account",
-#                 recipients=[user.email],
-#                 body=f"Hello {user.name},\n\nPlease verify your email by clicking the link below:\n{verification_url}\n\nIf you did not register, please ignore this email."
-#             )
-#             mail.send(msg)
-#         except Exception as e:
-#             print(f"[EMAIL ERROR] Failed to send verification email: {e}")
-#             flash('Registration successful, but failed to send verification email. Please contact support.', 'danger')
-#             return redirect(url_for('login'))
-#         
-#         # Log rescue registration
-#         log_audit_event(
-#             user_id=user.id,
-#             rescue_id=rescue.id,
-#             action='rescue_registration',
-#             resource_type='Rescue',
-#             resource_id=rescue.id,
-#             details={
-#                 'rescue_name': rescue.name,
-#                 'primary_contact_email': rescue.primary_contact_email,
-#                 'status': rescue.status
-#             },
-#             ip_address=request.remote_addr,
-#             user_agent=request.headers.get('User-Agent'),
-#             success=True
-#         )
-#         
-#         flash('Registration successful! Please check your email to verify your account before logging in.', 'success')
-#         return redirect(url_for('login'))
-#     
-#     return render_template('auth/register_rescue.html', form=form)
-# 
-# @app.route('/password-reset-request', methods=['GET', 'POST'])
-# @limiter.limit("3 per minute")
-# def password_reset_request():
-#     if current_user.is_authenticated:
-#         return redirect(url_for('main.dashboard'))
-#     
-#     form = PasswordResetRequestForm()
-#     if form.validate_on_submit():
-#         user = User.query.filter_by(email=form.email.data).first()
-#         if user:
-#             token = user.generate_password_reset_token()
-#             db.session.commit()
-#             
-#             # Log password reset request
-#             log_audit_event(
-#                 user_id=user.id,
-#                 rescue_id=user.rescue_id,
-#                 action='password_reset_request',
-#                 resource_type='User',
-#                 resource_id=user.id,
-#                 details={'email': user.email},
-#                 ip_address=request.remote_addr,
-#                 user_agent=request.headers.get('User-Agent'),
-#                 success=True
-#             )
-#             
-#             # TODO: Send email with reset link
-#             # For now, just show a message
-#             flash(f'Password reset instructions have been sent to {form.email.data}. (Note: Email functionality not yet implemented)', 'info')
-#         else:
-#             # Don't reveal if email exists or not for security
-#             flash(f'If an account with email {form.email.data} exists, password reset instructions have been sent.', 'info')
-#         
-#         return redirect(url_for('login'))
-#     
-#     return render_template('auth/password_reset_request.html', form=form)
-# 
-# @app.route('/password-reset/<token>', methods=['GET', 'POST'])
-# def password_reset(token):
-#     if current_user.is_authenticated:
-#         return redirect(url_for('main.dashboard'))
-#     
-#     user = User.query.filter_by(password_reset_token=token).first()
-#     if not user or not user.verify_password_reset_token(token):
-#         flash('Invalid or expired password reset token.', 'danger')
-#         return redirect(url_for('login'))
-#     
-#     form = PasswordResetForm()
-#     if form.validate_on_submit():
-#         user.set_password(form.password.data)
-#         user.password_reset_token = None
-#         user.password_reset_expires = None
-#         db.session.commit()
-#         
-#         # Log successful password reset
-#         log_audit_event(
-#             user_id=user.id,
-#             rescue_id=user.rescue_id,
-#             action='password_reset_success',
-#             resource_type='User',
-#             resource_id=user.id,
-#             details={'email': user.email},
-#             ip_address=request.remote_addr,
-#             user_agent=request.headers.get('User-Agent'),
-#             success=True
-#         )
-#         
-#         flash('Your password has been reset successfully. You can now log in.', 'success')
-#         return redirect(url_for('login'))
-#     
-#     return render_template('auth/password_reset.html', form=form)
+@app.route('/register-rescue', methods=['GET', 'POST'])
+def register_rescue():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = RescueRegistrationForm()
+    if form.validate_on_submit():
+        # Create rescue
+        rescue = Rescue(
+            name=form.rescue_name.data,
+            address=form.rescue_address.data,
+            phone=form.rescue_phone.data,
+            email=form.rescue_email.data,
+            primary_contact_name=form.contact_name.data,
+            primary_contact_email=form.contact_email.data,
+            primary_contact_phone=form.contact_phone.data,
+            data_consent=form.data_consent.data,
+            marketing_consent=form.marketing_consent.data,
+            status='active'  # No admin approval needed
+        )
+        db.session.add(rescue)
+        db.session.flush()  # Get the rescue ID
+        
+        # Create first user (admin of the rescue)
+        user = User(
+            name=form.contact_name.data,
+            email=form.contact_email.data,
+            role='admin',
+            rescue_id=rescue.id,
+            is_first_user=True,
+            email_verified=False,  # Will need email verification
+            data_consent=form.data_consent.data,
+            marketing_consent=form.marketing_consent.data
+        )
+        user.set_password(form.contact_password.data)
+        token = user.generate_email_verification_token()
+        db.session.add(user)
+        db.session.commit()
+        
+        # Send verification email
+        verification_url = url_for('verify_email', token=token, _external=True)
+        try:
+            msg = Message(
+                subject="Verify your DogTracker account",
+                recipients=[user.email],
+                body=f"Hello {user.name},\n\nPlease verify your email by clicking the link below:\n{verification_url}\n\nIf you did not register, please ignore this email."
+            )
+            mail.send(msg)
+        except Exception as e:
+            print(f"[EMAIL ERROR] Failed to send verification email: {e}")
+            flash('Registration successful, but failed to send verification email. Please contact support.', 'danger')
+            return redirect(url_for('login'))
+        
+        # Log rescue registration
+        log_audit_event(
+            user_id=user.id,
+            rescue_id=rescue.id,
+            action='rescue_registration',
+            resource_type='Rescue',
+            resource_id=rescue.id,
+            details={
+                'rescue_name': rescue.name,
+                'primary_contact_email': rescue.primary_contact_email,
+                'status': rescue.status
+            },
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent'),
+            success=True
+        )
+        
+        flash('Registration successful! Please check your email to verify your account before logging in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('auth/register_rescue.html', form=form)
+
+@app.route('/password-reset-request', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
+def password_reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_password_reset_token()
+            db.session.commit()
+            
+            # Log password reset request
+            log_audit_event(
+                user_id=user.id,
+                rescue_id=user.rescue_id,
+                action='password_reset_request',
+                resource_type='User',
+                resource_id=user.id,
+                details={'email': user.email},
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent'),
+                success=True
+            )
+            
+            # TODO: Send email with reset link
+            # For now, just show a message
+            flash(f'Password reset instructions have been sent to {form.email.data}. (Note: Email functionality not yet implemented)', 'info')
+        else:
+            # Don't reveal if email exists or not for security
+            flash(f'If an account with email {form.email.data} exists, password reset instructions have been sent.', 'info')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('auth/password_reset_request.html', form=form)
+
+@app.route('/password-reset/<token>', methods=['GET', 'POST'])
+def password_reset(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.filter_by(password_reset_token=token).first()
+    if not user or not user.verify_password_reset_token(token):
+        flash('Invalid or expired password reset token.', 'danger')
+        return redirect(url_for('login'))
+    
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        user.password_reset_token = None
+        user.password_reset_expires = None
+        db.session.commit()
+        
+        # Log successful password reset
+        log_audit_event(
+            user_id=user.id,
+            rescue_id=user.rescue_id,
+            action='password_reset_success',
+            resource_type='User',
+            resource_id=user.id,
+            details={'email': user.email},
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent'),
+            success=True
+        )
+        
+        flash('Your password has been reset successfully. You can now log in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('auth/password_reset.html', form=form)
 
 @app.route('/dogs')
 @login_required
@@ -1733,12 +1740,89 @@ def calendar_events_api():
         print(f"Error in calendar_events_api: {e}")
         return jsonify({"error": str(e), "message": "Failed to load calendar events."}), 500
 
-# Dashboard route moved to blueprints/main/routes.py
-# @app.route('/dashboard')
-# @login_required  
-# def dashboard():
-# Dashboard function body moved to blueprints/main/routes.py
-#     Complete dashboard implementation now in main blueprint
+# --- Dashboard Route ---
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    from datetime import date
+    rescue_id = request.args.get('rescue_id', type=int)
+    if current_user.role == 'superadmin':
+        rescues = Rescue.query.order_by(Rescue.name.asc()).all()
+        if rescue_id:
+            overdue_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime < datetime.utcnow(),
+                Reminder.dog.has(rescue_id=rescue_id)
+            ).order_by(Reminder.due_datetime.asc()).all()
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            today_end = today_start + timedelta(days=1)
+            today_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime >= today_start,
+                Reminder.due_datetime < today_end,
+                Reminder.dog.has(rescue_id=rescue_id)
+            ).order_by(Reminder.due_datetime.asc()).all()
+        else:
+            overdue_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime < datetime.utcnow()
+            ).order_by(Reminder.due_datetime.asc()).all()
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            today_end = today_start + timedelta(days=1)
+            today_reminders = Reminder.query.options(
+                db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+                db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+                db.joinedload(Reminder.dog)
+            ).filter(
+                Reminder.status == 'pending',
+                Reminder.due_datetime >= today_start,
+                Reminder.due_datetime < today_end
+            ).order_by(Reminder.due_datetime.asc()).all()
+    else:
+        rescues = None
+        rescue_id = current_user.rescue_id
+        overdue_reminders = Reminder.query.options(
+            db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+            db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+            db.joinedload(Reminder.dog)
+        ).filter(
+            Reminder.status == 'pending',
+            Reminder.due_datetime < datetime.utcnow(),
+            Reminder.dog.has(rescue_id=current_user.rescue_id)
+        ).order_by(Reminder.due_datetime.asc()).all()
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_end = today_start + timedelta(days=1)
+        today_reminders = Reminder.query.options(
+            db.joinedload(Reminder.appointment).joinedload(Appointment.type),
+            db.joinedload(Reminder.dog_medicine).joinedload(DogMedicine.preset),
+            db.joinedload(Reminder.dog)
+        ).filter(
+            Reminder.status == 'pending',
+            Reminder.due_datetime >= today_start,
+            Reminder.due_datetime < today_end,
+            Reminder.dog.has(rescue_id=current_user.rescue_id)
+        ).order_by(Reminder.due_datetime.asc()).all()
+    grouped_overdue_reminders = group_reminders_by_type(overdue_reminders)
+    grouped_today_reminders = group_reminders_by_type(today_reminders)
+    return render_template('dashboard.html',
+                           current_user=current_user,
+                           grouped_overdue_reminders=grouped_overdue_reminders,
+                           grouped_today_reminders=grouped_today_reminders,
+                           now=datetime.utcnow(),
+                           rescues=rescues,
+                           selected_rescue_id=rescue_id)
 
 @app.route('/dog/<int:dog_id>/history')
 @login_required
@@ -2574,9 +2658,37 @@ def reset_staff_password():
 def generate_csp_nonce():
     g.csp_nonce = secrets.token_hex(16)
 
-# CSRF Error handler moved to blueprints/core/errors.py
-# @app.errorhandler(CSRFError)
-# def handle_csrf_error(e):
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    print(f"[CSRF ERROR HANDLER] CSRF validation failed. Reason: {e.description}")
+    print(f"[CSRF ERROR HANDLER] request.form content: {request.form}")
+    # Log CSRF violation to audit log
+    log_audit_event(
+        user_id=getattr(current_user, 'id', None) if current_user.is_authenticated else None,
+        rescue_id=getattr(current_user, 'rescue_id', None) if current_user.is_authenticated else None,
+        action='csrf_violation',
+        resource_type='Request',
+        resource_id=None,
+        details={
+            'reason': e.description,
+            'path': request.path,
+            'method': request.method,
+            'form': request.form.to_dict(),
+            'headers': dict(request.headers),
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=False
+    )
+    # HTMX or AJAX request: return partial or JSON error
+    if request.headers.get('HX-Request') or request.is_json or request.accept_mimetypes['application/json']:
+        response = make_response(render_template('partials/modal_form_error.html', message='Security Error: Your session has expired or the form was tampered with. Please refresh and try again.'), 400)
+        response.headers['HX-Retarget'] = '#alerts'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    # Normal request: flash and redirect
+    flash('Security Error: Your session has expired or the form was tampered with. Please refresh the page and try again.', 'danger')
+    return redirect(request.referrer or url_for('login'))
 
 @app.after_request
 def set_security_headers(response):
@@ -2610,26 +2722,53 @@ def set_security_headers(response):
     # response.headers['Permissions-Policy'] = "geolocation=(), microphone=(), camera=()"
     return response
 
-# Rate limit error handler moved to blueprints/core/errors.py
-# @app.errorhandler(429)
-# def ratelimit_handler(e):
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    # Log rate limit violation
+    log_audit_event(
+        user_id=getattr(current_user, 'id', None) if current_user.is_authenticated else None,
+        rescue_id=getattr(current_user, 'rescue_id', None) if current_user.is_authenticated else None,
+        action='rate_limit_exceeded',
+        resource_type='Request',
+        resource_id=None,
+        details={
+            'path': request.path,
+            'method': request.method,
+            'form': request.form.to_dict(),
+            'headers': dict(request.headers),
+            'description': str(e)
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=False
+    )
+    # HTMX or AJAX request: return partial or JSON error
+    if request.headers.get('HX-Request') or request.is_json or request.accept_mimetypes['application/json']:
+        response = make_response(render_template('partials/modal_form_error.html', message='Too many requests. Please wait and try again.'), 429)
+        response.headers['HX-Retarget'] = '#alerts'
+        response.headers['HX-Reswap'] = 'innerHTML'
+        return response
+    flash('Too many requests. Please wait and try again.', 'danger')
+    return redirect(request.referrer or url_for('login'))
 
-# @app.route('/verify-email/<token>')
-# def verify_email(token):
-#     user = User.query.filter_by(email_verification_token=token).first()
-#     if not user:
-#         flash('Invalid or expired verification link.', 'danger')
-#         return redirect(url_for('login'))
-#     user.email_verified = True
-#     user.email_verification_token = None
-#     db.session.commit()
-#     return render_template('auth/email_verified.html')
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    user = User.query.filter_by(email_verification_token=token).first()
+    if not user:
+        flash('Invalid or expired verification link.', 'danger')
+        return redirect(url_for('login'))
+    user.email_verified = True
+    user.email_verification_token = None
+    db.session.commit()
+    return render_template('auth/email_verified.html')
 
-# 404 and 500 error handlers moved to blueprints/core/errors.py
-# @app.errorhandler(404)
-# def not_found_error(error):
-# @app.errorhandler(500)
-# def internal_error(error):
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('error_404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error_500.html'), 500
 
 @app.route('/test-minimal-form', methods=['GET'])
 def show_minimal_test_form():

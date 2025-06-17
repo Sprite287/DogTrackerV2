@@ -25,7 +25,7 @@
                         {% endif %}
                     {% endwith %}
 
-                    <form method="POST" action="{{ url_for('login') }}">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
                         {{ form.hidden_tag() }}
                         
                         <div class="mb-3">
@@ -64,13 +64,13 @@
                 </div>
                 <div class="card-footer text-center">
                     <p class="mb-2">
-                        <a href="{{ url_for('password_reset_request') }}" class="text-decoration-none">
+                        <a href="{{ url_for('auth.password_reset_request') }}" class="text-decoration-none">
                             Forgot your password?
                         </a>
                     </p>
                     <p class="mb-0">
                         New rescue organization? 
-                        <a href="{{ url_for('register_rescue') }}" class="text-decoration-none">
+                        <a href="{{ url_for('auth.register_rescue') }}" class="text-decoration-none">
                             Register here
                         </a>
                     </p>
