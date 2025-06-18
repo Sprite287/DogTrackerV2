@@ -19,7 +19,10 @@
       <td style="text-align:center;">{{ appt.status }}</td>
       <td>{{ appt.description or '—' }}</td>
       <td style="text-align:center;">
-        <button class="btn btn-sm btn-primary me-1 js-edit-trigger" data-bs-target="#editAppointmentModal-{{ appt.id }}">Edit</button>
+        <button class="btn btn-sm btn-primary me-1 js-edit-trigger" 
+                data-bs-target="#editAppointmentModal"
+                data-appointment-id="{{ appt.id }}"
+                data-dog-id="{{ dog.id }}">Edit</button>
         <button class="btn btn-sm btn-danger"
                 hx-post="{{ url_for('appointments.delete_appointment', dog_id=dog.id, appointment_id=appt.id) }}"
                 hx-target="#appointments-list"
@@ -33,58 +36,4 @@
   </tbody>
 </table>
 
-<!-- Static Edit Modals rendered outside the table for valid HTML -->
-{% for appt in dog.appointments %}
-  <div class="modal fade" id="editAppointmentModal-{{ appt.id }}" tabindex="-1" aria-labelledby="editAppointmentModalLabel-{{ appt.id }}" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form method="POST" hx-post="{{ url_for('appointments.edit_appointment', dog_id=dog.id, appointment_id=appt.id) }}" hx-target="#appointments-list" hx-swap="outerHTML" hx-trigger="submit" action="{{ url_for('appointments.edit_appointment', dog_id=dog.id, appointment_id=appt.id) }}">
-          <input type="hidden" name="appointment_id" value="{{ appt.id }}">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editAppointmentModalLabel-{{ appt.id }}">Edit Appointment</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="editApptType-{{ appt.id }}" class="form-label">Appointment Type</label>
-              <select class="form-select" id="editApptType-{{ appt.id }}" name="appt_type_id">
-                {% for appt_type in appointment_types %}
-                  <option value="{{ appt_type.id }}" {% if appt_type.id == appt.type_id %}selected{% endif %}>{{ appt_type.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="editApptTitle-{{ appt.id }}" class="form-label">Title</label>
-              <input type="text" class="form-control" id="editApptTitle-{{ appt.id }}" name="appt_title" value="{{ appt.title }}">
-            </div>
-            <div class="mb-3">
-              <label for="editApptStart-{{ appt.id }}" class="form-label">Start Date/Time</label>
-              <input type="datetime-local" class="form-control" id="editApptStart-{{ appt.id }}" name="appt_start_datetime" value="{{ appt.start_datetime.strftime('%Y-%m-%dT%H:%M') if appt.start_datetime else '' }}">
-            </div>
-            <div class="mb-3">
-              <label for="editApptEnd-{{ appt.id }}" class="form-label">End Date/Time</label>
-              <input type="datetime-local" class="form-control" id="editApptEnd-{{ appt.id }}" name="appt_end_datetime" value="{{ appt.end_datetime.strftime('%Y-%m-%dT%H:%M') if appt.end_datetime else '' }}">
-            </div>
-            <div class="mb-3">
-              <label for="editApptStatus-{{ appt.id }}" class="form-label">Status</label>
-              <select class="form-select" id="editApptStatus-{{ appt.id }}" name="appt_status">
-                <option value="scheduled" {% if appt.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
-                <option value="completed" {% if appt.status == 'completed' %}selected{% endif %}>Completed</option>
-                <option value="canceled" {% if appt.status == 'canceled' %}selected{% endif %}>Canceled</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="editApptNotes-{{ appt.id }}" class="form-label">Notes</label>
-              <textarea class="form-control" id="editApptNotes-{{ appt.id }}" name="appt_notes">{{ appt.description or '' }}</textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-{% endfor %}
 </div> 

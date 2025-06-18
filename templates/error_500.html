@@ -1,17 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Server Error - DogTracker{% endblock %}
+{% block title %}Care System Needs Attention - DogTracker{% endblock %}
 {% block content %}
-<div class="container mt-5">
+<div class="container breathing-container">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow">
-                <div class="card-header bg-danger text-white text-center">
-                    <h4 class="mb-0"><i class="fas fa-bug me-2"></i>500 - Server Error</h4>
+        <div class="col-md-10 col-lg-8">
+            <div class="error-page-natural text-center py-5 breathing-card organic-flow">
+                <div class="mb-4 breathing-gentle">
+                    <i class="bi bi-gear-fill icon-gentle-warning large-icon"></i>
                 </div>
-                <div class="card-body text-center">
-                    <p class="lead">Oops! Something went wrong on our end.</p>
-                    <p>If this problem persists, please contact support.</p>
-                    <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="btn btn-primary mt-3">Go Home</a>
+                <h2 class="mb-4 icon-earth-secondary">We're having a moment - your dedication means everything</h2>
+                <p class="lead mb-4">Something didn't quite work behind the scenes, but your care for these animals shows in everything you do.</p>
+                <div class="mb-4 personality-bg-trust p-3">
+                    <p class="mb-2">
+                        <i class="bi bi-heart-pulse me-2 icon-trust-accent"></i>
+                        <strong>Just like caring for animals, technology sometimes needs gentle attention.</strong>
+                    </p>
+                    <p class="mb-0 small text-muted">
+                        We're working to get everything back to normal. Your patience helps us serve the animals better.
+                    </p>
+                </div>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" 
+                       class="btn btn-primary btn-lg grow-in btn-organic">
+                        <i class="bi bi-house-heart me-2"></i>Return to Care Center
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <button onclick="window.location.reload()" 
+                            class="btn btn-secondary btn-lg grow-in btn-organic">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Try Again
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-heart me-1"></i>
+                        Your animal care data is safe and protected - this is just a temporary hiccup.
+                    </small>
                 </div>
             </div>
         </div>

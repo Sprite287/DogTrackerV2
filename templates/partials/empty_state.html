@@ -1,0 +1,21 @@
+<!-- Empathetic Empty State Partial -->
+<div class="empty-state-natural text-center py-5 breathing-container">
+    <div class="mb-4">
+        <i class="{{ icon }} text-success mb-3 grow-in icon-earth-primary large-icon"></i>
+    </div>
+    <h4 class="mb-3 icon-earth-secondary">{{ title }}</h4>
+    <p class="text-muted mb-4 lead">{{ message }}</p>
+    {% if action_text and action_url %}
+        <a href="{{ action_url }}" class="btn {{ action_class or 'btn-primary' }} btn-lg breathe-hover">
+            {{ action_text }}
+        </a>
+    {% elif action_text and action_onclick %}
+        <button onclick="{{ action_onclick }}" class="btn {{ action_class or 'btn-primary' }} btn-lg breathe-hover">
+            {{ action_text }}
+        </button>
+    {% elif action_text and action_modal %}
+        <button data-bs-toggle="modal" data-bs-target="{{ action_modal }}" class="btn {{ action_class or 'btn-primary' }} btn-lg breathe-hover">
+            {{ action_text }}
+        </button>
+    {% endif %}
+</div>

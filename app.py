@@ -170,8 +170,8 @@ def set_security_headers(response):
         csp_policy = (
             "default-src 'self'; "
             f"script-src 'self' https://cdn.jsdelivr.net https://unpkg.com 'nonce-{nonce}'; "
-            f"style-src 'self' https://cdn.jsdelivr.net 'nonce-{nonce}'; "  # Apply nonce to styles too
-            "font-src 'self' https://cdn.jsdelivr.net; "
+            f"style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'nonce-{nonce}'; "  # Apply nonce to styles too
+            "font-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; "
             "img-src 'self' data:;"
         )
     else:
@@ -179,8 +179,8 @@ def set_security_headers(response):
         csp_policy = (
             "default-src 'self'; "
             "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
-            "style-src 'self' https://cdn.jsdelivr.net; "
-            "font-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "font-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; "
             "img-src 'self' data:;"
         )
     response.headers['Content-Security-Policy'] = csp_policy

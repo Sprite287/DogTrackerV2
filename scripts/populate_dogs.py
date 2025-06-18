@@ -1085,6 +1085,19 @@ def create_or_update_superadmin() -> None:
             superadmin.set_password(password)
             db.session.add(superadmin)
             db.session.commit()
+            
+            # Add superadmin credentials to seeded_logins.txt
+            try:
+                with open(os.path.join(os.path.dirname(__file__), '..', "seeded_logins.txt"), "a", encoding="utf-8") as f:
+                    f.write(f"Name: {name}\n")
+                    f.write(f"Email: {email}\n")
+                    f.write(f"Role: superadmin\n")
+                    f.write(f"Password: {password}\n")
+                    f.write("---\n")
+                print("Superadmin credentials added to seeded_logins.txt")
+            except Exception as e:
+                print(f"Warning: Could not write to seeded_logins.txt: {e}")
+            
             print(f"Superadmin user created successfully!\nName: {name}\nEmail: {email}\nRole: superadmin")
 
 

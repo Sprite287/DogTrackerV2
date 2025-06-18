@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Appointments Calendar - DogTrackerV2{% endblock %}
+{% block title %}Care Calendar - Your Schedule{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -71,21 +71,12 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Appointments Calendar</h1>
+        <h1>Care Calendar</h1>
         <!-- Future: Add filters or buttons here, e.g., for different views or new appointment -->
     </div>
 
-    {% if current_user.role == 'superadmin' %}
-    <form method="get" class="mb-3" id="rescueFilterForm">
-        <label for="rescueSelect" class="form-label">Filter by Rescue:</label>
-        <select name="rescue_id" id="rescueSelect" class="form-select">
-            <option value="">All Rescues</option>
-            {% for rescue in rescues %}
-                <option value="{{ rescue.id }}" {% if rescue.id == selected_rescue_id %}selected{% endif %}>{{ rescue.name }}</option>
-            {% endfor %}
-        </select>
-    </form>
-    {% endif %}
+    {% set auto_submit = false %}
+    {% include 'partials/rescue_filter.html' %}
 
     {# Display Grouped Upcoming Reminders as Accordion #}
     {% if grouped_reminders %}

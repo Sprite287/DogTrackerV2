@@ -121,6 +121,14 @@ class Dog(db.Model):
     notes = db.Column(db.Text)
     medical_info = db.Column(db.Text)
     rescue_id = db.Column(db.Integer, db.ForeignKey('rescue.id'), nullable=False)
+    
+    # Phase 7C: Personality Enhancement Fields
+    personality_notes = db.Column(db.Text)                # Freeform personality observations
+    energy_level = db.Column(db.String(20))               # Low/Medium/High/Very High
+    social_notes = db.Column(db.Text)                     # Social preferences/observations
+    special_story = db.Column(db.Text)                    # Adoption story or special memories
+    temperament_tags = db.Column(db.String(200))          # Simple comma-separated tags
+    
     appointments = relationship('Appointment', backref='dog', lazy=True, cascade='all, delete-orphan')
     medicines = relationship('DogMedicine', backref='dog', lazy=True, cascade='all, delete-orphan')
 

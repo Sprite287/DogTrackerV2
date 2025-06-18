@@ -9,21 +9,8 @@
       </h1>
       
       {% if current_user.role == 'superadmin' %}
-      <form method="get" class="mb-4" id="rescueSelectForm">
-        <div class="row align-items-end">
-          <div class="col-md-6">
-            <label for="rescueSelect" class="form-label">Select Rescue:</label>
-            <select name="rescue_id" id="rescueSelect" class="form-select">
-              <option value="">Choose a rescue...</option>
-              {% for rescue_option in rescues %}
-                <option value="{{ rescue_option.id }}" {% if rescue_option.id == selected_rescue_id %}selected{% endif %}>
-                  {{ rescue_option.name }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-      </form>
+      {% set auto_submit = false %}
+      {% include 'partials/rescue_filter.html' %}
       {% endif %}
       
       {% if rescue %}
@@ -44,9 +31,9 @@
                 <tr>
                   <td><strong>Status:</strong></td>
                   <td>
-                    <span class="badge {% if rescue.status == 'approved' %}bg-success{% elif rescue.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
-                      {{ rescue.status.title() }}
-                    </span>
+                    {% set status_value = rescue.status %}
+                    {% set status_type = "approval" %}
+                    {% include 'partials/status_badge.html' %}
                   </td>
                 </tr>
                 {% if rescue.registration_date %}
@@ -171,21 +158,17 @@
                 <tr>
                   <td><strong>Data Processing Consent:</strong></td>
                   <td>
-                    {% if rescue.data_consent %}
-                      <span class="badge bg-success">Given</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Not Given</span>
-                    {% endif %}
+                    {% set status_value = rescue.data_consent %}
+                    {% set status_type = "consent" %}
+                    {% include 'partials/status_badge.html' %}
                   </td>
                 </tr>
                 <tr>
                   <td><strong>Marketing Consent:</strong></td>
                   <td>
-                    {% if rescue.marketing_consent %}
-                      <span class="badge bg-success">Given</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Not Given</span>
-                    {% endif %}
+                    {% set status_value = rescue.marketing_consent %}
+                    {% set status_type = "consent" %}
+                    {% include 'partials/status_badge.html' %}
                   </td>
                 </tr>
               </table>

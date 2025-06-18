@@ -1,0 +1,56 @@
+{# Status Badge Component
+   Parameters:
+   - status_value: The actual status value to display
+   - status_type: Type of status (active_inactive, approval, count, appointment, medicine, medical_type)
+   - size: Badge size ('', 'sm', 'lg') - optional
+   - count: For count badges - optional
+   - additional_classes: Extra CSS classes - optional
+#}
+{% set badge_class = "badge" %}
+{% if size %}{% set badge_class = badge_class + " badge-" + size %}{% endif %}
+{% if additional_classes %}{% set badge_class = badge_class + " " + additional_classes %}{% endif %}
+
+{% if status_type == "active_inactive" %}
+    {% if status_value %}
+        <span class="{{ badge_class }} bg-success">Active</span>
+    {% else %}
+        <span class="{{ badge_class }} bg-secondary">Inactive</span>
+    {% endif %}
+{% elif status_type == "approval" %}
+    <span class="{{ badge_class }} {% if status_value == 'approved' %}bg-success{% elif status_value == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+        {{ status_value.title() }}
+    </span>
+{% elif status_type == "count" %}
+    {% if count is defined %}
+        <span class="{{ badge_class }} {% if count > 0 %}bg-primary{% else %}bg-secondary{% endif %}">{{ count }}</span>
+    {% else %}
+        <span class="{{ badge_class }} bg-secondary">{{ status_value }}</span>
+    {% endif %}
+{% elif status_type == "appointment" %}
+    <span class="{{ badge_class }} {% if status_value == 'scheduled' %}bg-warning{% elif status_value == 'completed' %}bg-success{% elif status_value == 'canceled' %}bg-danger{% else %}bg-secondary{% endif %}">
+        {{ status_value.title() }}
+    </span>
+{% elif status_type == "medicine" %}
+    <span class="{{ badge_class }} {% if status_value == 'active' %}bg-success{% elif status_value == 'completed' %}bg-primary{% elif status_value == 'stopped' %}bg-danger{% else %}bg-secondary{% endif %}">
+        {{ status_value.title() }}
+    </span>
+{% elif status_type == "medical_type" %}
+    {% if 'Medical' in status_value %}
+        <span class="{{ badge_class }} bg-danger">Medical</span>
+    {% elif 'Behavioral' in status_value %}
+        <span class="{{ badge_class }} bg-info">Behavioral</span>
+    {% elif 'Training' in status_value %}
+        <span class="{{ badge_class }} bg-success">Training</span>
+    {% else %}
+        <span class="{{ badge_class }} bg-secondary">{{ status_value }}</span>
+    {% endif %}
+{% elif status_type == "consent" %}
+    {% if status_value %}
+        <span class="{{ badge_class }} bg-success">Given</span>
+    {% else %}
+        <span class="{{ badge_class }} bg-secondary">Not Given</span>
+    {% endif %}
+{% else %}
+    {# Fallback for custom status #}
+    <span class="{{ badge_class }} bg-secondary">{{ status_value }}</span>
+{% endif %}

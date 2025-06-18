@@ -13,6 +13,7 @@ from . import dogs_bp
 from flask_login import login_required, current_user
 from extensions import db
 from models import Dog, AppointmentType, MedicinePreset, Appointment, DogMedicine, Reminder, User, DogNote, Rescue, AuditLog
+from empathetic_messages import flash_success, flash_error
 from blueprints.core.decorators import roles_required, role_required, rescue_access_required
 from blueprints.core.utils import get_rescue_dogs, get_rescue_appointments, get_rescue_medicines, get_rescue_medicine_presets
 from blueprints.core.audit_helpers import log_audit_event
@@ -40,6 +41,32 @@ def _get_dog_history_events(dog_id):
             'timestamp': datetime.combine(dog.intake_date, datetime.min.time()),
             'event_type': 'Dog Record', 'description': f'{dog.name} was taken into care.',
             'author': 'System', 'source_model': 'Dog', 'source_id': dog.id
+        })
+    
+    # 1.5. Phase 7C: Personality observations (if available)
+    if dog.personality_notes or dog.energy_level or dog.social_notes or dog.special_story or dog.temperament_tags:
+        personality_details = []
+        if dog.energy_level:
+            personality_details.append(f"Energy level: {dog.energy_level}")
+        if dog.temperament_tags:
+            tags = [tag.strip() for tag in dog.temperament_tags.split(',') if tag.strip()]
+            if tags:
+                personality_details.append(f"Traits: {', '.join(tags[:3])}")
+        if dog.personality_notes:
+            personality_details.append(f"Character: {dog.personality_notes[:100]}{'...' if len(dog.personality_notes) > 100 else ''}")
+        if dog.social_notes:
+            personality_details.append(f"Social: {dog.social_notes[:100]}{'...' if len(dog.social_notes) > 100 else ''}")
+        
+        description = f"Personality observations recorded for {dog.name}. " + " | ".join(personality_details)
+        
+        # Use current time since we don't have specific personality update timestamps
+        history_events.append({
+            'timestamp': datetime.utcnow(),
+            'event_type': 'Personality Profile',
+            'description': description,
+            'author': 'Care Team',
+            'source_model': 'DogPersonality',
+            'source_id': dog.id
         })
     # 2. DogNote Events
     for note in care_notes:
@@ -340,13 +367,12 @@ def edit_dog():
     
     name = request.form.get('name', '').strip()
     if not name or len(name) > 100:
-        error_msg = 'Dog name is required and must be 100 characters or less.'
+        error_msg = flash_error('form_validation_general')
         if request.headers.get('HX-Request'):
             cards = render_dog_cards_html()
             resp = make_response(cards)
             resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": error_msg, "category": "danger"}})
             return resp
-        flash(error_msg, 'danger')
         return redirect(request.referrer or url_for('dogs.dog_list_page'))
     
     dog.name = name
@@ -361,6 +387,7 @@ def edit_dog():
     dog.notes = bleach.clean(notes)
     medical_info = request.form.get('medical_info', '').strip()[:1000]
     dog.medical_info = bleach.clean(medical_info)
+    
     db.session.commit()
     
     log_audit_event(
@@ -382,19 +409,74 @@ def edit_dog():
         success=True
     )
     
+    success_msg = flash_success('dog_updated', dog_name=dog.name)
+    
     if request.headers.get('HX-Request'):
         if request.form.get('from_details') == 'details':
-            flash('Dog updated successfully!', 'success')
             resp = make_response('')
             resp.headers['HX-Redirect'] = request.referrer or '/'
-            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog updated successfully!", "category": "success"}})
+            resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": success_msg, "category": "success"}})
             return resp
         cards = render_dog_cards_html()
         resp = make_response(cards)
-        resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": "Dog updated successfully!", "category": "success"}})
+        resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": success_msg, "category": "success"}})
         return resp
-    flash('Dog updated successfully!', 'success')
     return redirect(url_for('dogs.dog_list_page'))
+
+
+@dogs_bp.route('/dog/<int:dog_id>/personality/edit', methods=['POST'])
+@login_required
+def edit_dog_personality(dog_id):
+    """Edit dog personality fields separately."""
+    print(f"DEBUG: edit_dog_personality called with dog_id={dog_id}")
+    print(f"DEBUG: Current user: {current_user}")
+    print(f"DEBUG: Request form data: {request.form}")
+    
+    dog = Dog.query.get_or_404(dog_id)
+    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
+        abort(403)
+    
+    # Phase 7C: Personality fields only
+    dog.energy_level = request.form.get('energy_level', '').strip()[:20] if request.form.get('energy_level') else None
+    temperament_tags = request.form.get('temperament_tags', '').strip()[:200]
+    dog.temperament_tags = bleach.clean(temperament_tags) if temperament_tags else None
+    personality_notes = request.form.get('personality_notes', '').strip()[:2000]
+    dog.personality_notes = bleach.clean(personality_notes) if personality_notes else None
+    social_notes = request.form.get('social_notes', '').strip()[:2000]
+    dog.social_notes = bleach.clean(social_notes) if social_notes else None
+    special_story = request.form.get('special_story', '').strip()[:2000]
+    dog.special_story = bleach.clean(special_story) if special_story else None
+    
+    db.session.commit()
+    
+    log_audit_event(
+        user_id=current_user.id,
+        rescue_id=dog.rescue_id,
+        action='edit_personality',
+        resource_type='Dog',
+        resource_id=dog.id,
+        details={
+            'name': dog.name,
+            'energy_level': dog.energy_level,
+            'has_temperament_tags': bool(dog.temperament_tags),
+            'has_personality_notes': bool(dog.personality_notes),
+            'has_social_notes': bool(dog.social_notes),
+            'has_special_story': bool(dog.special_story)
+        },
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+        success=True
+    )
+    
+    success_msg = flash_success('dog_updated', dog_name=f"{dog.name}'s personality")
+    
+    if request.headers.get('HX-Request'):
+        resp = make_response('')
+        resp.headers['HX-Redirect'] = request.referrer or url_for('dogs.dog_details', dog_id=dog.id)
+        resp.headers['HX-Trigger'] = json.dumps({"showAlert": {"message": success_msg, "category": "success"}})
+        return resp
+    
+    return redirect(url_for('dogs.dog_details', dog_id=dog.id))
 
 
 @dogs_bp.route('/dog/<int:dog_id>/delete', methods=['POST'])

@@ -1,0 +1,60 @@
+{# Icon with Text Component
+   Parameters:
+   - icon_type: Predefined icon type (history, medicine, appointment, reminder, note, add, done, dismiss, filter, view)
+   - custom_icon: Custom Bootstrap icon class (overrides icon_type)
+   - text: Text to display next to icon
+   - color_class: Optional color class (text-primary, text-success, etc.)
+   - size_class: Optional size class (fs-1, fs-2, etc.)
+#}
+
+{% if icon_type %}
+  {% if icon_type == "history" %}
+    {% set icon_class = "bi-clock-history" %}
+    {% set default_color = "text-info" %}
+  {% elif icon_type == "medicine" %}
+    {% set icon_class = "bi-capsule" %}
+    {% set default_color = "text-warning" %}
+  {% elif icon_type == "appointment" %}
+    {% set icon_class = "bi-calendar-event" %}
+    {% set default_color = "text-success" %}
+  {% elif icon_type == "reminder" %}
+    {% set icon_class = "bi-bell" %}
+    {% set default_color = "text-info" %}
+  {% elif icon_type == "note" %}
+    {% set icon_class = "bi-chat-square-text" %}
+    {% set default_color = "text-primary" %}
+  {% elif icon_type == "add" %}
+    {% set icon_class = "bi-plus-circle" %}
+    {% set default_color = "text-success" %}
+  {% elif icon_type == "done" %}
+    {% set icon_class = "bi-check-lg" %}
+    {% set default_color = "text-success" %}
+  {% elif icon_type == "dismiss" %}
+    {% set icon_class = "bi-x-lg" %}
+    {% set default_color = "text-danger" %}
+  {% elif icon_type == "filter" %}
+    {% set icon_class = "bi-funnel" %}
+    {% set default_color = "text-secondary" %}
+  {% elif icon_type == "view" %}
+    {% set icon_class = "bi-eye" %}
+    {% set default_color = "text-primary" %}
+  {% elif icon_type == "edit" %}
+    {% set icon_class = "bi-pencil" %}
+    {% set default_color = "text-primary" %}
+  {% elif icon_type == "delete" %}
+    {% set icon_class = "bi-trash" %}
+    {% set default_color = "text-danger" %}
+  {% else %}
+    {% set icon_class = "bi-circle" %}
+    {% set default_color = "text-secondary" %}
+  {% endif %}
+{% elif custom_icon %}
+  {% set icon_class = custom_icon %}
+  {% set default_color = "text-secondary" %}
+{% endif %}
+
+{% set final_color = color_class or default_color %}
+{% set final_size = size_class or "" %}
+
+<i class="bi {{ icon_class }} {{ final_color }} {{ final_size }}"></i>
+{% if text %}{{ text }}{% endif %}

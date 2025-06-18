@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Staff Management{% endblock %}
+{% block title %}Care Team Management{% endblock %}
 {% block content %}
-  <h1>Staff Management</h1>
-  <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addStaffModal">Add Staff</button>
+  <h1>Care Team Management</h1>
+  <button class="btn btn-primary mb-3 breathe-hover" data-bs-toggle="modal" data-bs-target="#addStaffModal">Add Care Team Member</button>
 
   <!-- Add Staff Modal -->
   <div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffModalLabel" aria-hidden="true">
@@ -10,7 +10,7 @@
       <div class="modal-content">
         <form id="addStaffForm">
           <div class="modal-header">
-            <h5 class="modal-title" id="addStaffModalLabel">Add Staff Member</h5>
+            <h5 class="modal-title" id="addStaffModalLabel">Add Care Team Member</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -114,11 +114,9 @@
           <td class="user-email">{{ user.email }}</td>
           <td class="user-role">{{ user.role|capitalize }}</td>
           <td class="user-status">
-            {% if user.is_active %}
-              <span class="badge bg-success">Active</span>
-            {% else %}
-              <span class="badge bg-secondary">Inactive</span>
-            {% endif %}
+            {% set status_value = user.is_active %}
+            {% set status_type = "active_inactive" %}
+            {% include 'partials/status_badge.html' %}
           </td>
           <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
           <td>

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ dog.name }} - Care History{% endblock %}
+{% block title %}{{ dog.name }}'s Journey - Care History{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -14,15 +14,15 @@
                 <i class="bi bi-clock-history"></i> History Overview
             </a>
         </div>
-        <h2 class="mb-0">Care History for {{ dog.name }}</h2>
+        <h2 class="mb-0">{{ dog.name }}'s Journey</h2>
     </div>
 
     <p class="text-muted">View all recorded care events, notes, and updates for {{ dog.name }}.</p>
 
     <!-- Add Dog Note Button -->
     <div class="mb-3">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
-            Add New Note
+        <button type="button" class="btn btn-primary breathe-hover" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
+            Add Caring Note
         </button>
         
         <!-- Phase 5C: Export Options -->
@@ -292,9 +292,6 @@
                         <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-arrow-left-circle"></i> Back to Dog Details
                         </a>
-                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
-                            <i class="bi bi-plus-circle"></i> Add Follow-up Note
-                        </button>
                         <div class="btn-group" role="group">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                 <i class="bi bi-plus"></i> Quick Add

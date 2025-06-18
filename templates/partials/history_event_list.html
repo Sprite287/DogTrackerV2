@@ -14,31 +14,35 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h6 class="card-title mb-1 d-flex align-items-center">
                                 {% if event.source_model == 'DogNote' %}
-                                    <i class="bi bi-journal-text text-primary me-2"></i>
+                                    <i class="bi bi-journal-heart me-2 icon-trust-accent"></i>
                                 {% elif event.source_model == 'Appointment' %}
-                                    <i class="bi bi-calendar-event text-success me-2"></i>
+                                    <i class="bi bi-calendar-heart me-2 icon-earth-primary"></i>
                                 {% elif event.source_model == 'DogMedicine' %}
-                                    <i class="bi bi-capsule text-warning me-2"></i>
+                                    <i class="bi bi-capsule-pill me-2 icon-gentle-warning"></i>
                                 {% elif event.source_model == 'Reminder' %}
-                                    <i class="bi bi-bell text-danger me-2"></i>
+                                    <i class="bi bi-heart-pulse me-2 icon-growth-highlight"></i>
+                                {% elif event.source_model == 'DogPersonality' %}
+                                    <i class="bi bi-heart-pulse-fill me-2 icon-growth-highlight"></i>
                                 {% else %}
-                                    <i class="bi bi-circle-fill text-secondary me-2"></i>
+                                    <i class="bi bi-heart me-2 icon-earth-secondary"></i>
                                 {% endif %}
                                 {{ event.event_type }}
                                 
                                 <!-- Phase 5B: Visual Indicators -->
                                 {% if event.source_model == 'DogNote' %}
                                     {% if event.description and 'Medical' in event.description %}
-                                        <span class="badge bg-danger ms-2">Medical</span>
+                                        <span class="badge ms-2 badge-health-care">Health Care</span>
                                     {% elif event.description and 'Behavioral' in event.description %}
-                                        <span class="badge bg-info ms-2">Behavioral</span>
+                                        <span class="badge ms-2 badge-behavior">Behavior</span>
                                     {% elif event.description and 'Training' in event.description %}
-                                        <span class="badge bg-success ms-2">Training</span>
+                                        <span class="badge ms-2 badge-learning">Learning</span>
                                     {% endif %}
                                 {% elif event.source_model == 'Appointment' %}
-                                    <span class="badge bg-success ms-2">Appointment</span>
+                                    <span class="badge ms-2 badge-care-visit">Care Visit</span>
                                 {% elif event.source_model == 'DogMedicine' %}
-                                    <span class="badge bg-warning text-dark ms-2">Medicine</span>
+                                    <span class="badge ms-2 badge-treatment">Treatment</span>
+                                {% elif event.source_model == 'DogPersonality' %}
+                                    <span class="badge ms-2 badge-character">Character</span>
                                 {% endif %}
                             </h6>
                             <small class="text-muted fw-bold">{{ event.timestamp.strftime('%m/%d/%Y %I:%M %p') }}</small>
@@ -48,23 +52,19 @@
                         
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
-                                <i class="bi bi-person me-1"></i>by {{ event.author }}
+                                <i class="bi bi-person-heart me-1 icon-earth-primary"></i>with care by {{ event.author }}
                             </small>
                             
                             <!-- Phase 5B: Contextual Links -->
                             <div class="btn-group btn-group-sm" role="group">
                                 {% if event.source_model == 'Appointment' %}
-                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#appointments" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-calendar-event"></i> View Appointments
+                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#appointments" class="btn btn-sm breathe-hover btn-earth-primary">
+                                        <i class="bi bi-calendar-heart"></i> Care Visits
                                     </a>
                                 {% elif event.source_model == 'DogMedicine' %}
-                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#medicines" class="btn btn-outline-warning btn-sm">
-                                        <i class="bi bi-capsule"></i> View Medicines
+                                    <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#medicines" class="btn btn-sm breathe-hover btn-gentle-warning">
+                                        <i class="bi bi-capsule-pill"></i> Treatments
                                     </a>
-                                {% elif event.source_model == 'DogNote' %}
-                                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
-                                        <i class="bi bi-plus-circle"></i> Add Note
-                                    </button>
                                 {% endif %}
                             </div>
                         </div>
@@ -83,15 +83,27 @@
         </div>
     {% endif %}
 {% else %}
-    <div class="text-center py-5">
-        <div class="mb-3">
-            <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+    <div class="empty-state-natural text-center py-5 breathing-container">
+        <div class="mb-4">
+            <i class="bi bi-journal-heart text-success mb-3 grow-in icon-earth-primary large-icon"></i>
         </div>
-        <h5 class="text-muted">No History Events Found</h5>
-        <p class="text-muted">{% if is_filtered %}Try adjusting your filters{% else %}No events have been recorded yet{% endif %}</p>
+        <h4 class="mb-3 icon-earth-secondary">
+            {% if is_filtered %}
+                No events match your caring search
+            {% else %}
+                {{ dog.name }}'s story is just beginning
+            {% endif %}
+        </h4>
+        <p class="text-muted mb-4 lead">
+            {% if is_filtered %}
+                Try adjusting your filters to see more of their journey
+            {% else %}
+                Every moment of care creates a meaningful chapter in their journey
+            {% endif %}
+        </p>
         {% if not is_filtered %}
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDogNoteModal">
-                <i class="bi bi-plus-circle"></i> Add First Care Note
+            <button type="button" data-bs-toggle="modal" data-bs-target="#addDogNoteModal" class="btn btn-primary btn-lg breathe-hover grow-in">
+                Add First Care Note
             </button>
         {% endif %}
     </div>
