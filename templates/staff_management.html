@@ -104,7 +104,7 @@
           <th>Role</th>
           <th>Status</th>
           <th>Last Login</th>
-          <th>Actions</th>
+          <th class="text-center" style="width: 280px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -119,23 +119,25 @@
             {% include 'partials/status_badge.html' %}
           </td>
           <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
-          <td>
-            {% if user.id != current_user.id and user.role != 'superadmin' %}
-              <button class="btn btn-sm btn-outline-secondary edit-staff-btn" data-bs-toggle="modal" data-bs-target="#editStaffModal"
-                data-user-id="{{ user.id }}"
-                data-user-name="{{ user.name }}"
-                data-user-role="{{ user.role }}"
-                data-user-active="{{ 'true' if user.is_active else 'false' }}">
-                Edit
-              </button>
-              <button class="btn btn-sm btn-outline-warning ms-1 toggle-active-btn" data-user-id="{{ user.id }}">
-                {% if user.is_active %}Deactivate{% else %}Reactivate{% endif %}
-              </button>
-              <button class="btn btn-sm btn-outline-danger ms-1 delete-staff-btn" data-user-id="{{ user.id }}">Delete</button>
-              <button class="btn btn-sm btn-outline-info ms-1 reset-password-btn" data-user-id="{{ user.id }}">Reset Password</button>
-            {% else %}
-              <span class="text-muted">N/A</span>
-            {% endif %}
+          <td class="text-center">
+            <div class="d-flex flex-wrap justify-content-center align-items-center" style="gap: 12px !important; min-height: 40px;">
+              {% if user.id != current_user.id and user.role != 'superadmin' %}
+                <button class="btn btn-outline-secondary btn-sm edit-staff-btn" data-bs-toggle="modal" data-bs-target="#editStaffModal"
+                  data-user-id="{{ user.id }}"
+                  data-user-name="{{ user.name }}"
+                  data-user-role="{{ user.role }}"
+                  data-user-active="{{ 'true' if user.is_active else 'false' }}">
+                  Edit
+                </button>
+                <button class="btn btn-secondary btn-sm deactivate-staff-btn" data-user-id="{{ user.id }}" data-active="{{ user.is_active|lower }}">
+                  {% if user.is_active %}Deactivate{% else %}Reactivate{% endif %}
+                </button>
+                <button class="btn btn-outline-danger btn-sm delete-staff-btn" data-user-id="{{ user.id }}">Delete</button>
+                <button class="btn btn-outline-info btn-sm reset-password-btn" data-user-id="{{ user.id }}">Reset Password</button>
+              {% else %}
+                <span class="text-muted">N/A</span>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -323,19 +325,21 @@
             <td class="user-role">${result.role.charAt(0).toUpperCase() + result.role.slice(1)}</td>
             <td class="user-status"><span class="badge bg-success">Active</span></td>
             <td>Never</td>
-            <td>
-              <button class="btn btn-sm btn-outline-secondary edit-staff-btn" data-bs-toggle="modal" data-bs-target="#editStaffModal"
-                data-user-id="${result.id}"
-                data-user-name="${result.name}"
-                data-user-role="${result.role}"
-                data-user-active="true">
-                Edit
-              </button>
-              <button class="btn btn-sm btn-outline-warning ms-1 toggle-active-btn" data-user-id="${result.id}">
-                Deactivate
-              </button>
-              <button class="btn btn-sm btn-outline-danger ms-1 delete-staff-btn" data-user-id="${result.id}">Delete</button>
-              <button class="btn btn-sm btn-outline-info ms-1 reset-password-btn" data-user-id="${result.id}">Reset Password</button>
+            <td class="text-center">
+              <div class="d-flex flex-wrap justify-content-center align-items-center" style="gap: 12px !important; min-height: 40px;">
+                <button class="btn btn-outline-secondary btn-sm edit-staff-btn" data-bs-toggle="modal" data-bs-target="#editStaffModal"
+                  data-user-id="${result.id}"
+                  data-user-name="${result.name}"
+                  data-user-role="${result.role}"
+                  data-user-active="true">
+                  Edit
+                </button>
+                <button class="btn btn-secondary btn-sm toggle-active-btn" data-user-id="${result.id}">
+                  Deactivate
+                </button>
+                <button class="btn btn-outline-danger btn-sm delete-staff-btn" data-user-id="${result.id}">Delete</button>
+                <button class="btn btn-outline-info btn-sm reset-password-btn" data-user-id="${result.id}">Reset Password</button>
+              </div>
             </td>
           `;
           

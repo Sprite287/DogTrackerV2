@@ -1,0 +1,47 @@
+{% for reminder in reminders %}
+    <div class="reminder-item {% if reminder_type == 'overdue' %}overdue{% endif %}" data-reminder-id="{{ reminder.id }}">
+        <div class="reminder-icon {% if reminder.appointment_id %}vet{% elif reminder.dog_medicine_id %}medication{% else %}other{% endif %}">
+            <i class="bi {% if reminder.appointment_id %}bi-hospital{% elif reminder.dog_medicine_id %}bi-capsule{% else %}bi-calendar-event{% endif %}"></i>
+        </div>
+        <div class="reminder-content">
+            <div class="reminder-title">
+                {% if reminder.appointment_id and reminder.appointment %}
+                    {{ reminder.appointment.title }}
+                {% elif reminder.dog_medicine_id and reminder.dog_medicine %}
+                    {{ reminder.dog_medicine.preset.name if reminder.dog_medicine.preset else 'Medication' }}
+                {% else %}
+                    {{ reminder.reminder_type.replace('_', ' ').title() }}
+                {% endif %}
+            </div>
+            <div class="reminder-meta">
+                <span class="reminder-dog">
+                    <i class="bi bi-heart-fill"></i> {{ reminder.dog.name if reminder.dog else 'Unknown' }}
+                </span>
+                {% if reminder_type == 'overdue' %}
+                    <span class="reminder-overdue-text">
+                        {% set time_diff = now - reminder.due_datetime %}
+                        {% set days = time_diff.days %}
+                        <i class="bi bi-clock"></i> 
+                        {% if days > 0 %}
+                            {{ days }} day{{ 's' if days != 1 else '' }} overdue
+                        {% else %}
+                            {% set hours = (time_diff.seconds // 3600) %}
+                            {{ hours }} hour{{ 's' if hours != 1 else '' }} overdue
+                        {% endif %}
+                    </span>
+                {% elif reminder_type == 'today' %}
+                    <span>
+                        <i class="bi bi-clock"></i> {{ reminder.due_datetime.strftime('%I:%M %p') }}
+                    </span>
+                {% else %}
+                    <span>
+                        <i class="bi bi-calendar3"></i> {{ reminder.due_datetime.strftime('%b %d at %I:%M %p') }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        <button class="btn-complete">
+            <i class="bi bi-check"></i> Done
+        </button>
+    </div>
+{% endfor %}

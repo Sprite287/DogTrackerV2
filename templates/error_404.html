@@ -12,12 +12,16 @@
                 <p class="lead mb-4">Sometimes we take wrong turns while caring for our animals - let's get you back to helping them.</p>
                 <p class="mb-4 text-muted">The page you're looking for might have been moved, or the link might be outdated. No worries - every step in rescue work teaches us something.</p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap">
-                    <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" 
+                    <a href="#" id="return-btn" 
                        class="btn btn-primary btn-lg grow-in btn-organic">
-                        <i class="bi bi-house-heart me-2"></i>Return to Care Center
+                        <i class="bi bi-arrow-left-circle me-2"></i>Return to Previous Page
+                    </a>
+                    <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" 
+                       class="btn btn-secondary btn-lg grow-in btn-organic">
+                        <i class="bi bi-house-heart me-2"></i>Go to Dashboard
                     </a>
                     {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('main.dogs') }}" 
+                    <a href="{{ url_for('dogs.dog_list_page') }}" 
                        class="btn btn-secondary btn-lg grow-in btn-organic">
                         <i class="bi bi-heart me-2"></i>View Dogs in Care
                     </a>
@@ -33,4 +37,29 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script nonce="{{ g.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    // Dynamic return functionality
+    const returnBtn = document.getElementById('return-btn');
+    
+    if (returnBtn) {
+        // Check if we have a referrer
+        if (document.referrer && document.referrer !== '') {
+            // Set the href to go back to the referring page
+            returnBtn.href = 'javascript:history.back()';
+        } else {
+            // No referrer, default to dashboard
+            {% if current_user.is_authenticated %}
+                returnBtn.href = '{{ url_for("main.dashboard") }}';
+            {% else %}
+                returnBtn.href = '{{ url_for("auth.login") }}';
+            {% endif %}
+        }
+    }
+});
+</script>
 {% endblock %} 

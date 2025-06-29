@@ -1,49 +1,37 @@
-from flask import render_template, request, jsonify, redirect, url_for, flash, render_template_string, make_response, send_file, session, g, abort
-import os
-import csv
-import io
-from datetime import datetime, timedelta
-from collections import defaultdict
-from sqlalchemy.orm import joinedload
-from werkzeug.utils import secure_filename
+# Standard library imports
 import json
-import bleach
+from collections import defaultdict
+from datetime import datetime, timedelta
 
+# Third-party imports
+import bleach
+from flask import (abort, flash, g, jsonify, make_response, redirect,
+                   render_template, render_template_string, request, send_file,
+                   session, url_for)
+from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
+
+# Local application imports
 from . import dogs_bp
-from flask_login import login_required, current_user
-from extensions import db
-from models import Dog, AppointmentType, MedicinePreset, Appointment, DogMedicine, Reminder, User, DogNote, Rescue, AuditLog
-from empathetic_messages import flash_success, flash_error
-from blueprints.core.decorators import roles_required, role_required, rescue_access_required
-from blueprints.core.utils import get_rescue_dogs, get_rescue_appointments, get_rescue_medicines, get_rescue_medicine_presets
 from blueprints.core.audit_helpers import log_audit_event
+from blueprints.core.decorators import (rescue_access_required, role_required,
+                                        roles_required)
+from blueprints.core.utils import (check_rescue_access, export_to_csv,
+                                   get_dog_history_events, get_first_user_id,
+                                   get_rescue_appointments, get_rescue_dogs,
+                                   get_rescue_medicine_presets,
+                                   get_rescue_medicines, htmx_error_response)
+from empathetic_messages import flash_error, flash_success
+from extensions import db
+from models import (Appointment, AppointmentType, AuditLog, Dog, DogMedicine,
+                    DogNote, MedicinePreset, Reminder, Rescue, User)
 
 
 def _get_dog_history_events(dog_id):
-    """Complex history aggregation function for dog timeline."""
-    dog = Dog.query.options(
-        joinedload(Dog.appointments).joinedload(Appointment.type),
-        joinedload(Dog.appointments).joinedload(Appointment.creator),
-        joinedload(Dog.medicines).joinedload(DogMedicine.preset),
-        joinedload(Dog.medicines).joinedload(DogMedicine.creator),
-        joinedload(Dog.reminders).joinedload(Reminder.user)
-    ).get_or_404(dog_id)
-
-    # Get care notes separately since it's a dynamic relationship
-    care_notes = DogNote.query.filter_by(dog_id=dog_id).options(
-        joinedload(DogNote.user)
-    ).all()
-
-    history_events = []
-    # 1. Dog Intake Event
-    if dog.intake_date:
-        history_events.append({
-            'timestamp': datetime.combine(dog.intake_date, datetime.min.time()),
-            'event_type': 'Dog Record', 'description': f'{dog.name} was taken into care.',
-            'author': 'System', 'source_model': 'Dog', 'source_id': dog.id
-        })
+    """Get dog history events including personality information."""
+    dog, history_events = get_dog_history_events(dog_id)
     
-    # 1.5. Phase 7C: Personality observations (if available)
+    # Add personality observations if available
     if dog.personality_notes or dog.energy_level or dog.social_notes or dog.special_story or dog.temperament_tags:
         personality_details = []
         if dog.energy_level:
@@ -68,64 +56,10 @@ def _get_dog_history_events(dog_id):
             'source_model': 'DogPersonality',
             'source_id': dog.id
         })
-    # 2. DogNote Events
-    for note in care_notes:
-        history_events.append({
-            'timestamp': note.timestamp, 'event_type': f'Note - {note.category}',
-            'description': note.note_text, 'author': note.user.name if note.user else 'Unknown User',
-            'source_model': 'DogNote', 'source_id': note.id
-        })
-    # 3. Appointment Events
-    for appt in dog.appointments:
-        history_events.append({
-            'timestamp': appt.created_at,
-            'event_type': f'Appointment - {appt.type.name if appt.type else "General"}',
-            'description': f'Appointment "{appt.title}" scheduled for {appt.start_datetime.strftime("%Y-%m-%d %I:%M %p")}. Status: {appt.status}.',
-            'author': appt.creator.name if appt.creator else 'System/Unknown', 'source_model': 'Appointment', 'source_id': appt.id
-        })
-        if appt.updated_at and appt.updated_at != appt.created_at:
-            history_events.append({
-                'timestamp': appt.updated_at, 'event_type': f'Appointment Update - {appt.type.name if appt.type else "General"}',
-                'description': f'Details for appointment "{appt.title}" were updated. New Status: {appt.status}.',
-                'author': 'System/Unknown', 'source_model': 'Appointment', 'source_id': appt.id
-            })
-    # 4. DogMedicine Events
-    for med in dog.medicines:
-        med_name = med.custom_name or (med.preset.name if med.preset else "Unnamed Medicine")
-        history_events.append({
-            'timestamp': datetime.combine(med.start_date, datetime.min.time()),
-            'event_type': f'Medication - {med_name}',
-            'description': f'Started medication: {med_name}. Dosage: {med.dosage} {med.unit}, Frequency: {med.frequency}. Status: {med.status}.',
-            'author': med.creator.name if med.creator else 'System/Unknown', 'source_model': 'DogMedicine', 'source_id': med.id
-        })
-        if med.end_date:
-            history_events.append({
-                'timestamp': datetime.combine(med.end_date, datetime.max.time() - timedelta(seconds=1)),
-                'event_type': f'Medication Ended - {med_name}',
-                'description': f'Ended medication: {med_name}.',
-                'author': med.creator.name if med.creator else 'System/Unknown', 'source_model': 'DogMedicine', 'source_id': med.id
-            })
-        if med.created_at.date() != med.start_date and med.created_at < datetime.combine(med.start_date, datetime.min.time()):
-            history_events.append({
-                'timestamp': med.created_at, 'event_type': f'Medication Logged - {med_name}',
-                'description': f'Medication record for {med_name} was created/updated.',
-                'author': med.creator.name if med.creator else 'System/Unknown', 'source_model': 'DogMedicine', 'source_id': med.id
-            })
-    # 5. Reminder Events
-    for reminder in dog.reminders:
-        history_events.append({
-            'timestamp': reminder.created_at, 'event_type': 'Reminder Created',
-            'description': f'Reminder set: "{reminder.message}" due {reminder.due_datetime.strftime("%Y-%m-%d %I:%M %p")}',
-            'author': reminder.user.name if reminder.user else 'System', 'source_model': 'Reminder', 'source_id': reminder.id
-        })
-        if reminder.status == 'acknowledged' or reminder.status == 'dismissed':
-            status_change_time = reminder.updated_at
-            history_events.append({
-                'timestamp': status_change_time, 'event_type': f'Reminder {reminder.status.title()}',
-                'description': f'Reminder "{reminder.message}" was {reminder.status}.',
-                'author': reminder.user.name if reminder.user else 'System', 'source_model': 'Reminder', 'source_id': reminder.id
-            })
-    history_events.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Re-sort after adding personality event
+        history_events.sort(key=lambda x: x['timestamp'], reverse=True)
+    
     return dog, history_events
 
 
@@ -221,8 +155,7 @@ def dog_list_page():
 def dog_details(dog_id):
     """Dog details page with appointments, medicines, and recent history."""
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
 
     # Fetch and prepare appointment types ensuring unique names, sorted
     appointment_types_db = AppointmentType.query.filter_by(rescue_id=dog.rescue_id).order_by(AppointmentType.name).all()
@@ -267,7 +200,9 @@ def dog_details(dog_id):
                            dog=dog, 
                            appointment_types=appointment_types_json, 
                            medicine_presets_categorized=sorted_categorized_medicine_presets,
-                           recent_history_events=recent_history_events)
+                           recent_history_events=recent_history_events,
+                           now=datetime.now(),
+                           timedelta=timedelta)
 
 
 @dogs_bp.route('/dog/add', methods=['POST'])
@@ -362,8 +297,7 @@ def edit_dog():
     """Edit existing dog with validation and audit logging."""
     dog_id = request.form.get('dog_id')
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     
     name = request.form.get('name', '').strip()
     if not name or len(name) > 100:
@@ -433,8 +367,7 @@ def edit_dog_personality(dog_id):
     print(f"DEBUG: Request form data: {request.form}")
     
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     
     # Phase 7C: Personality fields only
     dog.energy_level = request.form.get('energy_level', '').strip()[:20] if request.form.get('energy_level') else None
@@ -485,8 +418,7 @@ def edit_dog_personality(dog_id):
 def delete_dog(dog_id):
     """Delete dog with audit logging and HTMX support."""
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     
     # Store dog info for audit log before deletion
     dog_info = {
@@ -534,23 +466,13 @@ def delete_dog(dog_id):
     return redirect(url_for('dogs.dog_list_page'))
 
 
-def get_first_user_id():
-    """Helper to get the ID of the first available user, or None."""
-    first_user = User.query.order_by(User.id.asc()).first()
-    if first_user:
-        return first_user.id
-    print("WARNING: No users found in the database. 'created_by' fields will be None.")
-    return None
-
-
 @dogs_bp.route('/dog/<int:dog_id>/history')
 @rescue_access_required(lambda kwargs: Dog.query.get(kwargs['dog_id']).rescue_id)
 @login_required
 def dog_history(dog_id):
     """Dog history timeline with pagination."""
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     dog, all_history_events = _get_dog_history_events(dog_id)
     
     # Calculate days in care if intake_date exists
@@ -579,18 +501,32 @@ def dog_history(dog_id):
 def dog_history_overview():
     """Overview of all dogs with recent history events."""
     rescue_id = request.args.get('rescue_id', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # Limit per_page to reasonable values
+    if per_page not in [10, 20, 50, 100]:
+        per_page = 20
+    
+    # Build base query
     if current_user.role == 'superadmin':
         rescues = Rescue.query.order_by(Rescue.name.asc()).all()
         if rescue_id:
-            dogs = Dog.query.filter_by(rescue_id=rescue_id).order_by(Dog.name.asc()).all()
+            base_query = Dog.query.filter_by(rescue_id=rescue_id)
         else:
-            dogs = Dog.query.order_by(Dog.name.asc()).all()
+            base_query = Dog.query
     else:
         rescues = None
         rescue_id = current_user.rescue_id
-        dogs = Dog.query.filter_by(rescue_id=current_user.rescue_id).order_by(Dog.name.asc()).all()
+        base_query = Dog.query.filter_by(rescue_id=current_user.rescue_id)
     
-    # Organize dogs alphabetically for accordion display
+    # Get paginated results
+    dogs_pagination = base_query.order_by(Dog.name.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    dogs = dogs_pagination.items
+    
+    # Organize dogs alphabetically for display
     dogs_by_letter = {}
     for dog in dogs:
         first_letter = dog.name[0].upper() if dog.name else 'Unknown'
@@ -615,7 +551,10 @@ def dog_history_overview():
                            dogs_by_letter=sorted_dogs_by_letter,
                            recent_events=recent_events,
                            rescues=rescues,
-                           selected_rescue_id=rescue_id)
+                           selected_rescue_id=rescue_id,
+                           pagination=dogs_pagination,
+                           per_page=per_page,
+                           now=datetime.now())
 
 
 @dogs_bp.route('/dog/<int:dog_id>/note/add', methods=['POST'])
@@ -624,17 +563,13 @@ def dog_history_overview():
 def add_dog_note(dog_id):
     """Add care note to dog with validation and HTMX support."""
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     
     dog_check = Dog.query.get_or_404(dog_id)
     current_user_id = get_first_user_id()
     if not current_user_id:
         if request.headers.get('HX-Request'):
-            response = make_response(render_template('partials/modal_form_error.html', message='Error: Could not identify user for note creation.'), 400)
-            response.headers['HX-Retarget'] = '#addDogNoteModalError'
-            response.headers['HX-Reswap'] = 'innerHTML'
-            return response
+            return htmx_error_response('Error: Could not identify user for note creation.', 'addDogNoteModal', 400)
         flash('Error: Could not identify user for note creation.', 'danger')
         return redirect(url_for('dogs.dog_history', dog_id=dog_id))
 
@@ -652,10 +587,7 @@ def add_dog_note(dog_id):
 
     if error_message:
         if request.headers.get('HX-Request'):
-            response = make_response(render_template('partials/modal_form_error.html', message=error_message), 200)
-            response.headers['HX-Retarget'] = '#addDogNoteModalError'
-            response.headers['HX-Reswap'] = 'innerHTML'
-            return response
+            return htmx_error_response(error_message, 'addDogNoteModal', 200)
         else:
             flash(error_message, 'danger')
             return redirect(url_for('dogs.dog_history', dog_id=dog_id))
@@ -765,21 +697,25 @@ def export_dog_history(dog_id):
     """Export complete dog history as CSV."""
     dog, all_history_events = _get_dog_history_events(dog_id)
     
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Prepare headers
+    headers = ['Timestamp', 'Event Type', 'Description', 'Author', 'Source Model', 'Source ID']
     
-    writer.writerow(['Timestamp', 'Event Type', 'Description', 'Author', 'Source Model', 'Source ID'])
-    
+    # Prepare data rows
+    data = []
     for event in all_history_events:
-        writer.writerow([event['timestamp'].isoformat(), event['event_type'], event['description'], event['author'], event['source_model'], event['source_id']])
+        data.append([
+            event['timestamp'].isoformat(),
+            event['event_type'],
+            event['description'],
+            event['author'],
+            event['source_model'],
+            event['source_id']
+        ])
     
-    csv_content = output.getvalue()
+    # Generate filename
+    filename = f"{dog.name}_history"
     
-    response = make_response(csv_content)
-    response.headers['Content-Disposition'] = f'attachment; filename={dog.name}_history.csv'
-    response.headers['Content-Type'] = 'text/csv'
-    
-    return response
+    return export_to_csv(data, headers, filename)
 
 
 @dogs_bp.route('/export/medical_summary/<int:dog_id>', methods=['GET'])
@@ -789,13 +725,13 @@ def export_medical_summary(dog_id):
     """Export medical summary as CSV."""
     dog = Dog.query.get_or_404(dog_id)
     
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Prepare headers
+    headers = ['Medicine Name', 'Dosage', 'Unit', 'Form', 'Frequency', 'Start Date', 'End Date', 'Status', 'Notes']
     
-    writer.writerow(['Medicine Name', 'Dosage', 'Unit', 'Form', 'Frequency', 'Start Date', 'End Date', 'Status', 'Notes'])
-    
+    # Prepare data rows
+    data = []
     for med in dog.medicines:
-        writer.writerow([
+        data.append([
             med.custom_name or (med.preset.name if med.preset else "Unnamed Medicine"),
             med.dosage,
             med.unit,
@@ -807,13 +743,10 @@ def export_medical_summary(dog_id):
             med.notes
         ])
     
-    csv_content = output.getvalue()
+    # Generate filename
+    filename = f"{dog.name}_medical_summary"
     
-    response = make_response(csv_content)
-    response.headers['Content-Disposition'] = f'attachment; filename={dog.name}_medical_summary.csv'
-    response.headers['Content-Type'] = 'text/csv'
-    
-    return response
+    return export_to_csv(data, headers, filename)
 
 
 @dogs_bp.route('/export/medication_log/<int:dog_id>', methods=['GET'])
@@ -823,13 +756,13 @@ def export_medication_log(dog_id):
     """Export medication log as CSV."""
     dog = Dog.query.get_or_404(dog_id)
     
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Prepare headers
+    headers = ['Medicine Name', 'Dosage', 'Unit', 'Form', 'Frequency', 'Start Date', 'End Date', 'Status', 'Notes']
     
-    writer.writerow(['Medicine Name', 'Dosage', 'Unit', 'Form', 'Frequency', 'Start Date', 'End Date', 'Status', 'Notes'])
-    
+    # Prepare data rows
+    data = []
     for med in dog.medicines:
-        writer.writerow([
+        data.append([
             med.custom_name or (med.preset.name if med.preset else "Unnamed Medicine"),
             med.dosage,
             med.unit,
@@ -841,13 +774,10 @@ def export_medication_log(dog_id):
             med.notes
         ])
     
-    csv_content = output.getvalue()
+    # Generate filename
+    filename = f"{dog.name}_medication_log"
     
-    response = make_response(csv_content)
-    response.headers['Content-Disposition'] = f'attachment; filename={dog.name}_medication_log.csv'
-    response.headers['Content-Type'] = 'text/csv'
-    
-    return response
+    return export_to_csv(data, headers, filename)
 
 
 @dogs_bp.route('/export/care_summary/<int:dog_id>', methods=['GET'])

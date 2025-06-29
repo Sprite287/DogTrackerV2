@@ -1,0 +1,1464 @@
+/* Calendar Page - Complete Refinement
+   ========================================================
+   70/30 layout with proper FullCalendar integration
+*/
+
+/* Smooth transitions for key elements only */
+.calendar-header,
+.calendar-container,
+.reminders-card,
+.reminders-header,
+.reminder-tabs,
+.reminder-tab,
+.reminder-item,
+.view-btn,
+.btn-add-event,
+.btn-complete,
+.show-more-btn,
+.fc-daygrid-day,
+.fc-event {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
+}
+
+/* ===== 1. Page Layout (70/30 Split) ===== */
+.calendar-page {
+    min-height: calc(100vh - 80px);
+    padding: 0;
+}
+
+/* Ensure the container uses full width */
+.container-fluid.mt-4 {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.calendar-page-container {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+}
+
+/* Main Calendar Section (70% - wider) */
+.calendar-main {
+    flex: 2.3;
+    background: var(--caring-bg-light);
+    border-radius: var(--radius-soft);
+    box-shadow: var(--shadow-gentle);
+    overflow: hidden;
+    min-width: 0; /* Allow flex shrinking */
+}
+
+/* Reminders Sidebar (30% - wider for better content fit) */
+.reminders-sidebar {
+    flex: 1;
+    max-width: 420px;
+    min-width: 380px;
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 120px);
+    overflow: hidden; /* Prevent sidebar itself from scrolling */
+}
+
+/* ===== 2. Calendar Header ===== */
+.calendar-header {
+    background: white;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    min-height: 80px;
+}
+
+body.dark-mode .calendar-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+.calendar-title h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: var(--caring-secondary);
+    font-weight: 600;
+}
+
+body.dark-mode .calendar-title h1 {
+    color: var(--text-primary);
+}
+
+.today-date {
+    color: var(--caring-primary);
+    font-weight: 500;
+    margin-left: 1rem;
+}
+
+/* View Switcher */
+.view-switcher {
+    display: flex;
+    background: rgba(107, 143, 82, 0.1);
+    border-radius: 6px;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid rgba(107, 143, 82, 0.15);
+}
+
+body.dark-mode .view-switcher {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--caring-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+body.dark-mode .view-btn {
+    color: var(--text-secondary);
+}
+
+.view-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+body.dark-mode .view-btn:hover {
+    background: var(--bg-quaternary);
+}
+
+.view-btn.active {
+    background: white;
+    color: var(--caring-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+body.dark-mode .view-btn.active {
+    background: var(--bg-tertiary);
+    color: var(--caring-primary);
+}
+
+/* Add Event Button */
+.btn-add-event {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--caring-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(107, 143, 82, 0.2);
+}
+
+.btn-add-event:hover {
+    background: #7FAD70;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(107, 143, 82, 0.3);
+}
+
+.btn-add-event:active {
+    transform: translateY(0);
+}
+
+/* Breathe hover animation */
+.btn-add-event.breathe-hover:hover {
+    animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: translateY(-1px) scale(1); }
+    50% { transform: translateY(-1px) scale(1.02); }
+}
+
+body.dark-mode .btn-add-event {
+    background: var(--caring-primary);
+}
+
+body.dark-mode .btn-add-event:hover {
+    background: #7FAD70;
+}
+
+/* ===== 3. Calendar Container ===== */
+.calendar-container {
+    padding: 1.5rem;
+    background: var(--caring-bg-light);
+    box-shadow: 0 2px 8px rgba(93, 74, 55, 0.15);
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    border-radius: 6px;
+    min-height: 600px;
+}
+
+body.dark-mode .calendar-container {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== 4. FullCalendar Customization ===== */
+.fc {
+    font-family: var(--font-caring);
+}
+
+/* Hide default toolbar - we use custom header */
+.fc-toolbar {
+    display: none !important;
+}
+
+/* Calendar table */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .fc-theme-standard td,
+body.dark-mode .fc-theme-standard th {
+    border-color: var(--border-color);
+}
+
+/* Day headers */
+.fc-col-header-cell {
+    background: rgba(107, 143, 82, 0.05) !important;
+    padding: 0.75rem !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px !important;
+    font-weight: 600 !important;
+    color: var(--caring-secondary) !important;
+    border: 1px solid rgba(107, 143, 82, 0.1) !important;
+}
+
+body.dark-mode .fc-col-header-cell {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Calendar cells */
+.fc-daygrid-day {
+    background: white !important;
+    border: 1px solid rgba(107, 143, 82, 0.1) !important;
+    transition: all 0.2s ease !important;
+    min-height: 140px !important;
+    vertical-align: top !important;
+    position: relative !important;
+}
+
+body.dark-mode .fc-daygrid-day {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.fc-daygrid-day:hover {
+    background: rgba(107, 143, 82, 0.03) !important;
+}
+
+body.dark-mode .fc-daygrid-day:hover {
+    background: var(--bg-tertiary) !important;
+}
+
+/* Weekend cells */
+.fc-day-sat,
+.fc-day-sun {
+    background: rgba(0, 0, 0, 0.02) !important;
+}
+
+body.dark-mode .fc-day-sat,
+body.dark-mode .fc-day-sun {
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Today highlight */
+.fc-day-today {
+    background: rgba(107, 143, 82, 0.08) !important;
+    border: 2px solid var(--caring-primary) !important;
+}
+
+body.dark-mode .fc-day-today {
+    background: rgba(107, 143, 82, 0.15) !important;
+    border-color: var(--caring-primary) !important;
+}
+
+/* Day numbers */
+.fc-daygrid-day-number {
+    color: var(--caring-secondary) !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    padding: 0.5rem !important;
+}
+
+body.dark-mode .fc-daygrid-day-number {
+    color: var(--text-primary) !important;
+}
+
+/* Other month days */
+.fc-day-other .fc-daygrid-day-number {
+    opacity: 0.4 !important;
+}
+
+/* ===== 5. Calendar Events ===== */
+.fc-event {
+    border: none !important;
+    padding: 2px 6px !important;
+    margin: 1px !important;
+    border-radius: 3px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    min-height: 18px !important;
+    line-height: 1.1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.fc-event:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+    text-decoration: none !important;
+}
+
+/* Event colors by category */
+.fc-event.vet {
+    background-color: #e74c3c !important;
+    color: white !important;
+}
+
+.fc-event.grooming {
+    background-color: #3498db !important;
+    color: white !important;
+}
+
+.fc-event.medication {
+    background-color: #f39c12 !important;
+    color: white !important;
+}
+
+.fc-event.checkup {
+    background-color: #2ecc71 !important;
+    color: white !important;
+}
+
+.fc-event.other {
+    background-color: #95a5a6 !important;
+    color: white !important;
+}
+
+/* Event title */
+.fc-event-title {
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: white !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+/* Ensure all event text is white and visible */
+.fc-event .fc-event-main {
+    color: white !important;
+}
+
+.fc-event .fc-event-title-container {
+    color: white !important;
+}
+
+.fc-event .fc-event-time {
+    color: white !important;
+}
+
+/* More events link */
+.fc-daygrid-more-link {
+    color: var(--caring-primary) !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+}
+
+body.dark-mode .fc-daygrid-more-link {
+    color: var(--brand-primary) !important;
+}
+
+/* More events popover styling */
+.fc-popover {
+    background: var(--caring-bg-light) !important;
+    border: 1px solid rgba(107, 143, 82, 0.2) !important;
+    border-radius: var(--radius-soft) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden !important;
+}
+
+body.dark-mode .fc-popover {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fc-popover-header {
+    background: rgba(107, 143, 82, 0.1) !important;
+    color: var(--caring-secondary) !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1) !important;
+}
+
+body.dark-mode .fc-popover-header {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+.fc-popover-body {
+    padding: 0.5rem !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+}
+
+.fc-popover .fc-event {
+    margin: 2px 0 !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+}
+
+.fc-popover-close {
+    color: var(--caring-secondary) !important;
+    opacity: 0.7 !important;
+}
+
+body.dark-mode .fc-popover-close {
+    color: var(--text-primary) !important;
+}
+
+/* ===== 6. Week/Day/List Views ===== */
+/* Week view */
+.fc-timegrid-slot {
+    height: 2.5rem;
+    border-color: rgba(107, 143, 82, 0.1) !important;
+}
+
+body.dark-mode .fc-timegrid-slot {
+    border-color: var(--border-color) !important;
+}
+
+.fc-timegrid-slot-label {
+    color: var(--caring-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+body.dark-mode .fc-timegrid-slot-label {
+    color: var(--text-secondary);
+}
+
+/* Week/Day header */
+.fc-timegrid-col-frame {
+    background: white;
+}
+
+body.dark-mode .fc-timegrid-col-frame {
+    background: var(--bg-secondary);
+}
+
+/* Week events */
+.fc-timegrid-event {
+    border-radius: 4px !important;
+    border: none !important;
+    padding: 2px 6px !important;
+    font-size: 0.8rem !important;
+}
+
+.fc-timegrid-event .fc-event-title {
+    font-weight: 500 !important;
+}
+
+/* List view */
+.fc-list-day-cushion {
+    background: rgba(107, 143, 82, 0.1) !important;
+    color: var(--caring-secondary) !important;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+}
+
+body.dark-mode .fc-list-day-cushion {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.fc-list-event {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fc-list-event:hover {
+    background: rgba(107, 143, 82, 0.05);
+}
+
+body.dark-mode .fc-list-event:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Fix list view text contrast */
+.fc-list-event-title {
+    color: var(--caring-secondary) !important;
+    font-weight: 600 !important;
+}
+
+body.dark-mode .fc-list-event-title {
+    color: var(--text-primary) !important;
+}
+
+.fc-list-event-time {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode .fc-list-event-time {
+    color: var(--text-secondary) !important;
+}
+
+/* ===== 7. Reminders Sidebar ===== */
+.reminders-card {
+    background: var(--caring-bg-light);
+    border-radius: var(--radius-soft);
+    box-shadow: var(--shadow-gentle);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: calc(100vh - 140px);
+}
+
+body.dark-mode .reminders-card {
+    background: var(--bg-secondary);
+}
+
+.reminders-header {
+    background: white;
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .reminders-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+.reminders-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--caring-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.dark-mode .reminders-header h2 {
+    color: var(--text-primary);
+}
+
+.reminder-count {
+    background: var(--caring-primary);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-left: auto;
+}
+
+body.dark-mode .reminder-count {
+    background: var(--brand-primary);
+}
+
+/* Reminder Tabs */
+.reminder-tabs {
+    display: flex;
+    background: rgba(107, 143, 82, 0.05);
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .reminder-tabs {
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+}
+
+.reminder-tab {
+    flex: 1;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--caring-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+body.dark-mode .reminder-tab {
+    color: var(--text-secondary);
+}
+
+.reminder-tab:hover {
+    background: rgba(107, 143, 82, 0.03);
+}
+
+body.dark-mode .reminder-tab:hover {
+    background: var(--bg-tertiary);
+}
+
+.reminder-tab.active {
+    color: var(--caring-primary);
+    background: white;
+}
+
+body.dark-mode .reminder-tab.active {
+    color: var(--caring-primary);
+    background: var(--bg-secondary);
+}
+
+.reminder-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--caring-primary);
+    border-radius: 2px 2px 0 0;
+}
+
+body.dark-mode .reminder-tab.active::after {
+    background: var(--caring-primary);
+}
+
+.tab-count {
+    background: rgba(107, 143, 82, 0.2);
+    color: var(--caring-secondary);
+    padding: 0.125rem 0.375rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+body.dark-mode .tab-count {
+    background: var(--bg-quaternary);
+    color: var(--text-secondary);
+}
+
+.reminder-tab.active .tab-count {
+    background: var(--caring-primary);
+    color: white;
+}
+
+body.dark-mode .reminder-tab.active .tab-count {
+    background: var(--brand-primary);
+}
+
+/* Overdue tab special styling */
+.reminder-tab.overdue-tab .tab-count {
+    background: rgba(183, 122, 102, 0.2);
+    color: #B77A66; /* var(--caring-warning) equivalent */
+    border: 1px solid rgba(183, 122, 102, 0.3);
+}
+
+/* Reminders List */
+.reminders-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    padding-bottom: 3rem; /* Extra bottom padding for scrolling */
+    scroll-behavior: smooth;
+    max-height: calc(100vh - 250px); /* Ensure proper scrollable height */
+}
+
+.reminder-tab-content {
+    display: none;
+}
+
+.reminder-tab-content.active {
+    display: block;
+}
+
+.reminder-item {
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    transition: all 0.2s ease;
+    min-height: 80px;
+    box-shadow: 0 1px 3px rgba(107, 143, 82, 0.08);
+}
+
+body.dark-mode .reminder-item {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reminder-item:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-mode .reminder-item:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.reminder-item.overdue {
+    border-left: 3px solid #e74c3c;
+    background: rgba(231, 76, 60, 0.05);
+}
+
+body.dark-mode .reminder-item.overdue {
+    background: rgba(255, 134, 149, 0.05);
+}
+
+/* Reminder icons */
+.reminder-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.reminder-icon.vet {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.reminder-icon.grooming {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.reminder-icon.medication {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+.reminder-icon.other {
+    background: rgba(107, 143, 82, 0.1);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.2);
+}
+
+.reminder-item:hover .reminder-icon {
+    transform: scale(1.1);
+}
+
+/* Reminder content */
+.reminder-content {
+    flex: 1;
+}
+
+.reminder-title {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+body.dark-mode .reminder-title {
+    color: var(--text-primary);
+}
+
+.reminder-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    line-height: 1.3;
+}
+
+@media (min-width: 1400px) {
+    .reminder-meta {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+    }
+}
+
+.reminder-dog {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.reminder-dog i {
+    color: var(--caring-primary);
+}
+
+body.dark-mode .reminder-dog i {
+    color: var(--brand-primary);
+}
+
+/* Action button */
+.btn-complete {
+    padding: 0.375rem 0.75rem;
+    background: white;
+    border: 1px solid var(--caring-primary);
+    color: var(--caring-primary);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 1px 2px rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .btn-complete {
+    background: var(--bg-secondary);
+    border-color: var(--caring-primary);
+    color: var(--caring-primary);
+}
+
+.btn-complete:hover {
+    background: var(--caring-primary);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(107, 143, 82, 0.2);
+}
+
+body.dark-mode .btn-complete:hover {
+    background: var(--caring-primary);
+    color: white;
+}
+
+/* Show more button */
+.show-more-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px dashed var(--caring-primary);
+    color: var(--caring-primary);
+    border-radius: var(--radius-soft);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+body.dark-mode .show-more-btn {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+}
+
+.show-more-btn:hover {
+    background: var(--caring-primary);
+    color: white;
+    border-style: solid;
+}
+
+body.dark-mode .show-more-btn:hover {
+    background: var(--brand-primary);
+    color: var(--bg-primary);
+}
+
+.show-more-btn i {
+    transition: transform 0.2s ease;
+}
+
+.show-more-btn.expanded i {
+    transform: rotate(180deg);
+}
+
+/* Hidden reminder items */
+.hidden-reminder {
+    display: none !important;
+}
+
+/* Reminder removal animation */
+.reminder-removing {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+}
+
+/* Empty state */
+.empty-reminders {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-reminders i {
+    font-size: 3rem;
+    color: var(--caring-primary);
+    opacity: 0.3;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* ===== 8. Responsive Design ===== */
+@media (max-width: 1200px) {
+    .calendar-page-container {
+        flex-direction: column;
+    }
+    
+    .reminders-sidebar {
+        width: 100%;
+        order: -1; /* Show reminders on top */
+        position: static;
+        max-height: 400px;
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .calendar-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .calendar-title {
+        margin-bottom: 0.5rem;
+    }
+    
+    .view-switcher {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-add-event {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .fc-daygrid-day-number {
+        font-size: 0.875rem;
+    }
+    
+    .fc-event {
+        font-size: 0.7rem !important;
+    }
+}
+
+/* ===== 9. Loading State ===== */
+.calendar-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: var(--caring-primary);
+}
+
+.calendar-loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-color: var(--caring-primary);
+    border-right-color: transparent;
+}
+
+/* ===== 10. Tooltips ===== */
+.fc-event[data-bs-toggle="tooltip"] {
+    cursor: pointer;
+}
+
+.tooltip-inner {
+    background: var(--caring-secondary);
+    max-width: 300px;
+    text-align: left;
+    padding: 0.75rem;
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: var(--caring-secondary);
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: var(--caring-secondary);
+}
+
+.tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: var(--caring-secondary);
+}
+
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: var(--caring-secondary);
+}
+
+/* Fix tooltip z-index conflicts with popovers */
+.tooltip {
+    z-index: 1070 !important;
+}
+
+.fc-popover {
+    z-index: 1060 !important;
+}
+
+/* Ensure tooltips are hidden when popovers are open */
+.fc-popover-open .tooltip {
+    z-index: 1050 !important;
+    opacity: 0 !important;
+}
+
+/* ===== 11. Filter Bar (from calendar-redesign.css) ===== */
+.calendar-filter-bar {
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 0.75rem 1rem;
+    margin-bottom: var(--space-gentle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+body.dark-mode .calendar-filter-bar {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.filter-label {
+    font-weight: 500;
+    color: var(--caring-secondary);
+    margin-right: 0.5rem;
+}
+
+body.dark-mode .filter-label {
+    color: var(--text-primary);
+}
+
+.filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.2);
+    border-radius: 20px;
+    color: var(--caring-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition-gentle);
+}
+
+body.dark-mode .filter-toggle {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.filter-toggle:hover {
+    background: rgba(107, 143, 82, 0.1);
+    border-color: var(--caring-primary);
+}
+
+body.dark-mode .filter-toggle:hover {
+    background: var(--bg-quaternary);
+    border-color: var(--brand-primary);
+}
+
+.filter-toggle.active {
+    background: var(--caring-primary);
+    border-color: var(--caring-primary);
+    color: white;
+}
+
+body.dark-mode .filter-toggle.active {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: var(--bg-primary);
+}
+
+.filter-toggle .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* Event type indicators */
+.filter-toggle[data-filter-type="vet"] .indicator { background-color: #e74c3c; }
+.filter-toggle[data-filter-type="grooming"] .indicator { background-color: #3498db; }
+.filter-toggle[data-filter-type="medication"] .indicator { background-color: #f39c12; }
+.filter-toggle[data-filter-type="other"] .indicator { background-color: #95a5a6; }
+
+/* ===== 12. Event Labels Pills (from calendar-redesign.css) ===== */
+/* Event label pills - FORCE WHITE TEXT */
+.event-label {
+    display: inline-block !important;
+    padding: 4px 8px !important;
+    margin: 3px 2px !important;
+    border-radius: 3px;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: white !important;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+    text-align: left;
+    line-height: 1.2 !important;
+    min-height: 24px !important;
+    max-width: 100% !important;
+}
+
+/* Force all text inside event labels to be white */
+.event-label,
+.event-label *,
+.event-label:hover,
+.event-label:focus,
+.event-label:visited {
+    color: white !important;
+    text-decoration: none !important;
+}
+
+/* Event label text structure */
+.event-label .event-type {
+    font-weight: 700 !important;
+    color: white !important;
+}
+
+.event-label .event-pet {
+    color: white !important;
+    font-weight: 500 !important;
+}
+
+.event-label:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    color: white !important;
+    text-decoration: none !important;
+    filter: brightness(1.1);
+}
+
+/* Event type colors - DARKER FOR BETTER CONTRAST */
+.event-label.vet {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.event-label.grooming {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+.event-label.medication {
+    background-color: #fd7e14 !important;
+    color: white !important;
+}
+
+.event-label.other {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+/* ===== 13. Enhanced Tooltips (from calendar-redesign.css) ===== */
+.event-tooltip {
+    position: fixed;
+    width: 320px;
+    background: var(--caring-bg-light, white);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 1rem;
+    box-shadow: var(--shadow-gentle);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+body.dark-mode .event-tooltip {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+/* Tooltip arrow */
+.event-tooltip .tooltip-arrow {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.2);
+    transform: rotate(45deg);
+}
+
+body.dark-mode .event-tooltip .tooltip-arrow {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.event-tooltip.left .tooltip-arrow {
+    right: -5px;
+    top: 20px;
+    border-right: none;
+    border-top: none;
+}
+
+.event-tooltip.right .tooltip-arrow {
+    left: -5px;
+    top: 20px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.event-tooltip .tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .event-tooltip .tooltip-header {
+    color: var(--text-primary);
+}
+
+.event-tooltip .tooltip-body {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+body.dark-mode .event-tooltip .tooltip-body {
+    color: var(--text-secondary);
+}
+
+.event-tooltip .tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.event-tooltip .tooltip-row i {
+    color: var(--caring-primary);
+    width: 16px;
+}
+
+/* Tooltip actions */
+.event-tooltip .tooltip-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .event-tooltip .tooltip-actions {
+    border-top-color: var(--border-color);
+}
+
+.event-tooltip .tooltip-actions a {
+    color: var(--caring-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.event-tooltip .tooltip-actions a:hover {
+    text-decoration: underline;
+}
+
+/* ===== 14. List View Styles (from calendar-redesign.css) ===== */
+.appointment-list-container {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: var(--space-gentle);
+    box-shadow: var(--shadow-gentle);
+}
+
+body.dark-mode .appointment-list-container {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.date-group {
+    margin-bottom: 2rem;
+}
+
+.date-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(107, 143, 82, 0.1);
+}
+
+body.dark-mode .date-header {
+    border-bottom-color: var(--border-color);
+}
+
+.date-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .date-header h3 {
+    color: var(--text-primary);
+}
+
+.date-header .count {
+    background: var(--caring-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+body.dark-mode .date-header .count {
+    background: var(--brand-primary);
+}
+
+.appointment-card {
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    border-radius: var(--radius-soft);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: var(--transition-gentle);
+}
+
+body.dark-mode .appointment-card {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.appointment-card:hover {
+    box-shadow: 0 2px 8px rgba(93, 74, 55, 0.1);
+    transform: translateY(-1px);
+}
+
+body.dark-mode .appointment-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== 15. Event Modal Styling (from calendar-redesign.css) ===== */
+#allEventsModal .modal-content {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+}
+
+body.dark-mode #allEventsModal .modal-content {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+#allEventsModal .modal-header {
+    background: rgba(107, 143, 82, 0.05);
+    border-bottom: 1px solid rgba(107, 143, 82, 0.15);
+}
+
+body.dark-mode #allEventsModal .modal-header {
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+}
+
+#allEventsModal .modal-title {
+    color: var(--caring-secondary);
+    font-weight: 600;
+}
+
+body.dark-mode #allEventsModal .modal-title {
+    color: var(--text-primary);
+}
+
+#allEventsModal .list-group-item {
+    background: white;
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    margin-bottom: 0.5rem;
+    border-radius: var(--radius-soft);
+}
+
+body.dark-mode #allEventsModal .list-group-item {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+#allEventsModal .list-group-item:hover {
+    background: rgba(107, 143, 82, 0.02);
+}
+
+body.dark-mode #allEventsModal .list-group-item:hover {
+    background: var(--bg-quaternary);
+}
+
+#allEventsModal .appointment-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#allEventsModal .appointment-icon.vet {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+}
+
+#allEventsModal .appointment-icon.grooming {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+}
+
+#allEventsModal .appointment-icon.medication {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+}
+
+#allEventsModal .appointment-icon.other {
+    background: rgba(149, 165, 166, 0.1);
+    color: #95a5a6;
+}

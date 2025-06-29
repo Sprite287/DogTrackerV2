@@ -1,0 +1,2981 @@
+/* Simplified Caring Components */
+
+/* --- Theme Switch --- */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+  margin: 0;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: var(--transition-gentle);
+  border-radius: 26px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: var(--transition-gentle);
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--caring-primary);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 4px var(--caring-primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* --- Caring Cards --- */
+.card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    box-shadow: var(--shadow-gentle);
+    margin-bottom: var(--space-gentle);
+    color: var(--caring-secondary);
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(93, 74, 55, 0.2);
+    transition: var(--transition-gentle);
+}
+
+.card:focus-within {
+    border-color: var(--caring-primary);
+    box-shadow: 0 0 0 2px rgba(107, 143, 82, 0.2);
+}
+
+/* --- Caring Info Cards (from dog details) --- */
+.caring-info-card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: var(--space-gentle);
+    transition: var(--transition-gentle);
+    position: relative;
+    overflow: hidden;
+}
+
+.caring-info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(93, 74, 55, 0.15);
+}
+
+.caring-info-card .info-icon {
+    position: absolute;
+    top: var(--space-gentle);
+    right: var(--space-gentle);
+    font-size: 2rem;
+    opacity: 0.3;
+}
+
+.caring-info-card .info-content {
+    position: relative;
+    z-index: 1;
+}
+
+.caring-info-card .info-label {
+    font-size: 0.875rem;
+    color: var(--caring-secondary);
+    opacity: 0.8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.caring-info-card .info-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--caring-primary);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+/* --- Caring Buttons --- */
+.btn {
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: var(--transition-gentle);
+    border: 1px solid transparent;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: #4A6B3A; /* Darker forest green for better contrast */
+    border-color: #4A6B3A;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #5A7B4A; /* Slightly brighter but still readable */
+    border-color: #5A7B4A;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border-color: var(--caring-secondary);
+    color: var(--caring-secondary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--caring-secondary);
+    color: white;
+}
+
+.btn-warning {
+    background-color: #8A6009; /* Darker goldenrod for better contrast */
+    border-color: #8A6009;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #9A7019;
+    border-color: #9A7019;
+    color: white;
+}
+
+/* --- Caring Navigation --- */
+.navbar {
+    background: rgba(247, 245, 243, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+.nav-link:hover {
+    color: var(--caring-primary);
+    transition: var(--transition-gentle);
+}
+
+/* --- Caring Forms --- */
+.form-control {
+    border-radius: var(--radius-soft);
+    border: 1px solid rgba(107, 143, 82, 0.2);
+    transition: var(--transition-gentle);
+}
+
+.form-control:focus {
+    border-color: var(--caring-primary);
+    box-shadow: 0 0 0 2px rgba(107, 143, 82, 0.2);
+}
+
+/* --- Caring Modals --- */
+.modal-content {
+    border-radius: var(--radius-soft);
+    border: none;
+    box-shadow: 0 8px 24px rgba(93, 74, 55, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+    background: var(--caring-bg);
+}
+
+/* --- Caring Tables --- */
+.table {
+    border-radius: var(--radius-soft);
+    overflow: hidden;
+}
+
+.table th {
+    background-color: var(--caring-bg);
+    border-bottom: 2px solid rgba(107, 143, 82, 0.1);
+    color: var(--caring-text);
+    font-weight: 600;
+}
+
+.table td {
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(107, 143, 82, 0.05);
+}
+
+/* --- Caring Alerts --- */
+.alert {
+    border-radius: var(--radius-soft);
+    border: 1px solid;
+}
+
+.alert-success {
+    background-color: rgba(127, 173, 112, 0.1);
+    border-color: var(--caring-accent);
+    color: var(--caring-text);
+}
+
+.alert-warning {
+    background-color: rgba(184, 122, 102, 0.1);
+    border-color: var(--caring-warning);
+    color: var(--caring-text);
+}
+
+/* --- Caring Badges --- */
+.badge {
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+    padding: 0.4rem 0.6rem;
+}
+
+/* --- Simple Animations (see animations.css for full set) --- */
+
+/* --- Accessibility Focus (defined in base.css) --- */
+
+/* Motion preferences handled in responsive.css */
+
+/* Dark Mode Button Fixes - Natural Earth Tones with Readable Text */
+body.dark-mode .btn-primary {
+    background-color: #4A6B3A !important; /* Much darker forest green */
+    border-color: #4A6B3A !important;
+    color: white !important; /* White text on darker forest green */
+}
+
+body.dark-mode .btn-primary:hover {
+    background-color: #5A7B4A !important; /* Slightly brighter but still dark */
+    border-color: #5A7B4A !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-success,
+body.dark-mode .btn-organic {
+    background-color: #3A5A3A !important; /* Much darker sage green */
+    border-color: #3A5A3A !important;
+    color: white !important; /* White text on darker sage */
+}
+
+body.dark-mode .btn-success:hover,
+body.dark-mode .btn-organic:hover {
+    background-color: #4A6A4A !important; /* Slightly brighter but still dark */
+    border-color: #4A6A4A !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: #4A3A27 !important; /* Much darker earth brown */
+    border-color: #4A3A27 !important;
+    color: white !important; /* White text on darker earth brown */
+}
+
+body.dark-mode .btn-secondary:hover {
+    background-color: #5A4A37 !important; /* Slightly brighter but still dark */
+    border-color: #5A4A37 !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-warning {
+    background-color: #8A6009 !important; /* Much darker goldenrod */
+    border-color: #8A6009 !important;
+    color: white !important; /* White text on darker goldenrod */
+}
+
+body.dark-mode .btn-warning:hover {
+    background-color: #9A7019 !important; /* Slightly brighter but still dark */
+    border-color: #9A7019 !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-danger {
+    background-color: #7A3A1D !important; /* Much darker sienna */
+    border-color: #7A3A1D !important;
+    color: white !important; /* White text on darker sienna */
+}
+
+body.dark-mode .btn-danger:hover {
+    background-color: #8A4A2D !important; /* Slightly brighter but still dark */
+    border-color: #8A4A2D !important;
+    color: white !important;
+}
+
+/* Dark Mode Card Fixes */
+body.dark-mode .card {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .card:hover {
+    border-color: var(--caring-primary) !important;
+    box-shadow: 0 4px 12px rgba(107, 142, 90, 0.2), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    transform: translateY(-1px);
+}
+
+body.dark-mode .card:focus-within {
+    border-color: var(--caring-primary) !important;
+    box-shadow: 0 0 0 2px rgba(107, 142, 90, 0.4) !important;
+}
+
+body.dark-mode .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card-body {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card-title {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card-text {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card .text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Fix specific card spacing issues in dark mode */
+body.dark-mode .dog-card {
+    margin-bottom: var(--space-gentle);
+    padding: 1rem;
+}
+
+body.dark-mode .dog-card .btn {
+    margin-top: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+/* Fix overdue items section in dark mode */
+body.dark-mode .accordion-item {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .accordion-header {
+    background-color: var(--bg-tertiary) !important;
+}
+
+body.dark-mode .accordion-button {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: none !important;
+}
+
+body.dark-mode .accordion-button:not(.collapsed) {
+    background-color: var(--caring-primary) !important; /* Soft sage green */
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .accordion-body {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Dark Mode Navigation Fixes */
+body.dark-mode .navbar {
+    background: rgba(26, 33, 46, 0.95) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .navbar-brand {
+    color: var(--caring-primary) !important; /* Soft sage green */
+}
+
+body.dark-mode .nav-link {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-mode .nav-link:hover {
+    color: var(--caring-primary) !important; /* Natural sage green hover */
+}
+
+/* Dark Mode Form Fixes */
+body.dark-mode .form-control {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .form-control:focus {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 2px rgba(107, 142, 90, 0.4) !important; /* Natural forest green glow */
+}
+
+body.dark-mode .form-select {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Dark Mode Alert Fixes */
+body.dark-mode .alert-success {
+    background-color: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+    color: var(--success-fg) !important;
+}
+
+body.dark-mode .alert-warning {
+    background-color: var(--warning-bg) !important;
+    border-color: var(--warning-border) !important;
+    color: var(--warning-fg) !important;
+}
+
+body.dark-mode .alert-danger {
+    background-color: var(--danger-bg) !important;
+    border-color: var(--danger-border) !important;
+    color: var(--danger-fg) !important;
+}
+
+/* Dark Mode Text Hierarchy and Contrast Fixes */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode p {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .text-muted {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-mode small {
+    color: var(--text-muted) !important;
+}
+
+/* Dark Mode Link Fixes */
+body.dark-mode a {
+    color: var(--caring-primary) !important;
+}
+
+body.dark-mode a:hover {
+    color: #9ACD9A !important; /* Slightly brighter sage green */
+}
+
+body.dark-mode a:visited {
+    color: var(--caring-secondary) !important; /* Warm tan */
+}
+
+/* Dark Mode Badge Fixes - Natural Earth Tones with Readable Text */
+body.dark-mode .badge {
+    color: white !important; /* White text for readability on darker backgrounds */
+}
+
+body.dark-mode .badge.bg-primary {
+    background-color: var(--caring-primary) !important;
+    color: white !important;
+}
+
+body.dark-mode .badge.bg-success {
+    background-color: var(--caring-accent) !important;
+    color: white !important;
+}
+
+body.dark-mode .badge.bg-warning {
+    background-color: var(--caring-warning) !important;
+    color: white !important;
+}
+
+body.dark-mode .badge.bg-danger {
+    background-color: var(--caring-danger) !important;
+    color: white !important;
+}
+
+body.dark-mode .badge.bg-secondary {
+    background-color: var(--caring-secondary) !important;
+    color: white !important;
+}
+
+body.dark-mode .badge.bg-info {
+    background-color: var(--caring-primary) !important;
+    color: white !important;
+}
+
+/* Dark Mode Table Fixes */
+body.dark-mode .table {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .table th {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid var(--border-color) !important;
+}
+
+body.dark-mode .table td {
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+    background-color: rgba(130, 170, 255, 0.1) !important;
+}
+
+/* Dark Mode Modal Fixes */
+body.dark-mode .modal-content {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .modal-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .modal-title {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .modal-body {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .modal-footer {
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Dark Mode List Group Fixes */
+body.dark-mode .list-group-item {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .list-group-item:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Dark Mode Dropdown Fixes */
+body.dark-mode .dropdown-menu {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .dropdown-item:hover,
+body.dark-mode .dropdown-item:focus {
+    background-color: var(--caring-primary) !important; /* Soft sage green */
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .dropdown-divider {
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .dropdown-header {
+    color: var(--text-muted) !important;
+}
+
+/* Dashboard Button Group Styling */
+.list-group-item .btn-group {
+    min-width: 160px; /* Slightly wider for better balance */
+}
+
+.list-group-item .btn-group .btn {
+    flex: 1; /* Equal width buttons */
+    padding: 0.375rem 0.5rem; /* Consistent padding */
+    font-size: 0.875rem; /* Consistent font size */
+    font-weight: 500;
+}
+
+.list-group-item .d-grid {
+    margin-top: 0.5rem; /* Tighter spacing */
+}
+
+.list-group-item .d-grid .btn {
+    min-width: 160px; /* Match btn-group width */
+    padding: 0.375rem 0.5rem; /* Match button group padding */
+    font-size: 0.875rem; /* Consistent font size */
+    font-weight: 500;
+}
+
+/* Ensure button alignment container */
+.list-group-item .ms-auto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Right align everything */
+    min-width: 160px;
+}
+
+/* Improve button visual consistency - All outlined style */
+.list-group-item .btn-outline-success {
+    border-color: var(--caring-primary) !important;
+    color: var(--caring-primary) !important;
+}
+
+.list-group-item .btn-outline-success:hover {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: white !important;
+}
+
+.list-group-item .btn-outline-danger {
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+.list-group-item .btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+}
+
+.list-group-item .btn-outline-secondary {
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+}
+
+.list-group-item .btn-outline-secondary:hover {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+}
+
+/* Dark mode button fixes */
+body.dark-mode .list-group-item .btn-outline-success {
+    border-color: var(--caring-primary) !important;
+    color: var(--caring-primary) !important;
+}
+
+body.dark-mode .list-group-item .btn-outline-success:hover {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .list-group-item .btn-outline-danger {
+    border-color: #ff6b6b !important;
+    color: #ff6b6b !important;
+}
+
+body.dark-mode .list-group-item .btn-outline-danger:hover {
+    background-color: #ff6b6b !important;
+    border-color: #ff6b6b !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .list-group-item .btn-outline-secondary {
+    border-color: var(--text-secondary) !important;
+    color: var(--text-secondary) !important;
+}
+
+body.dark-mode .list-group-item .btn-outline-secondary:hover {
+    background-color: var(--text-secondary) !important;
+    border-color: var(--text-secondary) !important;
+    color: var(--bg-primary) !important;
+}
+
+/* Badge visibility fixes for dark mode */
+.badge.bg-light {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+body.dark-mode .badge.bg-light {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .badge.text-danger {
+    color: #ff6b6b !important;
+}
+
+body.dark-mode .badge.text-primary {
+    color: var(--brand-primary) !important;
+}
+
+/* Card header badge fixes */
+body.dark-mode .card-header .badge.bg-light {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Custom Caring Button Classes */
+.btn-caring-primary {
+    background-color: var(--caring-primary);
+    border-color: var(--caring-primary);
+    color: white;
+}
+
+.btn-caring-primary:hover {
+    background-color: var(--caring-accent);
+    border-color: var(--caring-accent);
+    color: white;
+}
+
+.btn-caring-accent {
+    background-color: var(--caring-accent);
+    border-color: var(--caring-accent);
+    color: white;
+}
+
+.btn-caring-accent:hover {
+    background-color: #8ABD7B; /* Slightly brighter accent */
+    border-color: #8ABD7B;
+    color: white;
+}
+
+.btn-caring-secondary {
+    background-color: var(--caring-secondary);
+    border-color: var(--caring-secondary);
+    color: white;
+}
+
+.btn-caring-secondary:hover {
+    background-color: #6D5A47; /* Slightly brighter earth brown */
+    border-color: #6D5A47;
+    color: white;
+}
+
+/* Custom Caring Text Colors */
+.text-caring-primary {
+    color: var(--caring-primary) !important;
+}
+
+.text-caring-accent {
+    color: var(--caring-accent) !important;
+}
+
+.text-caring-secondary {
+    color: var(--caring-secondary) !important;
+}
+
+/* Dark mode adjustments for caring buttons - Much darker for readability */
+body.dark-mode .btn-caring-primary {
+    background-color: #3A5A2A !important; /* Much darker forest green */
+    border-color: #3A5A2A !important;
+    color: white !important; /* White text for contrast */
+}
+
+body.dark-mode .btn-caring-primary:hover {
+    background-color: #4A6A3A !important; /* Slightly brighter but still dark */
+    border-color: #4A6A3A !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-caring-accent {
+    background-color: #2A5A2A !important; /* Much darker sage green */
+    border-color: #2A5A2A !important;
+    color: white !important; /* White text for contrast */
+}
+
+body.dark-mode .btn-caring-accent:hover {
+    background-color: #3A6A3A !important;
+    border-color: #3A6A3A !important;
+    color: white !important;
+}
+
+body.dark-mode .btn-caring-secondary {
+    background-color: #3A2A1A !important; /* Much darker earth brown */
+    border-color: #3A2A1A !important;
+    color: white !important; /* White text for contrast */
+}
+
+body.dark-mode .btn-caring-secondary:hover {
+    background-color: #4A3A2A !important;
+    border-color: #4A3A2A !important;
+    color: white !important;
+}
+
+/* Outlined Caring Button Classes */
+.btn-outline-caring-primary {
+    border-color: var(--caring-primary);
+    color: var(--caring-primary);
+    background-color: transparent;
+}
+
+.btn-outline-caring-primary:hover {
+    background-color: var(--caring-primary);
+    border-color: var(--caring-primary);
+    color: white;
+}
+
+.btn-outline-caring-accent {
+    border-color: var(--caring-accent);
+    color: var(--caring-accent);
+    background-color: transparent;
+}
+
+.btn-outline-caring-accent:hover {
+    background-color: var(--caring-accent);
+    border-color: var(--caring-accent);
+    color: white;
+}
+
+.btn-outline-caring-secondary {
+    border-color: var(--caring-secondary);
+    color: var(--caring-secondary);
+    background-color: transparent;
+}
+
+.btn-outline-caring-secondary:hover {
+    background-color: var(--caring-secondary);
+    border-color: var(--caring-secondary);
+    color: white;
+}
+
+.btn-outline-caring-danger {
+    border-color: var(--caring-warning); /* Using warning color as danger for earthy feel */
+    color: var(--caring-warning);
+    background-color: transparent;
+}
+
+.btn-outline-caring-danger:hover {
+    background-color: var(--caring-warning);
+    border-color: var(--caring-warning);
+    color: white;
+}
+
+/* Dark mode outline caring buttons */
+body.dark-mode .btn-outline-caring-primary {
+    border-color: var(--caring-primary) !important;
+    color: var(--caring-primary) !important;
+}
+
+body.dark-mode .btn-outline-caring-primary:hover {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .btn-outline-caring-danger {
+    border-color: #B8860B !important; /* Darker goldenrod for danger */
+    color: #B8860B !important;
+}
+
+body.dark-mode .btn-outline-caring-danger:hover {
+    background-color: #B8860B !important;
+    border-color: #B8860B !important;
+    color: var(--bg-primary) !important;
+}
+
+/* Enhanced Dog Care Card Styling */
+.dog-care-card {
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    box-shadow: var(--shadow-gentle);
+    transition: var(--transition-gentle);
+    background: var(--caring-bg-light);
+    overflow: hidden; /* Prevent any child elements from overflowing */
+}
+
+.dog-care-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(93, 74, 55, 0.2);
+    border-color: var(--caring-primary);
+}
+
+.dog-card-header {
+    width: 100% !important;
+    overflow: hidden !important;
+    padding: 0.75rem !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+}
+
+.dog-card-header .card-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: var(--caring-secondary) !important;
+    margin: 0 0 0.75rem 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3 !important;
+    max-width: 100% !important;
+}
+
+.dog-card-header .d-flex {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    align-items: flex-start !important;
+    margin-bottom: 0.5rem !important;
+    justify-content: space-between !important;
+}
+
+/* Ensure card body has proper padding and overflow handling */
+.dog-care-card .card-body {
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
+/* Fix energy level badge positioning */
+.energy-level-badge {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
+    white-space: nowrap !important;
+    max-width: fit-content !important;
+    flex-shrink: 0 !important;
+}
+
+/* Status Badge Styling - Fixed Overflow and Professional Appearance */
+.status-badge {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 4px !important;
+    display: inline-block !important;
+    max-width: 95% !important;
+    word-wrap: break-word !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.3 !important;
+    text-transform: none !important;
+    letter-spacing: 0.2px !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* History Page Status Badge Fixes */
+.badge-status {
+    font-size: 0.6rem !important;
+    font-weight: 600 !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 3px !important;
+    display: block !important;
+    max-width: 70px !important;
+    width: fit-content !important;
+    word-wrap: break-word !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.1 !important;
+    text-transform: none !important;
+    letter-spacing: 0.1px !important;
+    border: none !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    flex-shrink: 0 !important;
+    color: white !important;
+    margin-top: 0.25rem !important;
+    margin-left: auto !important;
+}
+
+/* Unified Professional Colors for History Page Status Badges */
+.badge-status.bg-info {
+    background-color: #28a745 !important; /* Available - Green */
+    color: white !important;
+}
+
+.badge-status.bg-success {
+    background-color: #007bff !important; /* Adopted - Blue */
+    color: white !important;
+}
+
+.badge-status.bg-warning {
+    background-color: #fd7e14 !important; /* Hold/Pending - Orange */
+    color: white !important;
+}
+
+.badge-status.bg-secondary {
+    background-color: #6c757d !important; /* Returned/Not Adopted - Gray */
+    color: white !important;
+}
+
+.badge-status.bg-dark {
+    background-color: #495057 !important; /* Deceased - Dark Gray */
+    color: white !important;
+}
+
+.badge-status.bg-primary {
+    background-color: #20c997 !important; /* Transferred - Teal */
+    color: white !important;
+}
+
+.status-badge-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+    overflow: hidden !important;
+    padding: 0 0.25rem !important;
+    box-sizing: border-box !important;
+}
+
+/* Unified Professional Color Scheme - All White Text for Consistency */
+.status-available {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.status-adopted {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+.status-hold {
+    background-color: #fd7e14 !important;
+    color: white !important;
+}
+
+.status-pending {
+    background-color: #6f42c1 !important;
+    color: white !important;
+}
+
+.status-returned {
+    background-color: #e83e8c !important;
+    color: white !important;
+}
+
+.status-deceased {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+.status-not-adopted {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.status-transferred {
+    background-color: #20c997 !important;
+    color: white !important;
+}
+
+.status-unknown {
+    background-color: #495057 !important;
+    color: white !important;
+}
+
+/* Energy Level Badge Styling */
+.energy-level-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.3rem 0.5rem;
+}
+
+.energy-badge-low {
+    background-color: rgba(107, 143, 82, 0.2);
+    color: var(--caring-primary);
+}
+
+.energy-badge-medium {
+    background-color: rgba(127, 173, 112, 0.2);
+    color: var(--caring-accent);
+}
+
+.energy-badge-high {
+    background-color: rgba(184, 122, 102, 0.2);
+    color: var(--caring-warning);
+}
+
+.energy-badge-very-high {
+    background-color: rgba(184, 122, 102, 0.3);
+    color: #B87A66;
+    font-weight: 600;
+}
+
+.energy-badge-default {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+}
+
+/* Info Item Styling */
+.info-item {
+    text-align: left;
+}
+
+.info-item .text-muted {
+    font-size: 0.8rem;
+    display: block;
+}
+
+.info-item .fw-medium {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--caring-text);
+}
+
+/* Temperament Tags */
+.temperament-tag {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.4rem;
+}
+
+.temperament-tag-more {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+    border: 1px solid rgba(93, 74, 55, 0.3);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Personality Preview */
+.personality-preview {
+    font-style: italic;
+}
+
+/* Dark Mode Adjustments */
+body.dark-mode .dog-care-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.dark-mode .dog-care-card:hover {
+    border-color: var(--caring-primary);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .dog-card-header .card-title {
+    color: var(--text-primary);
+}
+
+/* Dark Mode - Same Professional Colors, All White Text */
+body.dark-mode .status-available {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+body.dark-mode .status-adopted {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+body.dark-mode .status-hold {
+    background-color: #fd7e14 !important;
+    color: white !important;
+}
+
+body.dark-mode .status-pending {
+    background-color: #6f42c1 !important;
+    color: white !important;
+}
+
+body.dark-mode .status-returned {
+    background-color: #e83e8c !important;
+    color: white !important;
+}
+
+body.dark-mode .status-deceased {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+body.dark-mode .status-not-adopted {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+body.dark-mode .status-transferred {
+    background-color: #20c997 !important;
+    color: white !important;
+}
+
+body.dark-mode .status-unknown {
+    background-color: #495057 !important;
+    color: white !important;
+}
+
+/* Dark Mode - History Page Status Badges */
+body.dark-mode .badge-status.bg-info {
+    background-color: #28a745 !important; /* Available - Green */
+    color: white !important;
+}
+
+body.dark-mode .badge-status.bg-success {
+    background-color: #007bff !important; /* Adopted - Blue */
+    color: white !important;
+}
+
+body.dark-mode .badge-status.bg-warning {
+    background-color: #fd7e14 !important; /* Hold/Pending - Orange */
+    color: white !important;
+}
+
+body.dark-mode .badge-status.bg-secondary {
+    background-color: #6c757d !important; /* Returned/Not Adopted - Gray */
+    color: white !important;
+}
+
+body.dark-mode .badge-status.bg-dark {
+    background-color: #495057 !important; /* Deceased - Dark Gray */
+    color: white !important;
+}
+
+body.dark-mode .badge-status.bg-primary {
+    background-color: #20c997 !important; /* Transferred - Teal */
+    color: white !important;
+}
+
+/* History Page Card Layout Improvements */
+.card .d-flex.justify-content-between {
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+}
+
+.card .flex-grow-1.min-w-0 {
+    overflow: hidden !important;
+    padding-right: 0.25rem !important;
+}
+
+.card .ms-2 {
+    margin-left: 0.25rem !important;
+    align-self: flex-start !important;
+}
+
+/* History Page Card Body Fixes */
+.card-body.p-3 {
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.card.h-100 {
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+/* History Page Button Styling Fixes */
+.card .btn-primary.btn-sm {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: white !important;
+    font-weight: 500 !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.card .btn-primary.btn-sm:hover {
+    background-color: var(--caring-accent) !important;
+    border-color: var(--caring-accent) !important;
+    color: white !important;
+}
+
+.card .btn-outline-secondary.btn-sm {
+    background-color: transparent !important;
+    border-color: var(--caring-secondary) !important;
+    color: var(--caring-secondary) !important;
+    font-weight: 500 !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.card .btn-outline-secondary.btn-sm:hover {
+    background-color: var(--caring-secondary) !important;
+    border-color: var(--caring-secondary) !important;
+    color: white !important;
+}
+
+/* Dark Mode Button Fixes for History Page */
+body.dark-mode .card .btn-primary.btn-sm {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: white !important;
+}
+
+body.dark-mode .card .btn-primary.btn-sm:hover {
+    background-color: var(--caring-accent) !important;
+    border-color: var(--caring-accent) !important;
+    color: white !important;
+}
+
+body.dark-mode .card .btn-outline-secondary.btn-sm {
+    background-color: transparent !important;
+    border-color: var(--caring-secondary) !important;
+    color: var(--caring-secondary) !important;
+}
+
+body.dark-mode .card .btn-outline-secondary.btn-sm:hover {
+    background-color: var(--caring-secondary) !important;
+    border-color: var(--caring-secondary) !important;
+    color: white !important;
+}
+
+/* History Page Card Alignment & Consistency Fixes */
+.card-title.mb-1 {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0.25rem !important;
+    color: var(--caring-secondary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.card .text-muted.mb-0.small {
+    font-size: 0.8rem !important;
+    color: rgba(93, 74, 55, 0.7) !important;
+    margin-bottom: 0.5rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.card .mb-2 {
+    margin-bottom: 0.75rem !important;
+}
+
+.card .d-grid.gap-1.mt-auto {
+    margin-top: auto !important;
+    gap: 0.5rem !important;
+}
+
+/* Dark Mode Text Color Fixes for History Page */
+body.dark-mode .card-title.mb-1 {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card .text-muted.mb-0.small {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-mode .card .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Responsive Improvements for History Page Cards */
+@media (max-width: 768px) {
+    .badge-status {
+        font-size: 0.55rem !important;
+        padding: 0.15rem 0.3rem !important;
+        max-width: 60px !important;
+    }
+    
+    .card-body.p-3 {
+        padding: 0.5rem !important;
+    }
+    
+    .card .btn-sm {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+}
+
+body.dark-mode .info-item .fw-medium {
+    color: var(--text-primary);
+}
+
+body.dark-mode .temperament-tag {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .temperament-tag-more {
+    background-color: rgba(139, 115, 85, 0.2);
+    border-color: rgba(139, 115, 85, 0.4);
+    color: var(--caring-secondary);
+}
+
+/* Dogs Care Page Header and Stats */
+.dogs-care-header {
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: var(--transition-gentle);
+    height: 100%;
+    box-shadow: var(--shadow-gentle);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(93, 74, 55, 0.15);
+    border-color: var(--caring-primary);
+}
+
+.stat-icon {
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.stat-icon i {
+    font-size: 2.5rem;
+}
+
+.stat-content {
+    flex-grow: 1;
+}
+
+.stat-number {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--caring-secondary);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+}
+
+.stat-label {
+    color: var(--caring-text);
+    margin-bottom: 0;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* Search and Filter Section */
+.search-filter-section .card {
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    box-shadow: var(--shadow-gentle);
+}
+
+.input-group-text.bg-caring-primary {
+    background-color: var(--caring-primary) !important;
+    border-color: var(--caring-primary) !important;
+}
+
+.form-control.border-caring-primary {
+    border-color: var(--caring-primary) !important;
+}
+
+.form-control.border-caring-primary:focus {
+    border-color: var(--caring-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(127, 173, 112, 0.25) !important;
+}
+
+/* Dark Mode Stats and Search */
+body.dark-mode .stat-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .stat-card:hover {
+    border-color: var(--caring-primary);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stat-number {
+    color: var(--text-primary);
+}
+
+body.dark-mode .stat-label {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .search-filter-section .card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .input-group-text.bg-caring-primary {
+    background-color: var(--caring-primary) !important;
+}
+
+body.dark-mode .form-control.border-caring-primary {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .form-control.border-caring-primary:focus {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--caring-accent) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Form Select Alignment with Input Groups */
+.form-select.border-caring-primary {
+    border-color: var(--caring-primary) !important;
+    height: calc(2.25rem + 2px); /* Match input group height */
+}
+
+.form-select.border-caring-primary:focus {
+    border-color: var(--caring-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(127, 173, 112, 0.25) !important;
+}
+
+/* Dark mode form-select styling */
+body.dark-mode .form-select.border-caring-primary {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--caring-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .form-select.border-caring-primary:focus {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--caring-accent) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Dog Details Page - Enhanced Info Cards */
+.dog-profile-header {
+    margin-bottom: 1.5rem;
+}
+
+.dog-name-section h2 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.dog-actions {
+    min-width: 200px;
+}
+
+.dog-actions .btn {
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Info Card Grid */
+.dog-info-grid {
+    margin-top: 1.5rem;
+}
+
+.caring-info-card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    transition: var(--transition-gentle);
+    height: 100%;
+    box-shadow: var(--shadow-gentle);
+}
+
+.caring-info-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(93, 74, 55, 0.1);
+    border-color: var(--caring-accent);
+}
+
+.caring-info-card.special-highlight {
+    border: 2px solid var(--caring-primary);
+    background: rgba(107, 143, 82, 0.05);
+}
+
+.caring-info-card .info-icon {
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.caring-info-card .info-icon i {
+    font-size: 1.5rem;
+}
+
+.caring-info-card .info-content {
+    flex-grow: 1;
+}
+
+.caring-info-card .info-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--caring-text);
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.caring-info-card .info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--caring-secondary);
+    line-height: 1.2;
+}
+
+/* Notes Cards */
+.caring-notes-card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 1rem;
+    transition: var(--transition-gentle);
+    box-shadow: var(--shadow-gentle);
+    height: 100%;
+}
+
+.caring-notes-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(93, 74, 55, 0.1);
+    border-color: var(--caring-accent);
+}
+
+.caring-notes-card.medical-notes {
+    border-left: 4px solid var(--caring-warning);
+}
+
+.caring-notes-card .notes-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(107, 143, 82, 0.15);
+}
+
+.caring-notes-card .notes-header span {
+    color: var(--caring-secondary);
+}
+
+.caring-notes-card .notes-content {
+    color: var(--caring-text);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* Dark Mode for Dog Details */
+body.dark-mode .caring-info-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .caring-info-card:hover {
+    border-color: var(--caring-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .caring-info-card.special-highlight {
+    border-color: var(--caring-primary);
+    background: rgba(107, 142, 90, 0.1);
+}
+
+body.dark-mode .caring-info-card .info-label {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .caring-info-card .info-value {
+    color: var(--text-primary);
+}
+
+body.dark-mode .caring-notes-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .caring-notes-card:hover {
+    border-color: var(--caring-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .caring-notes-card.medical-notes {
+    border-left-color: var(--caring-warning);
+}
+
+body.dark-mode .caring-notes-card .notes-header {
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .caring-notes-card .notes-header span {
+    color: var(--text-primary);
+}
+
+body.dark-mode .caring-notes-card .notes-content {
+    color: var(--text-secondary);
+}
+
+/* Enhanced Personality Section */
+.personality-summary {
+    margin-bottom: 1rem;
+}
+
+.personality-quick-card {
+    background: var(--caring-bg-light);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    transition: var(--transition-gentle);
+    box-shadow: var(--shadow-gentle);
+    min-width: 120px;
+}
+
+.personality-quick-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(93, 74, 55, 0.1);
+    border-color: var(--caring-accent);
+}
+
+.personality-quick-card .quick-card-icon {
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.personality-quick-card .quick-card-icon i {
+    font-size: 1.25rem;
+}
+
+.personality-quick-card .quick-card-content {
+    flex-grow: 1;
+}
+
+.personality-quick-card .quick-card-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--caring-text);
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.personality-quick-card .quick-card-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--caring-secondary);
+    line-height: 1.2;
+}
+
+.temperament-count-badge {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.4rem;
+}
+
+.personality-section-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--caring-secondary);
+    font-size: 0.9rem;
+}
+
+.personality-detail-card {
+    background: rgba(107, 143, 82, 0.05);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    padding: 1rem;
+    transition: var(--transition-gentle);
+    height: 100%;
+}
+
+.personality-detail-card:hover {
+    background: rgba(107, 143, 82, 0.08);
+    border-color: var(--caring-accent);
+}
+
+.personality-detail-card.special-story-card {
+    border-left: 4px solid var(--caring-warning);
+    background: rgba(184, 122, 102, 0.05);
+}
+
+.personality-detail-card.special-story-card:hover {
+    background: rgba(184, 122, 102, 0.08);
+}
+
+.personality-content {
+    color: var(--caring-text);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+.temperament-tags-display {
+    margin-top: 0.5rem;
+}
+
+/* Dark Mode for Enhanced Personality Section */
+body.dark-mode .personality-quick-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .personality-quick-card:hover {
+    border-color: var(--caring-primary);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .personality-quick-card .quick-card-label {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .personality-quick-card .quick-card-value {
+    color: var(--text-primary);
+}
+
+body.dark-mode .temperament-count-badge {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .personality-section-title {
+    color: var(--text-primary);
+}
+
+body.dark-mode .personality-detail-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .personality-detail-card:hover {
+    background: rgba(107, 142, 90, 0.1);
+    border-color: var(--caring-primary);
+}
+
+body.dark-mode .personality-detail-card.special-story-card {
+    border-left-color: var(--caring-warning);
+    background: rgba(184, 134, 11, 0.1);
+}
+
+body.dark-mode .personality-detail-card.special-story-card:hover {
+    background: rgba(184, 134, 11, 0.15);
+}
+
+body.dark-mode .personality-content {
+    color: var(--text-secondary);
+}
+
+/* Enhanced Quick Statistics */
+.stats-grid {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    background: rgba(107, 143, 82, 0.05);
+    border: 1px solid rgba(107, 143, 82, 0.15);
+    border-radius: var(--radius-soft);
+    transition: var(--transition-gentle);
+}
+
+.stat-item:hover {
+    background: rgba(107, 143, 82, 0.08);
+    border-color: var(--caring-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(93, 74, 55, 0.1);
+}
+
+.stat-item .stat-icon {
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.stat-item .stat-icon i {
+    font-size: 1.5rem;
+}
+
+.stat-item .stat-content {
+    flex-grow: 1;
+}
+
+.stat-item .stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--caring-secondary);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-item .stat-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--caring-text);
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stat-item .stat-extra {
+    margin-top: 0.25rem;
+}
+
+.stat-badge-upcoming {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.3);
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.35rem;
+}
+
+.stat-badge-active {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.35rem;
+}
+
+/* Care Progress Indicator */
+.care-progress {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(107, 143, 82, 0.15);
+}
+
+.progress-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--caring-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.progress-indicators {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.progress-indicators::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: rgba(107, 143, 82, 0.2);
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    position: relative;
+    z-index: 2;
+    background: var(--caring-bg-light);
+    padding: 0.25rem;
+    border-radius: var(--radius-soft);
+    min-width: 60px;
+}
+
+.progress-step i {
+    font-size: 1.25rem;
+    color: var(--caring-secondary);
+    opacity: 0.5;
+}
+
+.progress-step.completed i {
+    color: var(--caring-primary);
+    opacity: 1;
+}
+
+.progress-step span {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--caring-text);
+    text-align: center;
+    line-height: 1.2;
+    opacity: 0.7;
+}
+
+.progress-step.completed span {
+    opacity: 1;
+    color: var(--caring-secondary);
+    font-weight: 600;
+}
+
+/* Dark Mode for Enhanced Statistics */
+body.dark-mode .stat-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .stat-item:hover {
+    background: rgba(107, 142, 90, 0.1);
+    border-color: var(--caring-primary);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stat-item .stat-number {
+    color: var(--text-primary);
+}
+
+body.dark-mode .stat-item .stat-label {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .stat-badge-upcoming {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .stat-badge-active {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .care-progress {
+    border-top-color: var(--border-color);
+}
+
+body.dark-mode .progress-label {
+    color: var(--text-primary);
+}
+
+body.dark-mode .progress-indicators::before {
+    background: var(--border-color);
+}
+
+body.dark-mode .progress-step {
+    background: var(--bg-secondary);
+}
+
+body.dark-mode .progress-step i {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .progress-step.completed i {
+    color: var(--caring-primary);
+}
+
+body.dark-mode .progress-step span {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .progress-step.completed span {
+    color: var(--text-primary);
+}
+
+/* Enhanced Timeline for Recent Activity */
+.activity-count-badge {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.3);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+}
+
+.enhanced-timeline {
+    position: relative;
+}
+
+.timeline-event {
+    display: flex;
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-event.has-next::after {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 50px;
+    bottom: -1.5rem;
+    width: 2px;
+    background: rgba(107, 143, 82, 0.2);
+    z-index: 1;
+}
+
+.event-indicator {
+    position: relative;
+    z-index: 2;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.event-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid;
+}
+
+.event-icon.event-note {
+    background-color: rgba(107, 143, 82, 0.1);
+    border-color: var(--caring-primary);
+    color: var(--caring-primary);
+}
+
+.event-icon.event-appointment {
+    background-color: rgba(127, 173, 112, 0.1);
+    border-color: var(--caring-accent);
+    color: var(--caring-accent);
+}
+
+.event-icon.event-medicine {
+    background-color: rgba(184, 122, 102, 0.1);
+    border-color: var(--caring-warning);
+    color: var(--caring-warning);
+}
+
+.event-icon.event-reminder {
+    background-color: rgba(93, 74, 55, 0.1);
+    border-color: var(--caring-secondary);
+    color: var(--caring-secondary);
+}
+
+.event-icon.event-default {
+    background-color: rgba(93, 74, 55, 0.05);
+    border-color: rgba(93, 74, 55, 0.3);
+    color: var(--caring-text);
+}
+
+.event-content {
+    flex-grow: 1;
+    background: rgba(107, 143, 82, 0.03);
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    border-radius: var(--radius-soft);
+    padding: 1rem;
+    transition: var(--transition-gentle);
+}
+
+.event-content:hover {
+    background: rgba(107, 143, 82, 0.05);
+    border-color: rgba(107, 143, 82, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(93, 74, 55, 0.1);
+}
+
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.event-title {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.event-time {
+    font-size: 0.75rem;
+    color: var(--caring-text);
+    opacity: 0.7;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-left: 1rem;
+}
+
+.event-description {
+    color: var(--caring-text);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+}
+
+.event-author {
+    font-size: 0.8rem;
+    color: var(--caring-text);
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+}
+
+.event-meta {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.event-type-badge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.2rem 0.4rem;
+}
+
+.event-type-badge.badge-note {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.3);
+}
+
+.event-type-badge.badge-appointment {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+}
+
+.event-type-badge.badge-medicine {
+    background-color: rgba(184, 122, 102, 0.15);
+    color: var(--caring-warning);
+    border: 1px solid rgba(184, 122, 102, 0.3);
+}
+
+.event-type-badge.badge-reminder {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+    border: 1px solid rgba(93, 74, 55, 0.3);
+}
+
+.event-type-badge.badge-default {
+    background-color: rgba(93, 74, 55, 0.1);
+    color: var(--caring-text);
+    border: 1px solid rgba(93, 74, 55, 0.2);
+}
+
+/* Dark Mode for Enhanced Timeline */
+body.dark-mode .activity-count-badge {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .timeline-event.has-next::after {
+    background: var(--border-color);
+}
+
+body.dark-mode .event-icon.event-note {
+    background-color: rgba(107, 142, 90, 0.15);
+    border-color: var(--caring-primary);
+}
+
+body.dark-mode .event-icon.event-appointment {
+    background-color: rgba(90, 138, 90, 0.15);
+    border-color: var(--caring-accent);
+}
+
+body.dark-mode .event-icon.event-medicine {
+    background-color: rgba(184, 134, 11, 0.15);
+    border-color: var(--caring-warning);
+}
+
+body.dark-mode .event-icon.event-reminder {
+    background-color: rgba(139, 115, 85, 0.15);
+    border-color: var(--caring-secondary);
+}
+
+body.dark-mode .event-icon.event-default {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .event-content {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .event-content:hover {
+    background: rgba(107, 142, 90, 0.1);
+    border-color: var(--caring-primary);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .event-title {
+    color: var(--text-primary);
+}
+
+body.dark-mode .event-time {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .event-description {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .event-author {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .event-type-badge.badge-note {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .event-type-badge.badge-appointment {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .event-type-badge.badge-medicine {
+    background-color: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--caring-warning);
+}
+
+body.dark-mode .event-type-badge.badge-reminder {
+    background-color: rgba(139, 115, 85, 0.2);
+    border-color: rgba(139, 115, 85, 0.4);
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .event-type-badge.badge-default {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Enhanced Tables for Appointments & Medicines */
+.enhanced-table-container {
+    border-radius: var(--radius-soft);
+    overflow: hidden;
+    box-shadow: var(--shadow-gentle);
+}
+
+.enhanced-table {
+    margin-bottom: 0;
+    background: var(--caring-bg-light);
+}
+
+.enhanced-table-header {
+    background: rgba(107, 143, 82, 0.1);
+    border-bottom: 2px solid rgba(107, 143, 82, 0.2);
+}
+
+.enhanced-table-header th {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.enhanced-table-row {
+    transition: var(--transition-gentle);
+    border-bottom: 1px solid rgba(107, 143, 82, 0.1);
+}
+
+.enhanced-table-row:hover {
+    background: rgba(107, 143, 82, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(93, 74, 55, 0.05);
+}
+
+.enhanced-table-row td {
+    padding: 1rem 0.75rem;
+    border: none;
+    vertical-align: middle;
+}
+
+/* Appointment Table Specific Styling */
+.appointment-type-badge {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-soft);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid rgba(107, 143, 82, 0.3);
+}
+
+.appointment-title {
+    font-weight: 600;
+    color: var(--caring-secondary);
+}
+
+.datetime-display .date-part {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    font-size: 0.9rem;
+}
+
+.datetime-display .time-part {
+    color: var(--caring-text);
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.appointment-status-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.3rem 0.6rem;
+}
+
+.appointment-status-badge.status-scheduled {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.3);
+}
+
+.appointment-status-badge.status-completed {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+}
+
+.appointment-status-badge.status-cancelled {
+    background-color: rgba(184, 122, 102, 0.15);
+    color: var(--caring-warning);
+    border: 1px solid rgba(184, 122, 102, 0.3);
+}
+
+.appointment-status-badge.status-default {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+    border: 1px solid rgba(93, 74, 55, 0.3);
+}
+
+.appointment-notes .notes-preview {
+    font-style: italic;
+    color: var(--caring-text);
+    opacity: 0.8;
+}
+
+/* Medicine Table Specific Styling */
+.medicine-name-display .medicine-name {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.medicine-name-display .medicine-category {
+    font-size: 0.7rem;
+    color: var(--caring-text);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.medicine-form-badge {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-soft);
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid rgba(127, 173, 112, 0.3);
+}
+
+.dosage-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+.dosage-display .dosage-amount {
+    font-weight: 600;
+    color: var(--caring-secondary);
+    font-size: 0.9rem;
+}
+
+.dosage-display .dosage-unit {
+    font-size: 0.75rem;
+    color: var(--caring-text);
+    opacity: 0.8;
+}
+
+.frequency-badge {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-soft);
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid rgba(93, 74, 55, 0.3);
+}
+
+.medicine-status-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.3rem 0.6rem;
+}
+
+.medicine-status-badge.status-active {
+    background-color: rgba(127, 173, 112, 0.15);
+    color: var(--caring-accent);
+    border: 1px solid rgba(127, 173, 112, 0.3);
+}
+
+.medicine-status-badge.status-completed {
+    background-color: rgba(107, 143, 82, 0.15);
+    color: var(--caring-primary);
+    border: 1px solid rgba(107, 143, 82, 0.3);
+}
+
+.medicine-status-badge.status-discontinued {
+    background-color: rgba(184, 122, 102, 0.15);
+    color: var(--caring-warning);
+    border: 1px solid rgba(184, 122, 102, 0.3);
+}
+
+.medicine-status-badge.status-default {
+    background-color: rgba(93, 74, 55, 0.15);
+    color: var(--caring-secondary);
+    border: 1px solid rgba(93, 74, 55, 0.3);
+}
+
+.medicine-notes .notes-preview {
+    font-style: italic;
+    color: var(--caring-text);
+    opacity: 0.8;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-buttons .btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-soft);
+}
+
+/* Empty Table State */
+.empty-table-state {
+    background: rgba(107, 143, 82, 0.03);
+    border: 1px solid rgba(107, 143, 82, 0.1);
+    border-radius: var(--radius-soft);
+    margin: 1rem;
+}
+
+.empty-table-state .large-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+}
+
+/* Dark Mode for Enhanced Tables */
+body.dark-mode .enhanced-table {
+    background: var(--bg-secondary);
+}
+
+body.dark-mode .enhanced-table-header {
+    background: rgba(107, 142, 90, 0.1);
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .enhanced-table-header th {
+    color: var(--text-primary);
+}
+
+body.dark-mode .enhanced-table-row {
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .enhanced-table-row:hover {
+    background: rgba(107, 142, 90, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .appointment-type-badge {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .appointment-title {
+    color: var(--text-primary);
+}
+
+body.dark-mode .datetime-display .date-part {
+    color: var(--text-primary);
+}
+
+body.dark-mode .datetime-display .time-part {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .appointment-status-badge.status-scheduled {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .appointment-status-badge.status-completed {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .appointment-status-badge.status-cancelled {
+    background-color: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--caring-warning);
+}
+
+body.dark-mode .appointment-status-badge.status-default {
+    background-color: rgba(139, 115, 85, 0.2);
+    border-color: rgba(139, 115, 85, 0.4);
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .appointment-notes .notes-preview {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .medicine-name-display .medicine-name {
+    color: var(--text-primary);
+}
+
+body.dark-mode .medicine-name-display .medicine-category {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .medicine-form-badge {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .dosage-display .dosage-amount {
+    color: var(--text-primary);
+}
+
+body.dark-mode .dosage-display .dosage-unit {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .frequency-badge {
+    background-color: rgba(139, 115, 85, 0.2);
+    border-color: rgba(139, 115, 85, 0.4);
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .medicine-status-badge.status-active {
+    background-color: rgba(90, 138, 90, 0.2);
+    border-color: rgba(90, 138, 90, 0.4);
+    color: var(--caring-accent);
+}
+
+body.dark-mode .medicine-status-badge.status-completed {
+    background-color: rgba(107, 142, 90, 0.2);
+    border-color: rgba(107, 142, 90, 0.4);
+    color: var(--caring-primary);
+}
+
+body.dark-mode .medicine-status-badge.status-discontinued {
+    background-color: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--caring-warning);
+}
+
+body.dark-mode .medicine-status-badge.status-default {
+    background-color: rgba(139, 115, 85, 0.2);
+    border-color: rgba(139, 115, 85, 0.4);
+    color: var(--caring-secondary);
+}
+
+body.dark-mode .medicine-notes .notes-preview {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .empty-table-state {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Status Badge Responsive Design */
+@media (max-width: 576px) {
+    .status-badge {
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+        max-width: 90% !important;
+    }
+    
+    .status-badge-container {
+        margin-bottom: 0.4rem !important;
+        padding: 0 0.125rem !important;
+    }
+    
+    .dog-card-header .d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.4rem !important;
+    }
+    
+    .energy-level-badge {
+        align-self: flex-start !important;
+        margin-top: 0.2rem !important;
+        font-size: 0.6rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    
+    .dog-card-header {
+        padding: 0.5rem !important;
+    }
+    
+    .dog-care-card .card-body {
+        padding: 0.5rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .status-badge {
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+        max-width: 92% !important;
+    }
+    
+    .energy-level-badge {
+        font-size: 0.6rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .list-group-item .btn-group,
+    .list-group-item .d-grid .btn,
+    .list-group-item .ms-auto {
+        min-width: 120px; /* Smaller on mobile */
+    }
+    
+    .list-group-item .btn-group .btn,
+    .list-group-item .d-grid .btn {
+        padding: 0.25rem 0.375rem; /* Smaller padding on mobile */
+        font-size: 0.8rem;
+    }
+    
+    /* Dog Details Mobile Responsiveness */
+    .dog-profile-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .dog-actions {
+        min-width: auto;
+        width: 100%;
+        order: -1; /* Move actions to top on mobile */
+    }
+    
+    .dog-actions .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .caring-info-card {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .caring-info-card .info-icon i {
+        font-size: 1.25rem;
+    }
+    
+    .caring-notes-card {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Personality Quick Cards Mobile */
+    .personality-quick-card {
+        padding: 0.5rem;
+        min-width: 100px;
+    }
+    
+    .personality-quick-card .quick-card-icon i {
+        font-size: 1rem;
+    }
+    
+    /* Statistics Mobile */
+    .stat-item {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-item .stat-icon i {
+        font-size: 1.25rem;
+    }
+    
+    .stat-item .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    /* Timeline Mobile */
+    .timeline-event {
+        margin-bottom: 1rem;
+    }
+    
+    .event-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    .timeline-event.has-next::after {
+        left: 16px;
+        top: 40px;
+    }
+    
+    .event-content {
+        padding: 0.75rem;
+    }
+    
+    .event-header {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .event-time {
+        margin-left: 0;
+        align-self: flex-start;
+    }
+    
+    /* Progress Steps Mobile */
+    .progress-step {
+        min-width: 50px;
+        padding: 0.125rem;
+    }
+    
+    .progress-step i {
+        font-size: 1rem;
+    }
+    
+    .progress-step span {
+        font-size: 0.6rem;
+    }
+    
+    .progress-indicators::before {
+        left: 15%;
+        right: 15%;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Extra small screens */
+    .dog-info-grid .row {
+        --bs-gutter-x: 0.5rem;
+    }
+    
+    .caring-info-card {
+        padding: 0.5rem;
+    }
+    
+    .personality-summary .row {
+        --bs-gutter-x: 0.5rem;
+    }
+    
+    .personality-quick-card {
+        padding: 0.375rem;
+        min-width: 80px;
+    }
+    
+    .event-content {
+        padding: 0.5rem;
+    }
+    
+    .stat-item {
+        padding: 0.5rem;
+    }
+    
+    /* Enhanced Tables Mobile */
+    .enhanced-table-header th {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .enhanced-table-row td {
+        padding: 0.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .datetime-display .date-part {
+        font-size: 0.8rem;
+    }
+    
+    .datetime-display .time-part {
+        font-size: 0.7rem;
+    }
+    
+    .appointment-type-badge,
+    .medicine-form-badge,
+    .frequency-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+    
+    .appointment-status-badge,
+    .medicine-status-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .medicine-name-display .medicine-name {
+        font-size: 0.85rem;
+    }
+    
+    .medicine-name-display .medicine-category {
+        font-size: 0.65rem;
+    }
+    
+    .dosage-display .dosage-amount {
+        font-size: 0.8rem;
+    }
+    
+    .dosage-display .dosage-unit {
+        font-size: 0.7rem;
+    }
+}
+
+/* --- Action Column Width for Tables --- */
+.enhanced-table th.action-column {
+    width: 160px;
+}
+
+/* --- Reminder Overdue Text Style --- */
+.reminder-overdue-text {
+    color: #e74c3c;
+}
+
+/* --- Modal Content Background Style --- */
+.modal-organic-content {
+    background-color: white;
+    border-radius: var(--organic-radius);
+}

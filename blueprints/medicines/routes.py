@@ -1,13 +1,22 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify, abort, make_response
-from flask_login import login_required, current_user
-from datetime import datetime, timedelta
-import bleach
+# Standard library imports
 import json
+from datetime import datetime, timedelta
 
-from blueprints.core.decorators import roles_required
+# Third-party imports
+import bleach
+from flask import (Blueprint, abort, flash, jsonify, make_response, redirect,
+                   render_template, request, url_for)
+from flask_login import current_user, login_required
+
+# Local application imports
 from blueprints.core.audit_helpers import log_audit_event
-from models import db, MedicinePreset, RescueMedicineActivation, Rescue, Dog, DogMedicine, Reminder
-from blueprints.core.utils import get_first_user_id, parse_medicine_frequency, generate_daily_medicine_reminders
+from blueprints.core.decorators import roles_required
+from blueprints.core.utils import (check_rescue_access,
+                                   generate_daily_medicine_reminders,
+                                   get_first_user_id, htmx_error_response,
+                                   parse_medicine_frequency)
+from models import (Dog, DogMedicine, MedicinePreset, Reminder, Rescue,
+                    RescueMedicineActivation, db)
 
 medicines_bp = Blueprint('medicines', __name__, url_prefix='')
 
@@ -217,8 +226,7 @@ def delete_rescue_medicine_preset(preset_id):
 @login_required
 def add_medicine(dog_id):
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     med_preset_id_str = request.form.get('med_preset_id')
     med_dosage = request.form.get('med_dosage', '').strip()
     med_unit = request.form.get('med_unit', '').strip()
@@ -267,11 +275,7 @@ def add_medicine(dog_id):
         error_message = 'Status is required.'
 
     if error_message:
-        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
-        response.status_code = 200
-        response.headers['HX-Retarget'] = '#addMedicineModalError'
-        response.headers['HX-Reswap'] = 'innerHTML'
-        return response
+        return htmx_error_response(error_message, 'addMedicineModal', 200)
 
     # Sanitize notes
     med_notes = bleach.clean(med_notes)
@@ -290,11 +294,7 @@ def add_medicine(dog_id):
         final_preset_id = int(med_preset_id_str)
     except ValueError:
         error_message = 'Invalid Medicine Preset ID.' 
-        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
-        response.status_code = 200
-        response.headers['HX-Retarget'] = '#addMedicineModalError'
-        response.headers['HX-Reswap'] = 'innerHTML'
-        return response
+        return htmx_error_response(error_message, 'addMedicineModal', 200)
 
     med = DogMedicine(
         dog_id=dog.id,
@@ -395,11 +395,9 @@ def edit_medicine(dog_id, medicine_id):
     print('Form data:', dict(request.form))
     
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     med = DogMedicine.query.get_or_404(medicine_id)
-    if current_user.role != 'superadmin' and med.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(med)
 
     old_start_date = med.start_date
 
@@ -459,11 +457,7 @@ def edit_medicine(dog_id, medicine_id):
 
     if error_message:
         print(f'Validation failed: {error_message}')
-        response = make_response(render_template('partials/modal_form_error.html', message=error_message))
-        response.status_code = 200 # Keep 200 for HTMX to process swap
-        response.headers['HX-Retarget'] = '#editMedicineModalError'
-        response.headers['HX-Reswap'] = 'innerHTML'
-        return response
+        return htmx_error_response(error_message, 'editMedicineModal', 200)
 
     # Sanitize notes
     med_notes = bleach.clean(med_notes)
@@ -572,11 +566,9 @@ def edit_medicine(dog_id, medicine_id):
 @login_required
 def delete_medicine(dog_id, medicine_id):
     dog = Dog.query.get_or_404(dog_id)
-    if current_user.role != 'superadmin' and dog.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(dog)
     med = DogMedicine.query.get_or_404(medicine_id)
-    if current_user.role != 'superadmin' and med.rescue_id != current_user.rescue_id:
-        abort(403)
+    check_rescue_access(med)
     db.session.delete(med)
     db.session.commit()
     # --- AUDIT LOG ---

@@ -1,0 +1,802 @@
+/* Phase 7A: Natural Visual Foundation & Care Center Identity */
+
+/* Simplified Caring Design System */
+:root {
+  /* Core Caring Colors - WCAG AA Compliant */
+  --caring-primary: #6B8F52;       /* Sage green - for positive actions */
+  --caring-secondary: #5D4A37;     /* Earth brown - for text/grounding */
+  --caring-accent: #7FAD70;        /* Growth green - for highlights */
+  --caring-warning: #B87A66;       /* Gentle amber - for caution */
+  
+  /* Simplified Background Colors */
+  --caring-bg: #F7F5F3;           /* Warm cream background */
+  --caring-bg-light: #FEFCFA;     /* Pure cream for cards */
+  --caring-text: #4A4034;         /* Deep earth for text */
+  
+  /* Simplified Design Elements */
+  --radius-soft: 6px;              /* Gentle rounded corners */
+  
+  /* Essential Spacing */
+  --space-gentle: 1.2rem;          /* Standard spacing */
+  --space-sm: 0.6rem;              /* Small spacing */
+  --space-lg: 2rem;                /* Large spacing */
+  
+  /* Simple Shadow System */
+  --shadow-gentle: 0 2px 8px rgba(93, 74, 55, 0.15);
+  
+  /* Clean Typography */
+  --font-caring: 'Inter', 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Minimal Animation */
+  --transition-gentle: all 0.2s ease;
+  
+}
+
+/* Clean Body Styling with Caring Foundation */
+body {
+    font-family: var(--font-caring);
+    margin: 0;
+    padding: 0;
+    background: var(--caring-bg);
+    color: var(--caring-secondary);
+    line-height: 1.5;
+    font-size: 1rem;
+    min-height: 100vh;
+}
+
+/* Simple Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-caring);
+    font-weight: 600;
+    color: var(--caring-text);
+    line-height: 1.25;
+    margin: 0 0 var(--space-gentle);
+}
+
+/* Clean Text Styles */
+p {
+    line-height: 1.625;
+    margin: 0 0 var(--space-gentle);
+}
+
+.text-muted {
+    color: rgba(93, 74, 55, 0.7);
+}
+
+/* Simple Container Styling */
+.container {
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+/* --- Unified Dark Mode Theme System --- */
+
+body.dark-mode {
+    /* Core Background Colors */
+    --bg-primary: #1a212e;   /* Deep blue-grey, the main background */
+    --bg-secondary: #242c3d; /* Slightly lighter for elevated surfaces like cards */
+    --bg-tertiary: #2a3447;  /* Header and accent backgrounds */
+    --bg-quaternary: #313a52; /* Interactive element backgrounds */
+    
+    /* Text Colors */
+    --text-primary: #d6deeb; /* Light grey for primary text, high contrast */
+    --text-secondary: #8f9bb3; /* Muted grey for secondary text */
+    --text-muted: #a0a9b8; /* Even more muted text */
+    
+    /* Brand Colors */
+    --brand-primary: #82aaff; /* A vibrant, accessible blue */
+    --brand-primary-bright: #a1c4ff; /* Brighter variant */
+    --brand-primary-muted: rgba(130, 170, 255, 0.15); /* Muted background variant */
+    --brand-secondary: #c792ea; /* A soft, pleasing purple */
+    
+    /* Border Colors */
+    --border-color: #313a52; /* Subtle border color */
+    --border-color-light: #3a4460; /* Lighter border variant */
+    
+    /* State Colors */
+    --success: #4a9960;
+    --success-bright: #5ba870;
+    --success-bg: rgba(74, 153, 96, 0.15);
+    --success-border: rgba(74, 153, 96, 0.3);
+    --success-fg: #4a9960;
+    --success-bg-hover: rgba(74, 153, 96, 0.25);
+    --success-border-hover: rgba(74, 153, 96, 0.5);
+    
+    /* Professional Green Palette for Dark Mode */
+    --success-professional: #4a9960;
+    --success-professional-hover: #5ba870;
+    --success-professional-light: #6bb77d;
+    
+    --warning: #f1fa8c;
+    --warning-bg: rgba(241, 250, 140, 0.15);
+    --warning-border: rgba(241, 250, 140, 0.3);
+    --warning-fg: #f1fa8c;
+    --warning-bg-hover: rgba(241, 250, 140, 0.25);
+    --warning-border-hover: rgba(241, 250, 140, 0.5);
+    
+    --danger: #ff5555;
+    --danger-bg: rgba(255, 85, 85, 0.15);
+    --danger-border: rgba(255, 85, 85, 0.3);
+    --danger-fg: #ff5555;
+    --danger-fg-bright: #ff7b7b;
+    --danger-bg-hover: rgba(255, 85, 85, 0.25);
+    --danger-border-hover: rgba(255, 85, 85, 0.5);
+    
+    --info-bg: rgba(130, 170, 255, 0.15);
+    --info-border: rgba(130, 170, 255, 0.3);
+    --info-fg: var(--brand-primary);
+    
+    /* Natural Dark Mode Palette - Accessible Earth Tones */
+    --caring-primary: #6B8E5A;           /* Darker forest green - readable with white text */
+    --caring-secondary: #8B7355;         /* Darker earth brown - readable with white text */
+    --caring-accent: #5A8A5A;            /* Darker sage - readable with white text */
+    --caring-warning: #B8860B;           /* Darker goldenrod - readable with white text */
+    --caring-danger: #A0522D;            /* Darker sienna - readable with white text */
+    --caring-bg: var(--bg-primary);      /* Dark forest floor */
+    --caring-bg-light: var(--bg-secondary); /* Lighter earth tones */
+    --caring-text: var(--text-primary);  /* Natural moonlight text */
+
+    /* Set the new background and text colors */
+    background: radial-gradient(ellipse at bottom, var(--bg-primary) 0%, #0d121b 100%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode Component Overrides */
+body.dark-mode *,
+body.dark-mode *::before,
+body.dark-mode *::after {
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .text-muted {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* General Component Styling */
+body.dark-mode .card,
+body.dark-mode .modal-content,
+body.dark-mode .accordion-item,
+body.dark-mode .list-group-item {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .card-header,
+body.dark-mode .modal-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
+body.dark-mode .h1, body.dark-mode .h2, body.dark-mode .h3, body.dark-mode .h4, body.dark-mode .h5, body.dark-mode .h6 {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode a {
+    color: var(--brand-primary) !important;
+}
+
+body.dark-mode a:hover {
+    color: var(--brand-primary-bright) !important;
+}
+
+body.dark-mode hr {
+    color: var(--border-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Form Controls */
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Card Content Styling */
+body.dark-mode .card::before {
+    background: none !important;
+    opacity: 0 !important;
+}
+
+body.dark-mode .card-body {
+    background: transparent !important;
+}
+
+body.dark-mode .card-title,
+body.dark-mode .card-subtitle,
+body.dark-mode .card-text,
+body.dark-mode .card-link {
+    color: var(--text-primary) !important;
+}
+
+/* Text Utilities */
+body.dark-mode .card .text-muted,
+body.dark-mode .card-text small {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode .text-danger,
+body.dark-mode .alert-danger .alert-link {
+    color: var(--danger-fg-bright) !important;
+}
+
+/* Form Control Focus States */
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(130, 170, 255, 0.25) !important;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 1 !important;
+}
+
+/* Form Check Inputs */
+body.dark-mode .form-check-input {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .form-check-input:checked {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+}
+
+/* Button Styling */
+body.dark-mode .btn-primary {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .btn-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color-light) !important;
+}
+
+body.dark-mode .btn-organic,
+body.dark-mode .btn-success {
+    background-color: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+    color: var(--success-fg) !important;
+}
+
+body.dark-mode .btn-organic:hover,
+body.dark-mode .btn-success:hover {
+    background-color: var(--success-bg-hover) !important;
+    border-color: var(--success-border-hover) !important;
+    color: var(--success-fg) !important;
+}
+
+
+/* Navbar & Dropdowns */
+body.dark-mode .navbar {
+    background-color: rgba(26, 33, 46, 0.95) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color) !important;
+    box-shadow: var(--natural-shadow);
+}
+
+body.dark-mode .navbar-brand {
+    color: var(--brand-primary) !important;
+}
+
+body.dark-mode .nav-link {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-mode .nav-link:hover,
+body.dark-mode .nav-link:focus {
+    color: var(--brand-primary) !important;
+    background-color: rgba(130, 170, 255, 0.1) !important;
+}
+
+body.dark-mode .navbar-toggler {
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+body.dark-mode .dropdown-menu {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--natural-shadow-lg);
+}
+
+body.dark-mode .dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .dropdown-item:hover,
+body.dark-mode .dropdown-item:focus {
+    background-color: var(--brand-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .dropdown-divider {
+    border-color: var(--border-color) !important;
+}
+
+
+/* Alerts & Badges */
+body.dark-mode .alert {
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+
+body.dark-mode .alert-success { 
+    background-color: var(--success-bg) !important; 
+    border-color: var(--success-border) !important; 
+    color: var(--success-fg) !important; 
+}
+
+body.dark-mode .alert-warning { 
+    background-color: var(--warning-bg) !important; 
+    border-color: var(--warning-border) !important; 
+    color: var(--warning-fg) !important; 
+}
+
+body.dark-mode .alert-danger { 
+    background-color: var(--danger-bg) !important; 
+    border-color: var(--danger-border) !important; 
+    color: var(--danger-fg) !important; 
+}
+
+body.dark-mode .alert-info { 
+    background-color: var(--info-bg) !important; 
+    border-color: var(--info-border) !important; 
+    color: var(--info-fg) !important; 
+}
+
+body.dark-mode .badge.bg-primary { 
+    background-color: var(--brand-primary-muted) !important; 
+    color: var(--brand-primary) !important; 
+    border: 1px solid var(--brand-primary) !important;
+}
+
+body.dark-mode .badge.bg-secondary { 
+    background-color: var(--bg-tertiary) !important; 
+    color: var(--text-secondary) !important; 
+    border: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .badge.bg-success { 
+    background-color: var(--success-bg) !important; 
+    color: var(--success-fg) !important; 
+    border: 1px solid var(--success-border) !important;
+}
+
+body.dark-mode .badge.bg-danger { 
+    background-color: var(--danger-bg) !important; 
+    color: var(--danger-fg) !important; 
+    border: 1px solid var(--danger-border) !important;
+}
+
+body.dark-mode .badge.bg-warning { 
+    background-color: var(--warning-bg) !important; 
+    color: var(--warning-fg) !important; 
+    border: 1px solid var(--warning-border) !important;
+}
+
+body.dark-mode .badge.bg-info { 
+    background-color: var(--info-bg) !important; 
+    color: var(--info-fg) !important; 
+    border: 1px solid var(--info-border) !important;
+}
+
+
+/* FullCalendar Dark Mode Theme */
+body.dark-mode .fc {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .fc .fc-toolbar-title {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .fc .fc-button-primary {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .fc .fc-button-primary:hover {
+    background-color: var(--brand-primary-bright) !important;
+    opacity: 0.9;
+}
+
+body.dark-mode .fc .fc-button-primary:not(:disabled).fc-button-active,
+body.dark-mode .fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--brand-primary-bright) !important;
+}
+
+body.dark-mode .fc-col-header-cell {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .fc-daygrid-day, 
+body.dark-mode .fc-list-day-cushion {
+    background: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .fc-daygrid-day:hover {
+    background-color: var(--bg-secondary) !important;
+}
+
+body.dark-mode #calendar .fc-day-today {
+    background: var(--bg-tertiary) !important;
+}
+
+
+/* =================================================================
+   CALENDAR EVENT COLOR INDICATORS - PRESERVE CATEGORIZATION
+   ================================================================= */
+
+/* Default Dark Mode Calendar Event Styling - Subtle but Visible */
+body.dark-mode .fc-daygrid-event, 
+body.dark-mode .fc-list-event {
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+    margin: 1px !important;
+    padding: 2px 6px !important;
+    /* Remove background/border overrides to preserve event colors */
+    opacity: 0.9 !important;
+}
+
+body.dark-mode .fc-daygrid-event .fc-event-main,
+body.dark-mode .fc-list-event-title {
+    /* Remove color override to preserve event type colors */
+    font-weight: 500 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Enhanced Event Hover States for Dark Mode */
+body.dark-mode .fc-daygrid-event:hover, 
+body.dark-mode .fc-list-event:hover {
+    opacity: 1 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--natural-shadow-hover) !important;
+    z-index: 5 !important;
+}
+
+body.dark-mode .fc-daygrid-dot-event:hover, 
+body.dark-mode .fc-list-event:hover td {
+    background-color: var(--bg-tertiary) !important;
+    border-radius: var(--organic-radius) !important;
+}
+
+body.dark-mode .fc-more-link {
+    color: var(--brand-primary) !important;
+}
+
+body.dark-mode .fc-popover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .fc-popover-header {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .fc-popover-body {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .fc-popover-body .fc-daygrid-event .fc-event-main {
+    color: var(--brand-primary-bright) !important;
+}
+
+/* Popovers */
+body.dark-mode .popover {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    border-radius: var(--organic-radius-lg);
+}
+
+body.dark-mode .popover-header {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
+    font-weight: 600;
+}
+
+body.dark-mode .popover-body {
+    color: var(--text-primary);
+}
+
+body.dark-mode .popover .popover-arrow::after {
+    border-top-color: var(--bg-secondary);
+}
+
+body.dark-mode .popover .popover-arrow::before {
+    border-top-color: var(--border-color);
+}
+
+/* Tables */
+body.dark-mode .table {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .table > :not(caption) > * > * {
+    background-color: transparent !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(255, 255, 255, 0.03) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .table-hover > tbody > tr:hover > * {
+    --bs-table-accent-bg: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .table thead th {
+    color: var(--text-primary) !important;
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .table tbody td {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Accordion */
+body.dark-mode .accordion-item {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .accordion-button {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .accordion-button:not(.collapsed) {
+    background-color: var(--brand-primary) !important;
+    color: var(--bg-primary) !important;
+}
+
+body.dark-mode .accordion-button:not(.collapsed)::after {
+    filter: brightness(0) invert(1);
+}
+
+body.dark-mode .accordion-button::after {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+body.dark-mode .accordion-body {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+
+/* Timeline */
+body.dark-mode .timeline::before {
+    background-color: var(--border-color) !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .timeline-item .timeline-point {
+    background-color: var(--brand-primary) !important;
+    box-shadow: 0 0 0 3px var(--bg-secondary) !important;
+}
+
+body.dark-mode .timeline-item::before {
+    background: var(--brand-primary) !important;
+    border-color: var(--bg-secondary) !important;
+}
+
+/* Text Contrast & Definition Lists */
+body.dark-mode dt {
+    color: var(--text-muted) !important;
+}
+
+body.dark-mode dd {
+    color: var(--text-primary) !important;
+}
+
+/* Button & Badge Overrides (Increased Specificity) */
+body.dark-mode .btn.btn-success,
+body.dark-mode .btn.btn-organic {
+    background-color: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+    color: var(--success-fg) !important;
+}
+body.dark-mode .btn.btn-success:hover,
+body.dark-mode .btn.btn-organic:hover {
+    background-color: var(--success-bg-hover) !important;
+    border-color: var(--success-border-hover) !important;
+    color: var(--success-fg) !important;
+}
+
+body.dark-mode .btn.btn-warning {
+    background-color: var(--warning-bg) !important;
+    border-color: var(--warning-border) !important;
+    color: var(--warning-fg) !important;
+}
+body.dark-mode .btn.btn-warning:hover {
+    background-color: var(--warning-bg-hover) !important;
+    border-color: var(--warning-border-hover) !important;
+    color: var(--warning-fg) !important;
+}
+
+/* 0. Components */
+.calendar-container {
+    background-color: var(--bg-primary);
+    padding: 1.5rem;
+    border-radius: var(--organic-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--organic-shadow-subtle);
+}
+
+body.dark-mode .calendar-container {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+#calendar {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* 1. Root & Body */
+body.dark-mode .accordion-body {
+    color: var(--text-primary);
+}
+
+
+/* High Contrast Support */
+@media (prefers-contrast: high) {
+    :root {
+        --earth-primary: #5F7A47;        /* Darker green for better contrast */
+        --earth-secondary: #6D5A42;      /* Darker brown for better contrast */
+        --trust-accent: #4A6B7C;         /* Darker blue-gray for better contrast */
+        --growth-highlight: #7BA876;     /* Darker leaf green for better contrast */
+        --gentle-warning: #B8955E;       /* Darker amber for better contrast */
+    }
+}
+
+/* Enhanced Skip Links for Accessibility */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--earth-primary);
+    color: white;
+    padding: 8px;
+    border-radius: var(--organic-radius);
+    text-decoration: none;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.skip-link:focus {
+    top: 6px;
+    box-shadow: 0 0 0 3px rgba(107, 143, 82, 0.4);
+}
+
+/* Simplified Accessibility Focus Indicators */
+.btn:focus,
+.form-control:focus,
+.form-select:focus,
+.nav-link:focus {
+    outline: 2px solid var(--caring-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(107, 143, 82, 0.2);
+    transition: var(--transition-gentle);
+}
+
+.card:focus-within {
+    border-color: var(--caring-primary);
+    box-shadow: 0 0 0 2px rgba(107, 143, 82, 0.2);
+}
+
+/* Dark Mode Focus Fixes */
+body.dark-mode .btn:focus,
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus,
+body.dark-mode .nav-link:focus {
+    outline: 2px solid var(--caring-primary) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(107, 142, 90, 0.4) !important; /* Natural forest green glow */
+}
+
+body.dark-mode .card:focus-within {
+    border-color: var(--caring-primary) !important;
+    box-shadow: 0 0 0 2px rgba(107, 142, 90, 0.4) !important; /* Natural forest green glow */
+}
+
+/* High contrast mode focus improvements */
+@media (prefers-contrast: high) {
+    .btn:focus,
+    .form-control:focus,
+    .form-select:focus,
+    .nav-link:focus {
+        outline: 3px solid var(--caring-primary);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(107, 143, 82, 0.4);
+    }
+    
+    body.dark-mode .btn:focus,
+    body.dark-mode .form-control:focus,
+    body.dark-mode .form-select:focus,
+    body.dark-mode .nav-link:focus {
+        outline: 3px solid var(--caring-primary) !important;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(107, 142, 90, 0.6) !important; /* Enhanced natural forest green glow */
+    }
+}
+
+/* Dark Mode Utility Classes */
+body.dark-mode .icon-caring-primary {
+    color: var(--brand-primary) !important;
+}
+
+body.dark-mode .icon-caring-accent {
+    color: var(--success-professional) !important;
+}
+
+body.dark-mode .icon-caring-warning {
+    color: var(--warning) !important;
+}
+
+body.dark-mode .text-caring-primary {
+    color: var(--brand-primary) !important;
+}
+
+body.dark-mode .text-caring-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* Screen Reader Optimization */
+.sr-description {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.sr-only-loading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

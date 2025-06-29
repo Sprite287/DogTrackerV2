@@ -31,18 +31,36 @@
                                 <!-- Phase 5B: Visual Indicators -->
                                 {% if event.source_model == 'DogNote' %}
                                     {% if event.description and 'Medical' in event.description %}
-                                        <span class="badge ms-2 badge-health-care">Health Care</span>
+                                        {% set status_value="Health Care" %}
+                                        {% set status_type="event_type" %}
+                                        {% set additional_classes="ms-2" %}
+                                        {% include 'partials/status_badge.html' %}
                                     {% elif event.description and 'Behavioral' in event.description %}
-                                        <span class="badge ms-2 badge-behavior">Behavior</span>
+                                        {% set status_value="Behavior" %}
+                                        {% set status_type="event_type" %}
+                                        {% set additional_classes="ms-2" %}
+                                        {% include 'partials/status_badge.html' %}
                                     {% elif event.description and 'Training' in event.description %}
-                                        <span class="badge ms-2 badge-learning">Learning</span>
+                                        {% set status_value="Learning" %}
+                                        {% set status_type="event_type" %}
+                                        {% set additional_classes="ms-2" %}
+                                        {% include 'partials/status_badge.html' %}
                                     {% endif %}
                                 {% elif event.source_model == 'Appointment' %}
-                                    <span class="badge ms-2 badge-care-visit">Care Visit</span>
+                                    {% set status_value="Care Visit" %}
+                                    {% set status_type="event_type" %}
+                                    {% set additional_classes="ms-2" %}
+                                    {% include 'partials/status_badge.html' %}
                                 {% elif event.source_model == 'DogMedicine' %}
-                                    <span class="badge ms-2 badge-treatment">Treatment</span>
+                                    {% set status_value="Treatment" %}
+                                    {% set status_type="event_type" %}
+                                    {% set additional_classes="ms-2" %}
+                                    {% include 'partials/status_badge.html' %}
                                 {% elif event.source_model == 'DogPersonality' %}
-                                    <span class="badge ms-2 badge-character">Character</span>
+                                    {% set status_value="Character" %}
+                                    {% set status_type="event_type" %}
+                                    {% set additional_classes="ms-2" %}
+                                    {% include 'partials/status_badge.html' %}
                                 {% endif %}
                             </h6>
                             <small class="text-muted fw-bold">{{ event.timestamp.strftime('%m/%d/%Y %I:%M %p') }}</small>
@@ -56,7 +74,7 @@
                             </small>
                             
                             <!-- Phase 5B: Contextual Links -->
-                            <div class="btn-group btn-group-sm" role="group">
+                            <div>
                                 {% if event.source_model == 'Appointment' %}
                                     <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}#appointments" class="btn btn-sm breathe-hover btn-earth-primary">
                                         <i class="bi bi-calendar-heart"></i> Care Visits
@@ -83,28 +101,18 @@
         </div>
     {% endif %}
 {% else %}
-    <div class="empty-state-natural text-center py-5 breathing-container">
-        <div class="mb-4">
-            <i class="bi bi-journal-heart text-success mb-3 grow-in icon-earth-primary large-icon"></i>
-        </div>
-        <h4 class="mb-3 icon-earth-secondary">
-            {% if is_filtered %}
-                No events match your caring search
-            {% else %}
-                {{ dog.name }}'s story is just beginning
-            {% endif %}
-        </h4>
-        <p class="text-muted mb-4 lead">
-            {% if is_filtered %}
-                Try adjusting your filters to see more of their journey
-            {% else %}
-                Every moment of care creates a meaningful chapter in their journey
-            {% endif %}
-        </p>
-        {% if not is_filtered %}
-            <button type="button" data-bs-toggle="modal" data-bs-target="#addDogNoteModal" class="btn btn-primary btn-lg breathe-hover grow-in">
-                Add First Care Note
-            </button>
-        {% endif %}
-    </div>
+    {% if is_filtered %}
+        {% set icon="bi bi-journal-heart" %}
+        {% set title="No events match your caring search" %}
+        {% set message="Try adjusting your filters to see more of their journey" %}
+        {% include 'partials/empty_state.html' %}
+    {% else %}
+        {% set icon="bi bi-journal-heart" %}
+        {% set title=dog.name ~ "'s story is just beginning" %}
+        {% set message="Every moment of care creates a meaningful chapter in their journey" %}
+        {% set action_text="Add First Care Note" %}
+        {% set action_modal="#addDogNoteModal" %}
+        {% set action_class="btn-primary btn-lg grow-in" %}
+        {% include 'partials/empty_state.html' %}
+    {% endif %}
 {% endif %} 

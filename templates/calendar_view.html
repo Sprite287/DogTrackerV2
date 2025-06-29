@@ -3,428 +3,322 @@
 {% block title %}Care Calendar - Your Schedule{% endblock %}
 
 {% block head_extra %}
-<style>
-/* Improve FullCalendar styling for better readability */
-.fc-theme-standard td, .fc-theme-standard th {
-    border: 1px solid #ddd;
-}
-
-.fc-timegrid-slot {
-    height: 60px !important;
-}
-
-.fc-timegrid-slot-label {
-    font-size: 0.85rem;
-    padding: 8px 12px;
-}
-
-.fc-timegrid-event {
-    font-size: 0.85rem;
-    padding: 2px 4px;
-}
-
-.fc-daygrid-event {
-    font-size: 0.8rem;
-    margin: 1px;
-    padding: 2px 4px;
-}
-
-.fc-event-title {
-    font-weight: 500;
-}
-
-.fc-col-header-cell {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.fc-timegrid-axis {
-    width: 80px;
-}
-
-.fc-scroller {
-    overflow-y: auto !important;
-    max-height: 600px;
-}
-
-/* Better spacing for time grid views */
-.fc-timegrid-divider {
-    padding: 0;
-}
-
-.fc-timegrid-body {
-    min-height: 500px;
-}
-
-/* Improve month view */
-.fc-daygrid-body {
-    font-size: 0.9rem;
-}
-
-.fc-daygrid-day-number {
-    padding: 8px;
-    font-weight: 600;
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar-refined.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Care Calendar</h1>
-        <!-- Future: Add filters or buttons here, e.g., for different views or new appointment -->
-    </div>
-
+<div class="container-fluid calendar-page">
+    <!-- Rescue Filter (if applicable) -->
     {% set auto_submit = false %}
     {% include 'partials/rescue_filter.html' %}
 
-    {# Display Grouped Upcoming Reminders as Accordion #}
-    {% if grouped_reminders %}
-        <div id="upcoming-reminders-section" class="mb-4">
-            <h2>Upcoming Reminders (Next 7 Days)</h2>
-            <div class="accordion" id="remindersAccordion">
-                {% for group_name, reminders_in_group in grouped_reminders.items() %}
-                    {% if reminders_in_group %}
-                        {% set loop_index = loop.index %}
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" aria-expanded="false" aria-controls="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}">
-                                    {{ group_name }} <span class="badge bg-secondary ms-2">{{ reminders_in_group|length }}</span>
-                                </button>
-                            </h2>
-                            <div id="collapse-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ group_name|replace(' ', '-')|lower }}-{{ loop_index }}" data-bs-parent="#remindersAccordion">
-                                <div class="accordion-body p-0">
-                                    <ul class="list-group list-group-flush">
-                                        {% for reminder in reminders_in_group %}
-                                            <li class="list-group-item d-flex justify-content-between align-items-center" id="reminder-{{ reminder.id }}">
-                                                <span>
-                                                    {{ reminder.message }}
-                                                    <small class="text-muted d-block">Due: {{ reminder.due_datetime.strftime('%a, %b %d, %Y @ %I:%M %p UTC') }}</small>
-                                                    {% if reminder.dog %}
-                                                    <small class="text-muted d-block">Dog: <a href="{{ url_for('dogs.dog_details', dog_id=reminder.dog.id) }}">{{ reminder.dog.name }}</a></small>
-                                                    {% endif %}
-                                                </span>
-                                                <div class="btn-group" role="group">
-                                                    <button class="btn btn-sm btn-outline-success" 
-                                                            hx-post="{{ url_for('calendar.acknowledge_reminder', reminder_id=reminder.id) }}" 
-                                                            hx-target="#reminder-{{ reminder.id }}" 
-                                                            hx-swap="outerHTML">Done</button>
-                                                    <button class="btn btn-sm btn-outline-secondary" 
-                                                            hx-post="{{ url_for('calendar.dismiss_reminder', reminder_id=reminder.id) }}" 
-                                                            hx-target="#reminder-{{ reminder.id }}" 
-                                                            hx-swap="outerHTML">Dismiss</button>
-                                                    <!-- Phase 5C: History Integration -->
-                                                    {% if reminder.dog %}
-                                                        <a class="btn btn-sm btn-outline-info" 
-                                                           href="{{ url_for('dogs.dog_history', dog_id=reminder.dog.id) }}{% if reminder.appointment_id %}?filter_type=appointment{% elif reminder.dog_medicine_id %}?filter_type=medicine{% endif %}"
-                                                           title="View related history for {{ reminder.dog.name }}">
-                                                            <i class="bi bi-clock-history"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                </div>
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
+    <!-- Main Calendar Container (70/30 Split) -->
+    <div class="calendar-page-container">
+        <!-- Calendar Main Section (70%) -->
+        <div class="calendar-main">
+            <!-- Calendar Header -->
+            <div class="calendar-header">
+                <div class="calendar-title">
+                    <div class="d-flex align-items-center gap-3">
+                        <h1>Care Calendar</h1>
+                        <!-- Month Navigation -->
+                        <div class="month-navigation">
+                            <button class="nav-btn" id="prevMonth">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span class="current-month-year" id="currentMonthYear"></span>
+                            <button class="nav-btn" id="nextMonth">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
                         </div>
-                    {% endif %}
-                {% endfor %}
+                    </div>
+                    <span class="today-date"></span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <!-- View Switcher -->
+                    <div class="view-switcher">
+                        <button class="view-btn active">Month</button>
+                        <button class="view-btn">Week</button>
+                        <button class="view-btn">Day</button>
+                        <button class="view-btn">List</button>
+                    </div>
+                    
+                    <!-- Add Event Button -->
+                    <button class="btn-add-event breathe-hover" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+                        <i class="bi bi-plus-lg"></i>
+                        Add Event
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Calendar Container -->
+            <div class="calendar-container">
+                <div id="calendar">
+                    <!-- FullCalendar will be rendered here -->
+                </div>
             </div>
         </div>
-    {% else %}
-        <div class="alert alert-info mt-3" role="alert">
-            No upcoming reminders in the next 7 days.
+        
+        <!-- Reminders Sidebar (30% - Fixed 380px) -->
+        <div class="reminders-sidebar">
+            {# Categorize reminders #}
+            {% set overdue_reminders = [] %}
+            {% set today_reminders = [] %}
+            {% set upcoming_reminders = [] %}
+            
+            {% if grouped_reminders %}
+                {% for group_name, reminders_in_group in grouped_reminders.items() %}
+                    {% for reminder in reminders_in_group %}
+                        {% if reminder.due_datetime < now %}
+                            {% set _ = overdue_reminders.append(reminder) %}
+                        {% elif reminder.due_datetime.date() == now.date() %}
+                            {% set _ = today_reminders.append(reminder) %}
+                        {% else %}
+                            {% set _ = upcoming_reminders.append(reminder) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+            
+            {% set total_count = overdue_reminders|length + today_reminders|length + upcoming_reminders|length %}
+            
+            <div class="reminders-card">
+                <div class="reminders-header">
+                    <h2>
+                        <i class="bi bi-bell"></i>
+                        Reminders
+                        <span class="reminder-count">{{ total_count }}</span>
+                    </h2>
+                </div>
+                
+                <!-- Tab Navigation -->
+                <div class="reminder-tabs">
+                    <button class="reminder-tab overdue-tab {% if overdue_reminders %}active{% endif %}" data-tab="overdue">
+                        Overdue
+                        <span class="tab-count">{{ overdue_reminders|length }}</span>
+                    </button>
+                    <button class="reminder-tab {% if not overdue_reminders and today_reminders %}active{% endif %}" data-tab="today">
+                        Today
+                        <span class="tab-count">{{ today_reminders|length }}</span>
+                    </button>
+                    <button class="reminder-tab {% if not overdue_reminders and not today_reminders %}active{% endif %}" data-tab="upcoming">
+                        Upcoming
+                        <span class="tab-count">{{ upcoming_reminders|length }}</span>
+                    </button>
+                </div>
+                
+                <div class="reminders-list">
+                    <!-- Overdue Tab Content -->
+                    <div class="reminder-tab-content {% if overdue_reminders %}active{% endif %}" id="overdue-content">
+                        {% if overdue_reminders %}
+                            {% for reminder in overdue_reminders[:5] %}
+                                <div class="reminder-item overdue" data-reminder-id="{{ reminder.id }}">
+                                    <div class="reminder-icon {% if reminder.appointment_id %}vet{% elif reminder.dog_medicine_id %}medication{% else %}other{% endif %}">
+                                        <i class="bi {% if reminder.appointment_id %}bi-hospital{% elif reminder.dog_medicine_id %}bi-capsule{% else %}bi-calendar-event{% endif %}"></i>
+                                    </div>
+                                    <div class="reminder-content">
+                                        <div class="reminder-title">
+                                            {% if reminder.appointment_id and reminder.appointment %}
+                                                {{ reminder.appointment.title }}
+                                            {% elif reminder.dog_medicine_id and reminder.dog_medicine %}
+                                                {{ reminder.dog_medicine.preset.name if reminder.dog_medicine.preset else 'Medication' }}
+                                            {% else %}
+                                                {{ reminder.reminder_type.replace('_', ' ').title() }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="reminder-meta">
+                                            <span class="reminder-dog">
+                                                <i class="bi bi-heart-fill"></i> {{ reminder.dog.name if reminder.dog else 'Unknown' }}
+                                            </span>
+                                            <span style="color: #e74c3c;">
+                                                {% set time_diff = now - reminder.due_datetime %}
+                                                {% set days = time_diff.days %}
+                                                <i class="bi bi-clock"></i> 
+                                                {% if days > 0 %}
+                                                    {{ days }} day{{ 's' if days != 1 else '' }} overdue
+                                                {% else %}
+                                                    {% set hours = (time_diff.seconds // 3600) %}
+                                                    {{ hours }} hour{{ 's' if hours != 1 else '' }} overdue
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-complete">
+                                        <i class="bi bi-check"></i> Done
+                                    </button>
+                                </div>
+                            {% endfor %}
+                            {% if overdue_reminders|length > 5 %}
+                                <button class="show-more-btn" data-category="overdue" data-total="{{ overdue_reminders|length }}">
+                                    <i class="bi bi-chevron-down"></i> Show {{ [5, overdue_reminders|length - 5]|min }} more
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <div class="empty-reminders">
+                                <i class="bi bi-check-circle"></i>
+                                <p>No overdue reminders</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Today Tab Content -->
+                    <div class="reminder-tab-content {% if not overdue_reminders and today_reminders %}active{% endif %}" id="today-content">
+                        {% if today_reminders %}
+                            {% for reminder in today_reminders[:5] %}
+                                <div class="reminder-item" data-reminder-id="{{ reminder.id }}">
+                                    <div class="reminder-icon {% if reminder.appointment_id %}vet{% elif reminder.dog_medicine_id %}medication{% else %}other{% endif %}">
+                                        <i class="bi {% if reminder.appointment_id %}bi-hospital{% elif reminder.dog_medicine_id %}bi-capsule{% else %}bi-calendar-event{% endif %}"></i>
+                                    </div>
+                                    <div class="reminder-content">
+                                        <div class="reminder-title">
+                                            {% if reminder.appointment_id and reminder.appointment %}
+                                                {{ reminder.appointment.title }}
+                                            {% elif reminder.dog_medicine_id and reminder.dog_medicine %}
+                                                {{ reminder.dog_medicine.preset.name if reminder.dog_medicine.preset else 'Daily Medication' }}
+                                            {% else %}
+                                                {{ reminder.reminder_type.replace('_', ' ').title() }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="reminder-meta">
+                                            <span class="reminder-dog">
+                                                <i class="bi bi-heart-fill"></i> {{ reminder.dog.name if reminder.dog else 'Unknown' }}
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-clock"></i> {{ reminder.due_datetime.strftime('%I:%M %p') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-complete">
+                                        <i class="bi bi-check"></i> Done
+                                    </button>
+                                </div>
+                            {% endfor %}
+                            {% if today_reminders|length > 5 %}
+                                <button class="show-more-btn" data-category="today" data-total="{{ today_reminders|length }}">
+                                    <i class="bi bi-chevron-down"></i> Show {{ [5, today_reminders|length - 5]|min }} more
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <div class="empty-reminders">
+                                <i class="bi bi-calendar-check"></i>
+                                <p>No reminders for today</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Upcoming Tab Content -->
+                    <div class="reminder-tab-content {% if not overdue_reminders and not today_reminders %}active{% endif %}" id="upcoming-content">
+                        {% if upcoming_reminders %}
+                            {% for reminder in upcoming_reminders[:5] %}
+                                <div class="reminder-item" data-reminder-id="{{ reminder.id }}">
+                                    <div class="reminder-icon {% if reminder.appointment_id %}vet{% elif reminder.dog_medicine_id %}medication{% else %}other{% endif %}">
+                                        <i class="bi {% if reminder.appointment_id %}bi-hospital{% elif reminder.dog_medicine_id %}bi-capsule{% else %}bi-calendar-event{% endif %}"></i>
+                                    </div>
+                                    <div class="reminder-content">
+                                        <div class="reminder-title">
+                                            {% if reminder.appointment_id and reminder.appointment %}
+                                                {{ reminder.appointment.title }}
+                                            {% elif reminder.dog_medicine_id and reminder.dog_medicine %}
+                                                {{ reminder.dog_medicine.preset.name if reminder.dog_medicine.preset else 'Medication' }}
+                                            {% else %}
+                                                {{ reminder.reminder_type.replace('_', ' ').title() }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="reminder-meta">
+                                            <span class="reminder-dog">
+                                                <i class="bi bi-heart-fill"></i> {{ reminder.dog.name if reminder.dog else 'Unknown' }}
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-calendar3"></i> {{ reminder.due_datetime.strftime('%b %d at %I:%M %p') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-complete">
+                                        <i class="bi bi-check"></i> Done
+                                    </button>
+                                </div>
+                            {% endfor %}
+                            {% if upcoming_reminders|length > 5 %}
+                                <button class="show-more-btn" data-category="upcoming" data-total="{{ upcoming_reminders|length }}">
+                                    <i class="bi bi-chevron-down"></i> Show {{ [5, upcoming_reminders|length - 5]|min }} more
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <div class="empty-reminders">
+                                <i class="bi bi-calendar-plus"></i>
+                                <p>No upcoming reminders</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-    {% endif %}
-    
-    <div id="calendar" style="min-height: 700px;">
-        <!-- Calendar will be rendered here -->
     </div>
+</div>
+
+<!-- Add Appointment Modal -->
+<div class="modal fade" id="addAppointmentModal" tabindex="-1" aria-labelledby="addAppointmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('calendar.add_appointment') }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addAppointmentModalLabel">Add New Appointment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="selectDog" class="form-label">Select Dog</label>
+            <select class="form-select" id="selectDog" name="dog_id" required>
+              <option value="">Choose a dog...</option>
+              {% for dog in dogs %}
+                <option value="{{ dog.id }}">{{ dog.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="addApptType" class="form-label">Appointment Type</label>
+            <select class="form-select" id="addApptType" name="appt_type_id" required>
+              <option value="">Choose type...</option>
+              {% for appt_type in appointment_types %}
+                <option value="{{ appt_type.id }}">{{ appt_type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="addApptTitle" class="form-label">Title</label>
+            <input type="text" class="form-control" id="addApptTitle" name="appt_title" required>
+          </div>
+          <div class="mb-3">
+            <label for="addApptStart" class="form-label">Start Date/Time</label>
+            <input type="datetime-local" class="form-control" id="addApptStart" name="appt_start_datetime" required>
+          </div>
+          <div class="mb-3">
+            <label for="addApptEnd" class="form-label">End Date/Time (optional)</label>
+            <input type="datetime-local" class="form-control" id="addApptEnd" name="appt_end_datetime">
+          </div>
+          <div class="mb-3">
+            <label for="addApptNotes" class="form-label">Notes</label>
+            <textarea class="form-control" id="addApptNotes" name="appt_notes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Appointment</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-{{ super() }} {# Include scripts from base.html if any #}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/calendar-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/calendar-refined.js') }}"></script>
 <script nonce="{{ g.csp_nonce }}">
-    console.log("Calendar_view.html script block executing.");
-    console.log("Type of FullCalendar before DOMContentLoaded:", typeof FullCalendar);
-
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOMContentLoaded fired in calendar_view.html.");
-        console.log("Type of FullCalendar inside DOMContentLoaded:", typeof FullCalendar);
-
-        if (typeof FullCalendar !== 'undefined' && FullCalendar.Calendar) {
-            var calendarEl = document.getElementById('calendar');
-            if (calendarEl) {
-                try {
-                    // Make calendar global so we can update it from the rescue filter
-                    window.calendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: 'dayGridMonth',
-                        height: 'auto',
-                        aspectRatio: 1.5,
-                        headerToolbar: {
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-                        },
-                        slotMinTime: '06:00:00',
-                        slotMaxTime: '22:00:00',
-                        slotDuration: '01:00:00',
-                        allDaySlot: true,
-                        slotLabelInterval: '02:00:00',
-                        nowIndicator: true,
-                        expandRows: true,
-                        dayMaxEvents: 3,
-                        dayMaxEventRows: 3,
-                        moreLinkClick: 'popover',
-                        events: function(info, successCallback, failureCallback) {
-                            const baseUrl = "{{ url_for('api.calendar_events_api') }}";
-                            const rescueId = "{{ selected_rescue_id or '' }}";
-                            const url = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
-                            
-                            console.log(`[CALENDAR] Fetching events from: ${url} (rescueId: '${rescueId}')`);
-                            
-                            fetch(url)
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP error! status: ${response.status}`);
-                                    }
-                                    return response.json();
-                                })
-                                .then(data => {
-                                    console.log(`Loaded ${data.length} calendar events from ${url}`);
-                                    successCallback(data);
-                                })
-                                .catch(error => {
-                                    console.error('Error loading calendar events:', error);
-                                    failureCallback(error);
-                                });
-                        },
-                        editable: false, 
-                        selectable: false, 
-                        eventClick: function(info) {
-                            info.jsEvent.preventDefault(); 
-                            if (info.event.url) {
-                                window.open(info.event.url, "_self"); 
-                            }
-                        },
-                        eventDidMount: function(info) {
-                            if (info.event.extendedProps && (info.event.extendedProps.description || info.event.extendedProps.dog_name || info.event.extendedProps.medicine_name)) { 
-                                var popoverContent = '';
-                                if(info.event.extendedProps.dog_name) popoverContent += `<strong>Dog:</strong> ${info.event.extendedProps.dog_name}<br>`;
-                                if(info.event.extendedProps.eventType === 'appointment' && info.event.extendedProps.appointment_type) popoverContent += `<strong>Type:</strong> ${info.event.extendedProps.appointment_type}<br>`;
-                                if(info.event.extendedProps.eventType === 'medicine_start' && info.event.extendedProps.medicine_name) popoverContent += `<strong>Medicine:</strong> ${info.event.extendedProps.medicine_name}<br>`;
-                                if(info.event.extendedProps.status) popoverContent += `<strong>Status:</strong> ${info.event.extendedProps.status}<br>`;
-                                if(info.event.extendedProps.description) popoverContent += `<strong>Notes:</strong> ${info.event.extendedProps.description || 'None'}`;
-                                if(info.event.extendedProps.eventType === 'medicine_start' && info.event.extendedProps.dosage) popoverContent += `<strong>Dosage:</strong> ${info.event.extendedProps.dosage} ${info.event.extendedProps.unit || ''}<br>`;
-                                
-                                if (popoverContent) { 
-                                    info.el.setAttribute('data-bs-toggle', 'popover');
-                                    info.el.setAttribute('data-bs-trigger', 'hover focus');
-                                    info.el.setAttribute('data-bs-html', 'true');
-                                    info.el.setAttribute('data-bs-title', info.event.title);
-                                    info.el.setAttribute('data-bs-content', popoverContent);
-                                    new bootstrap.Popover(info.el); 
-                                }
-                            }
-                        }
-                    });
-                    window.calendar.render();
-                    console.log("FullCalendar initialized and rendered.");
-                    
-                    // Add debugging for calendar events loading
-                    window.calendar.on('eventSourceSuccess', function(info) {
-                        console.log('Calendar events loaded successfully:', info);
-                    });
-                    window.calendar.on('eventSourceFailure', function(info) {
-                        console.error('Calendar events failed to load:', info);
-                    });
-                    
-                    // Set up rescue filter dropdown event listener (avoiding CSP inline handler issues)
-                    const rescueSelect = document.getElementById('rescueSelect');
-                    if (rescueSelect) {
-                        rescueSelect.addEventListener('change', function(event) {
-                            const selectedRescueId = event.target.value;
-                            console.log(`[CALENDAR] Rescue dropdown changed to: '${selectedRescueId}'`);
-                            
-                            // Update both calendar and reminders dynamically
-                            updateCalendarEvents(selectedRescueId);
-                            updateRemindersSection(selectedRescueId);
-                        });
-                        console.log('[CALENDAR] Rescue filter event listener attached');
-                    } else {
-                        console.log('[CALENDAR] Rescue select element not found (user might not be superadmin)');
-                    }
-                } catch (e) {
-                    console.error("Error initializing FullCalendar:", e);
-                }
-            } else {
-                console.error("Calendar element #calendar not found.");
-            }
-        } else {
-            console.error("FullCalendar object or FullCalendar.Calendar constructor is not defined when trying to initialize.");
-        }
-    });
-    
-    // Function to update calendar events when rescue filter changes
-    function updateCalendarEvents(rescueId) {
-        console.log(`[CALENDAR] Updating events for rescue ID: '${rescueId}'`);
-        
-        if (window.calendar) {
-            // Remove all existing event sources
-            window.calendar.removeAllEventSources();
-            
-            // Add new event source with the selected rescue ID
-            const baseUrl = "{{ url_for('api.calendar_events_api') }}";
-            const newUrl = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
-            
-            console.log(`[CALENDAR] Adding new event source: ${newUrl}`);
-            
-            window.calendar.addEventSource({
-                url: newUrl,
-                failure: function(error) {
-                    console.error('Failed to load events:', error);
-                },
-                success: function(data) {
-                    console.log(`[CALENDAR] Successfully loaded ${data.length} events`);
-                }
-            });
-            
-            // Also update the URL in the browser (optional, for bookmarking)
-            const currentUrl = new URL(window.location);
-            if (rescueId) {
-                currentUrl.searchParams.set('rescue_id', rescueId);
-            } else {
-                currentUrl.searchParams.delete('rescue_id');
-            }
-            window.history.replaceState({}, '', currentUrl);
-        } else {
-            console.error('[CALENDAR] Calendar object not found, cannot update events');
-        }
-    }
-    
-    // Function to update reminders section when rescue filter changes
-    function updateRemindersSection(rescueId) {
-        console.log(`[REMINDERS] Updating reminders for rescue ID: '${rescueId}'`);
-        
-        const baseUrl = "{{ url_for('api.calendar_reminders_api') }}";
-        const url = rescueId ? `${baseUrl}?rescue_id=${rescueId}` : baseUrl;
-        
-        console.log(`[REMINDERS] Fetching reminders from: ${url}`);
-        
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log(`[REMINDERS] Loaded reminders data:`, data);
-                renderRemindersSection(data.grouped_reminders);
-            })
-            .catch(error => {
-                console.error('[REMINDERS] Error loading reminders:', error);
-                // Show error message in reminders section
-                const remindersSection = document.getElementById('upcoming-reminders-section');
-                if (remindersSection) {
-                    remindersSection.innerHTML = '<div class="alert alert-danger">Failed to load reminders. Please refresh the page.</div>';
-                }
-            });
-    }
-    
-    // Function to render the reminders HTML from API data
-    function renderRemindersSection(groupedReminders) {
-        const remindersSection = document.getElementById('upcoming-reminders-section');
-        if (!remindersSection) {
-            console.log('[REMINDERS] Reminders section not found');
-            return;
-        }
-        
-        // Base URLs for building dynamic links
-        const dogDetailsBaseUrl = "{{ url_for('dogs.dog_details', dog_id=1) }}".replace('/1', '');
-        const dogHistoryBaseUrl = "{{ url_for('dogs.dog_history', dog_id=1) }}".replace('/1', '');
-        const acknowledgeBaseUrl = "{{ url_for('calendar.acknowledge_reminder', reminder_id=1) }}".replace('/1', '');
-        const dismissBaseUrl = "{{ url_for('calendar.dismiss_reminder', reminder_id=1) }}".replace('/1', '');
-        
-        // Check if there are any reminders
-        const hasReminders = Object.keys(groupedReminders).length > 0;
-        
-        if (!hasReminders) {
-            remindersSection.innerHTML = `
-                <div class="alert alert-info mt-3" role="alert">
-                    No upcoming reminders in the next 7 days.
-                </div>
-            `;
-            return;
-        }
-        
-        // Build the accordion HTML
-        let html = `
-            <h2>Upcoming Reminders (Next 7 Days)</h2>
-            <div class="accordion" id="remindersAccordion">
-        `;
-        
-        let loopIndex = 1;
-        for (const [groupName, reminders] of Object.entries(groupedReminders)) {
-            if (reminders.length > 0) {
-                const groupId = groupName.replace(/\s+/g, '-').toLowerCase() + '-' + loopIndex;
-                html += `
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-${groupId}">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${groupId}" aria-expanded="false" aria-controls="collapse-${groupId}">
-                                ${groupName} <span class="badge bg-secondary ms-2">${reminders.length}</span>
-                            </button>
-                        </h2>
-                        <div id="collapse-${groupId}" class="accordion-collapse collapse" aria-labelledby="heading-${groupId}" data-bs-parent="#remindersAccordion">
-                            <div class="accordion-body p-0">
-                                <ul class="list-group list-group-flush">
-                `;
-                
-                for (const reminder of reminders) {
-                    html += `
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="reminder-${reminder.id}">
-                            <span>
-                                ${reminder.message}
-                                <small class="text-muted d-block">Due: ${reminder.due_datetime}</small>
-                                ${reminder.dog_name ? `<small class="text-muted d-block">Dog: <a href="${dogDetailsBaseUrl}/${reminder.dog_id}">${reminder.dog_name}</a></small>` : ''}
-                            </span>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-success" 
-                                        hx-post="${acknowledgeBaseUrl}/${reminder.id}" 
-                                        hx-target="#reminder-${reminder.id}" 
-                                        hx-swap="outerHTML">Done</button>
-                                <button class="btn btn-sm btn-outline-secondary" 
-                                        hx-post="${dismissBaseUrl}/${reminder.id}" 
-                                        hx-target="#reminder-${reminder.id}" 
-                                        hx-swap="outerHTML">Dismiss</button>
-                                ${reminder.dog_id ? `
-                                    <a class="btn btn-sm btn-outline-info" 
-                                       href="${dogHistoryBaseUrl}/${reminder.dog_id}${reminder.appointment_id ? '?filter_type=appointment' : (reminder.dog_medicine_id ? '?filter_type=medicine' : '')}"
-                                       title="View related history for ${reminder.dog_name}">
-                                        <i class="bi bi-clock-history"></i>
-                                    </a>
-                                ` : ''}
-                            </div>
-                        </li>
-                    `;
-                }
-                
-                html += `
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                loopIndex++;
-            }
-        }
-        
-        html += '</div>';
-        remindersSection.innerHTML = html;
-        
-        console.log(`[REMINDERS] Rendered ${Object.keys(groupedReminders).length} reminder groups`);
-    }
+    // Pass data to JavaScript
+    window.calendarEventsUrl = "/api/calendar/events";
+    window.selectedRescueId = "{{ selected_rescue_id or '' }}";
 </script>
-{% endblock %} 
+{% endblock %}

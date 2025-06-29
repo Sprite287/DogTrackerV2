@@ -17,7 +17,7 @@
       <div class="accordion-body p-0">
         <table class="table mb-0">
           <thead>
-            <tr><th>Name</th><th>Active?</th><th>Actions</th></tr>
+            <tr><th>Name</th><th>Active?</th><th class="text-center" style="width: 160px;">Actions</th></tr>
           </thead>
           <tbody>
             {% for preset in items|sort(attribute='name') %}
@@ -26,12 +26,14 @@
               <td>
                 <input type="checkbox" class="activate-toggle" data-preset-id="{{ preset.id }}" {% if preset.id not in active_global_ids %}checked{% endif %}>
               </td>
-              <td>
+              <td class="text-center">
                 {% if (preset.rescue_id == current_user.rescue_id) or current_user.role == 'superadmin' %}
-                  <a href="{{ url_for('medicines.edit_rescue_medicine_preset', preset_id=preset.id) }}" class="btn btn-sm btn-primary">Edit</a>
-                  <form method="post" action="{{ url_for('medicines.delete_rescue_medicine_preset', preset_id=preset.id) }}" style="display:inline;" onsubmit="return confirm('Delete this preset?');">
-                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                  </form>
+                  <div class="d-flex justify-content-center align-items-center" style="gap: 12px !important; min-height: 40px;">
+                    <a href="{{ url_for('medicines.edit_rescue_medicine_preset', preset_id=preset.id) }}" class="btn btn-primary btn-sm">Edit</a>
+                    <form method="post" action="{{ url_for('medicines.delete_rescue_medicine_preset', preset_id=preset.id) }}" style="display:inline;" onsubmit="return confirm('Delete this preset?');">
+                      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                  </div>
                 {% endif %}
               </td>
             </tr>

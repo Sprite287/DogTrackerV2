@@ -1,0 +1,232 @@
+/* Timeline Styles for Dog Tracker */
+
+/* Note: Additional dark mode overrides are in base.css and components.css */
+
+/* Timeline Container */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--caring-primary);
+    border-radius: 2px;
+    box-shadow: var(--shadow-gentle);
+}
+
+/* Timeline Items */
+.timeline-item {
+    position: relative;
+    margin-bottom: var(--space-gentle);
+    transition: var(--transition-gentle);
+}
+
+.timeline-item:hover {
+    transform: translateX(2px);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.4rem;
+    top: 1.5rem;
+    width: 12px;
+    height: 12px;
+    background: var(--caring-primary);
+    border: 2px solid var(--caring-bg);
+    border-radius: 50%;
+    box-shadow: var(--shadow-gentle);
+    transition: var(--transition-gentle);
+    z-index: 2;
+}
+
+.timeline-item:hover::before {
+    transform: scale(1.1);
+}
+
+/* Event Type Specific Colors */
+.timeline-item.event-note::before {
+    background: var(--caring-secondary);
+}
+
+.timeline-item.event-appointment::before {
+    background: var(--caring-accent);
+}
+
+.timeline-item.event-medicine::before {
+    background: var(--caring-warning);
+}
+
+.timeline-item.event-reminder::before {
+    background: var(--caring-warning);
+}
+
+/* History Event Cards */
+.history-event-card {
+    border-left: 4px solid var(--caring-primary);
+    transition: var(--transition-gentle);
+    border-radius: var(--radius-soft);
+    margin-bottom: var(--space-sm);
+    box-shadow: var(--shadow-gentle);
+    background: var(--caring-bg-light);
+}
+
+.history-event-card:hover {
+    border-left-color: var(--caring-accent);
+    transform: translateY(-1px);
+}
+
+.history-event-card.event-note {
+    border-left-color: var(--caring-secondary);
+}
+
+.history-event-card.event-appointment {
+    border-left-color: var(--caring-accent);
+}
+
+.history-event-card.event-medicine {
+    border-left-color: var(--caring-warning);
+}
+
+.history-event-card.event-reminder {
+    border-left-color: var(--caring-warning);
+}
+
+/* Event Type Badges */
+.badge-health-care,
+.badge-treatment {
+    background-color: var(--caring-warning) !important;
+    color: white !important;
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+}
+
+.badge-behavior {
+    background-color: var(--caring-secondary) !important;
+    color: white !important;
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+}
+
+.badge-learning,
+.badge-character {
+    background-color: var(--caring-accent) !important;
+    color: white !important;
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+}
+
+.badge-care-visit {
+    background-color: var(--caring-primary) !important;
+    color: white !important;
+    border-radius: var(--radius-soft);
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-item {
+        padding-left: 1rem;
+    }
+    
+    .timeline-item::before {
+        left: -1.9rem;
+        width: 12px;
+        height: 12px;
+    }
+    
+    .history-event-card {
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Dark Mode Timeline Fixes - Natural Earth Tones */
+body.dark-mode .timeline::before {
+    background: var(--caring-primary); /* Soft sage green line */
+}
+
+body.dark-mode .timeline-item::before {
+    background: var(--caring-primary); /* Soft sage green dots */
+    border-color: var(--bg-secondary);
+}
+
+body.dark-mode .timeline-item.event-note::before {
+    background: var(--caring-secondary); /* Warm tan for notes */
+}
+
+body.dark-mode .timeline-item.event-appointment::before {
+    background: var(--caring-accent); /* Spring green for appointments */
+}
+
+body.dark-mode .timeline-item.event-medicine::before {
+    background: var(--caring-warning); /* Soft burlywood for medicine */
+}
+
+body.dark-mode .timeline-item.event-reminder::before {
+    background: var(--caring-danger); /* Muted peru for reminders */
+}
+
+body.dark-mode .history-event-card {
+    background: var(--bg-secondary);
+    border-left-color: var(--caring-primary);
+    color: var(--text-primary);
+}
+
+body.dark-mode .history-event-card:hover {
+    border-left-color: var(--caring-accent);
+    background: var(--bg-tertiary);
+}
+
+body.dark-mode .history-event-card.event-note {
+    border-left-color: var(--caring-secondary);
+}
+
+body.dark-mode .history-event-card.event-appointment {
+    border-left-color: var(--caring-accent);
+}
+
+body.dark-mode .history-event-card.event-medicine {
+    border-left-color: var(--caring-warning);
+}
+
+body.dark-mode .history-event-card.event-reminder {
+    border-left-color: var(--caring-danger); /* Muted peru for reminders */
+}
+
+/* Animation Keyframes */
+@keyframes gentlePulse {
+    0%, 100% { 
+        transform: scale(1.2); 
+    }
+    50% { 
+        transform: scale(1.25); 
+    }
+}
+
+/* Print Styles */
+@media print {
+    .timeline::before {
+        background: #000 !important;
+    }
+    
+    .timeline-item::before {
+        background: #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .history-event-card {
+        border-left-color: #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}

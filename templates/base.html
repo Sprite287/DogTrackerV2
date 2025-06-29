@@ -4,20 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Care Center{% endblock %}</title>
+    
+    <!-- CRITICAL: Immediate Theme Detection to Prevent FOUC -->
+    <script nonce="{{ g.csp_nonce }}">
+        (function() {
+            const savedTheme = localStorage.getItem('darkMode');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'true' || (savedTheme === null && prefersDark)) {
+                document.documentElement.classList.add('dark-mode');
+                document.body.classList.add('dark-mode');
+            }
+        })();
+    </script>
+    
+    <!-- Preload Critical CSS -->
+    <link rel="preload" href="{{ url_for('static', filename='css/base.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/components.css') }}" as="style">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet" nonce="{{ g.csp_nonce }}">
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
     {# FullCalendar CSS is now injected by its JS according to v6 docs #}
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Phase 5C: Timeline and History Styling -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='timeline.css') }}">
+    
+    <!-- Phase 7 Modular CSS Architecture -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v=20250621-4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}?v=20250621-4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}?v=20250621-4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}?v=20250621-4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}?v=20250621-4">
+    
     <!-- Bootstrap Icons loaded after custom CSS to ensure proper display -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     {% block head_extra %}{% endblock %}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- Critical CSS Loading Strategy to Prevent FOUC -->
+    <style nonce="{{ g.csp_nonce }}">
+        /* Immediate FOUC Prevention */
+        body {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        body.loaded {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Critical Dark Mode Styles for FOUC Prevention */
+        html.dark-mode,
+        body.dark-mode {
+            background: #1a212e !important;
+            color: #d6deeb !important;
+        }
+        
+        .dark-mode .navbar {
+            background: rgba(26, 33, 46, 0.95) !important;
+        }
+        
+        .dark-mode .card {
+            background: #242c3d !important;
+            color: #d6deeb !important;
+            border-color: #313a52 !important;
+        }
+        
+        .dark-mode .modal-content {
+            background: #242c3d !important;
+            color: #d6deeb !important;
+            border-color: #313a52 !important;
+        }
+    </style>
 </head>
 <body>
 <!-- Phase 7D: Accessibility Skip Link -->
@@ -71,7 +132,17 @@
       </ul>
       
       <!-- User menu on the right -->
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-auto d-flex align-items-center flex-row">
+        <!-- Theme Toggle -->
+        <li class="nav-item me-3">
+          <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="theme-toggle-checkbox">
+              <input type="checkbox" id="theme-toggle-checkbox" />
+              <div class="slider round"></div>
+            </label>
+          </div>
+        </li>
+
         {% if current_user.is_authenticated %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -124,305 +195,11 @@
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-<script nonce="{{ g.csp_nonce }}">
-console.log('Base.html general script block loaded and running');
-// Clear Add Dog form when modal is opened
-function attachAddDogModalReset() {
-    var addDogModalEl = document.getElementById('addDogModal');
-    if (addDogModalEl && !addDogModalEl.hasAttribute('data-reset-attached')) {
-        addDogModalEl.addEventListener('show.bs.modal', function () {
-            var addDogForm = document.getElementById('addDogForm');
-            if(addDogForm) addDogForm.reset();
-        });
-        
-        // Ensure modal can be closed properly
-        addDogModalEl.addEventListener('hidden.bs.modal', function () {
-            document.body.classList.remove('modal-open');
-            var backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-        });
-        
-        addDogModalEl.setAttribute('data-reset-attached', 'true');
-    }
-}
-attachAddDogModalReset();
-
-document.addEventListener('htmx:afterSwap', function(evt) {
-    console.log('htmx:afterSwap fired in base.html', evt);
-    attachAddDogModalReset();
-    // Auto-close and reset Add Dog modal after successful add
-    // This specific logic might be better in index.html if #dogCards is only there.
-    if (evt.detail && evt.detail.target && evt.detail.target.id === 'dogCards') {
-        var addDogModalEl = document.getElementById('addDogModal');
-        if (addDogModalEl) {
-        var addDogForm = document.getElementById('addDogForm');
-            if(addDogForm) addDogForm.reset();
-            var modal = bootstrap.Modal.getInstance(addDogModalEl);
-            if (modal) modal.hide();
-        }
-    }
-    // Initialize popovers for newly added content from HTMX swaps (e.g., calendar event popovers)
-    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl)
-    })
-});
-
-function attachEditDogFormDebug() {
-    var editDogForm = document.getElementById('editDogForm');
-    if (editDogForm && !editDogForm._debugAttached) {
-        editDogForm.addEventListener('submit', function(e) {
-            console.log('DEBUG: editDogForm action:', editDogForm.action);
-            console.log('DEBUG: editDogForm hx-post:', editDogForm.getAttribute('hx-post'));
-        });
-        editDogForm._debugAttached = true;
-    }
-}
-
-function fillEditDogModal(btn) {
-    try {
-        var form = document.getElementById('editDogForm');
-        if (!form) { console.error('editDogForm not found'); return; }
-        form.querySelector('input[name="name"]').value = btn.getAttribute('data-dog-name') || '';
-        form.querySelector('input[name="adoption_status"]').value = btn.getAttribute('data-dog-status') || '';
-        form.querySelector('input[name="age"]').value = btn.getAttribute('data-dog-age') || '';
-        form.querySelector('input[name="breed"]').value = btn.getAttribute('data-dog-breed') || '';
-        form.querySelector('input[name="intake_date"]').value = btn.getAttribute('data-dog-intake-date') || '';
-        form.querySelector('input[name="microchip_id"]').value = btn.getAttribute('data-dog-microchip-id') || '';
-        form.querySelector('textarea[name="notes"]').value = btn.getAttribute('data-dog-notes') || '';
-        form.querySelector('textarea[name="medical_info"]').value = btn.getAttribute('data-dog-medical-info') || '';
-        form.querySelector('input[name="dog_id"]').value = btn.getAttribute('data-dog-id') || '';
-        
-        var fromDetailsField = form.querySelector('input[name="from_details"]');
-        if (document.getElementById('dogCards')) { // Check if on index page
-            form.setAttribute('hx-target', '#dogCards');
-            if(fromDetailsField) fromDetailsField.value = '';
-        } else { // Assume on details page or other
-            form.setAttribute('hx-target', 'body'); // Or a more specific target if available
-            if(fromDetailsField) fromDetailsField.value = 'details';
-        }
-        attachEditDogFormDebug();
-    } catch (e) {
-        console.error('Error in fillEditDogModal:', e);
-    }
-}
-
-function fillEditPersonalityModal(btn) {
-    try {
-        console.log('fillEditPersonalityModal called with:', btn);
-        var form = document.getElementById('editPersonalityForm');
-        if (!form) { console.error('editPersonalityForm not found'); return; }
-        console.log('Form found:', form);
-        
-        // Set dog name in modal title
-        var dogNameSpan = document.getElementById('personalityDogName');
-        if (dogNameSpan) {
-            dogNameSpan.textContent = btn.getAttribute('data-dog-name') || 'Dog';
-        }
-        
-        // Get data attributes
-        var energyLevel = btn.getAttribute('data-dog-energy-level') || '';
-        var temperamentTags = btn.getAttribute('data-dog-temperament-tags') || '';
-        
-        // Fill form fields
-        form.querySelector('select[name="energy_level"]').value = energyLevel;
-        form.querySelector('input[name="temperament_tags"]').value = temperamentTags;
-        form.querySelector('textarea[name="personality_notes"]').value = btn.getAttribute('data-dog-personality-notes') || '';
-        form.querySelector('textarea[name="social_notes"]').value = btn.getAttribute('data-dog-social-notes') || '';
-        form.querySelector('textarea[name="special_story"]').value = btn.getAttribute('data-dog-special-story') || '';
-        form.querySelector('input[name="dog_id"]').value = btn.getAttribute('data-dog-id') || '';
-        
-        // Update energy level badge display
-        var energyBadge = document.getElementById('energyBadge');
-        if (energyBadge) {
-            var badgeClass = 'energy-badge-default';
-            var displayText = 'Not yet observed';
-            if (energyLevel) {
-                displayText = energyLevel;
-                if (energyLevel === 'Low') badgeClass = 'energy-badge-low';
-                else if (energyLevel === 'Medium') badgeClass = 'energy-badge-medium';
-                else if (energyLevel === 'High') badgeClass = 'energy-badge-high';
-                else if (energyLevel === 'Very High') badgeClass = 'energy-badge-very-high';
-            }
-            // Remove all energy badge classes and add the new one
-            energyBadge.className = energyBadge.className.replace(/energy-badge-\w+/g, '');
-            energyBadge.classList.add(badgeClass);
-            energyBadge.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>' + displayText;
-        }
-        
-        // Update temperament tags badge display
-        var temperamentBadges = document.getElementById('temperamentBadges');
-        if (temperamentBadges) {
-            // Clear existing content
-            temperamentBadges.innerHTML = '';
-            
-            if (temperamentTags && temperamentTags.trim()) {
-                var tags = temperamentTags.split(',');
-                tags.forEach(function(tag) {
-                    if (tag.trim()) {
-                        var span = document.createElement('span');
-                        span.className = 'badge me-1 mb-1 temperament-tag-small';
-                        span.textContent = tag.trim();
-                        temperamentBadges.appendChild(span);
-                    }
-                });
-            } else {
-                var emptySpan = document.createElement('span');
-                emptySpan.className = 'text-muted small';
-                emptySpan.textContent = 'Traits to be discovered';
-                temperamentBadges.appendChild(emptySpan);
-            }
-        }
-        
-        // Set up HTMX target and action
-        var dogId = btn.getAttribute('data-dog-id');
-        var postUrl = '/dog/' + dogId + '/personality/edit';
-        console.log('Setting hx-post to:', postUrl);
-        form.setAttribute('action', postUrl);
-        form.setAttribute('hx-post', postUrl);
-        
-        // Force HTMX to reprocess the form after setting attributes
-        if (typeof htmx !== 'undefined') {
-            htmx.process(form);
-            console.log('HTMX process called on form');
-        } else {
-            console.error('HTMX not available');
-        }
-        
-        // Add real-time update listeners
-        var energySelect = form.querySelector('#energyLevelSelect');
-        if (energySelect) {
-            energySelect.addEventListener('change', function() {
-                var energyBadge = document.getElementById('energyBadge');
-                if (energyBadge) {
-                    var badgeClass = 'energy-badge-default';
-                    var displayText = 'Not yet observed';
-                    var selectedValue = this.value;
-                    if (selectedValue) {
-                        displayText = selectedValue;
-                        if (selectedValue === 'Low') badgeClass = 'energy-badge-low';
-                        else if (selectedValue === 'Medium') badgeClass = 'energy-badge-medium';
-                        else if (selectedValue === 'High') badgeClass = 'energy-badge-high';
-                        else if (selectedValue === 'Very High') badgeClass = 'energy-badge-very-high';
-                    }
-                    // Remove all energy badge classes and add the new one
-                    energyBadge.className = energyBadge.className.replace(/energy-badge-\w+/g, '');
-                    energyBadge.classList.add(badgeClass);
-                    energyBadge.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>' + displayText;
-                }
-            });
-        }
-        
-        var tagsInput = form.querySelector('#temperamentTagsInput');
-        if (tagsInput) {
-            tagsInput.addEventListener('input', function() {
-                var temperamentBadges = document.getElementById('temperamentBadges');
-                if (temperamentBadges) {
-                    // Clear existing content
-                    temperamentBadges.innerHTML = '';
-                    
-                    var inputValue = this.value;
-                    if (inputValue && inputValue.trim()) {
-                        var tags = inputValue.split(',');
-                        tags.forEach(function(tag) {
-                            if (tag.trim()) {
-                                var span = document.createElement('span');
-                                span.className = 'badge me-1 mb-1 temperament-tag-small';
-                                span.textContent = tag.trim();
-                                temperamentBadges.appendChild(span);
-                            }
-                        });
-                    } else {
-                        var emptySpan = document.createElement('span');
-                        emptySpan.className = 'text-muted small';
-                        emptySpan.textContent = 'Traits to be discovered';
-                        temperamentBadges.appendChild(emptySpan);
-                    }
-                }
-            });
-        }
-
-        // Add form submission debug listener
-        form.addEventListener('submit', function(e) {
-            console.log('Form submit event fired');
-            console.log('Form action:', form.action);
-            console.log('Form hx-post:', form.getAttribute('hx-post'));
-        });
-        
-    } catch (e) {
-        console.error('Error in fillEditPersonalityModal:', e);
-    }
-}
-
-function confirmDeleteDog(btn) {
-    const dogName = btn.getAttribute('data-dog-name') || 'this dog';
-    const dogId = btn.getAttribute('data-dog-id');
-    const rescueId = btn.getAttribute('data-rescue-id') || '';
-    
-    showEmpathicConfirmation({
-        title: 'A Difficult Goodbye',
-        message: `We understand this is difficult. This will permanently remove ${dogName}'s records from our care system.`,
-        detail: 'Their memory and the love you\'ve shown will always matter.',
-        icon: 'bi-heart-break',
-        confirmText: 'Remove with Care',
-        cancelText: 'Keep Them With Us',
-        onConfirm: () => {
-            htmx.ajax('POST', `/dog/${dogId}/delete`, {
-                target: '#dogCards', 
-                swap: 'outerHTML',
-                values: { selected_rescue_id: rescueId }
-            });
-        }
-    });
-    return false;
-}
-
-// Close the Add Dog and Edit Dog modals after successful HTMX request
-if (window.htmx) {
-    htmx.on('htmx:afterRequest', function(evt) {
-        console.log('htmx:afterRequest fired', evt);
-        
-        // Only close modal on successful requests
-        if (evt.detail.successful && evt.target) {
-            if (evt.target.id === 'addDogForm') {
-                var addDogModal = document.getElementById('addDogModal');
-                var addDogForm = document.getElementById('addDogForm');
-                if (addDogModal && addDogForm) {
-                    addDogForm.reset();
-                    var modal = bootstrap.Modal.getInstance(addDogModal);
-                    if (modal) {
-                        console.log('Closing Add Dog modal (afterRequest)');
-                        modal.hide();
-                    }
-                }
-            }
-            if (evt.target.id === 'editDogForm') {
-                var editDogModal = document.getElementById('editDogModal');
-                if (editDogModal) {
-                    var modal = bootstrap.Modal.getInstance(editDogModal);
-                    if (modal) {
-                        modal.hide();
-                    }
-                }
-            }
-        }
-    });
-}
-
-document.body.addEventListener('showAlert', function(event) {
-  var data = event.detail;
-  var alertsDiv = document.getElementById('alerts');
-  if (alertsDiv && data && data.message) {
-    var alertHTML = `<div class="alert alert-${data.category || 'success'} alert-dismissible fade show" role="alert">
-                       ${data.message}
-                       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                     </div>`;
-    alertsDiv.innerHTML = alertHTML; // Replace existing alerts
-  }
-});
-</script>
+<!-- Phase 7 Modular JavaScript Architecture -->
+<script src="{{ url_for('static', filename='js/core.js') }}" nonce="{{ g.csp_nonce }}"></script>
+<script src="{{ url_for('static', filename='js/modals.js') }}" nonce="{{ g.csp_nonce }}"></script>
+<script src="{{ url_for('static', filename='js/animations.js') }}" nonce="{{ g.csp_nonce }}"></script>
+<script src="{{ url_for('static', filename='js/forms.js') }}" nonce="{{ g.csp_nonce }}"></script>
 
 <!-- Edit Dog Modal (available on all pages) -->
 <div class="modal fade" id="editDogModal" tabindex="-1" aria-labelledby="editDogModalLabel" aria-hidden="true">
@@ -471,7 +248,7 @@ document.body.addEventListener('showAlert', function(event) {
           <input type='hidden' name='from_details' id='editDogFromDetails'>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary breathe-hover" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary breathe-hover">Save Changes</button>
         </div>
       </form>
@@ -482,7 +259,7 @@ document.body.addEventListener('showAlert', function(event) {
 <!-- Phase 7C: Personality Edit Modal -->
 <div class="modal fade" id="editPersonalityModal" tabindex="-1" aria-labelledby="editPersonalityModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content" style="background-color: white; border-radius: var(--organic-radius);">
+    <div class="modal-content modal-organic-content">
       <form id="editPersonalityForm" method="post" action="" hx-post="" hx-target="body" hx-swap="outerHTML">
         <div class="modal-header">
           <h5 class="modal-title d-flex align-items-center" id="editPersonalityModalLabel">
@@ -593,7 +370,7 @@ document.body.addEventListener('showAlert', function(event) {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary breathe-hover" data-bs-dismiss="modal" id="empathicConfirmCancel">Cancel</button>
-        <button type="button" class="btn btn-warning breathe-hover" id="empathicConfirmButton">Confirm</button>
+        <button type="button" class="btn btn-danger breathe-hover" id="empathicConfirmButton">Confirm</button>
       </div>
     </div>
   </div>
@@ -601,215 +378,16 @@ document.body.addEventListener('showAlert', function(event) {
 
 <!-- FullCalendar JS - Loaded before page-specific scripts -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-<script nonce="{{ g.csp_nonce }}">
-        console.log('Type of FullCalendar immediately after its script tag in base.html:', typeof FullCalendar);
-    </script>
 
 {# Block for page-specific scripts - calendar_view.html script will be injected here #}
 {% block scripts %}{% endblock %}
 
-{# Leaflet JS (if used) - keep commented if not used #}
-{# <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script> #}
-
-{# Custom global JS - if any - keep commented if not used #}
-{# <script src="{{ url_for('static', filename='global.js') }}"></script> #}
 
 <script nonce="{{ g.csp_nonce }}">
-// HTMX CSRF support: add CSRF token to all HTMX AJAX requests
-document.body.addEventListener('htmx:configRequest', function(event) {
-    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    if (csrfToken) {
-        event.detail.headers['X-CSRFToken'] = csrfToken;
-    }
-});
 
-// Empathetic Confirmation Dialog System
-function showEmpathicConfirmation(options) {
-    const modal = document.getElementById('empathicConfirmModal');
-    const title = document.getElementById('empathicConfirmTitle');
-    const icon = document.getElementById('empathicConfirmIcon');
-    const message = document.getElementById('empathicConfirmMessage');
-    const detail = document.getElementById('empathicConfirmDetail');
-    const confirmBtn = document.getElementById('empathicConfirmButton');
-    const cancelBtn = document.getElementById('empathicConfirmCancel');
-    
-    // Set content with natural styling
-    title.textContent = options.title || 'Confirm Action';
-    icon.className = options.icon || 'bi-question-circle';
-    icon.classList.add('icon-gentle-warning');
-    message.textContent = options.message || 'Are you sure you want to proceed?';
-    detail.textContent = options.detail || '';
-    confirmBtn.textContent = options.confirmText || 'Confirm';
-    cancelBtn.textContent = options.cancelText || 'Cancel';
-    
-    // Add natural animation
-    modal.classList.add('bloom-in');
-    
-    // Clear previous handlers
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    
-    // Add new handler
-    newConfirmBtn.addEventListener('click', function() {
-        if (options.onConfirm) {
-            options.onConfirm();
-        }
-        bootstrap.Modal.getInstance(modal).hide();
-    });
-    
-    // Show modal
-    new bootstrap.Modal(modal).show();
-    
-    // Remove animation class after animation
-    setTimeout(() => {
-        modal.classList.remove('bloom-in');
-    }, 500);
-}
-
-// Simple, working loading states
+// Essential inline functionality that needs immediate availability
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Simple loading system initialized');
-});
-
-// Simple, effective HTMX loading states using the working button animations
-document.body.addEventListener('htmx:beforeRequest', function(event) {
-    console.log('HTMX beforeRequest triggered:', event.target);
-    const target = event.target;
-    
-    // Apply to ANY button that triggers HTMX requests
-    if (target.tagName === 'BUTTON' || target.classList.contains('btn') || target.getAttribute('hx-post') || target.getAttribute('hx-get')) {
-        console.log('Adding simple loading state to:', target);
-        
-        target.classList.add('submitting', 'btn-loading', 'loading-active');
-        
-        const originalText = target.textContent.trim();
-        target.setAttribute('data-original-text', originalText);
-        target.setAttribute('data-original-html', target.innerHTML);
-        
-        // Simple loading text change
-        target.textContent = originalText + '...';
-        
-        // Store start time for minimum duration
-        target.setAttribute('data-loading-start', Date.now());
-    }
-});
-
-document.body.addEventListener('htmx:afterRequest', function(event) {
-    console.log('HTMX afterRequest triggered:', event.target);
-    const target = event.target;
-    
-    if (target.classList.contains('submitting')) {
-        const startTime = parseInt(target.getAttribute('data-loading-start'));
-        const elapsed = Date.now() - startTime;
-        const minDuration = 800; // Minimum duration to see the dramatic button effects
-        
-        const finishLoading = () => {
-            console.log('Finishing loading state for:', target);
-            
-            target.classList.remove('submitting', 'btn-loading', 'loading-active');
-            
-            const originalHTML = target.getAttribute('data-original-html');
-            const originalText = target.getAttribute('data-original-text');
-            
-            if (originalHTML) {
-                target.innerHTML = originalHTML;
-            } else if (originalText) {
-                target.textContent = originalText;
-            }
-            
-            target.removeAttribute('data-original-text');
-            target.removeAttribute('data-original-html');
-            target.removeAttribute('data-loading-start');
-            
-            // Add success animation
-            target.classList.add('success-glow');
-            setTimeout(() => {
-                target.classList.remove('success-glow');
-            }, 1500);
-        };
-        
-        if (elapsed < minDuration) {
-            console.log(`Waiting ${minDuration - elapsed}ms more for button animation`);
-            setTimeout(finishLoading, minDuration - elapsed);
-        } else {
-            finishLoading();
-        }
-    }
-});
-
-// Also catch regular form submissions
-document.body.addEventListener('submit', function(event) {
-    const form = event.target;
-    const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
-    
-    if (submitBtn && !submitBtn.classList.contains('submitting')) {
-        console.log('Form submission detected, adding loading to submit button');
-        
-        submitBtn.classList.add('submitting', 'btn-loading');
-        submitBtn.style.pointerEvents = 'none';
-        
-        const originalText = submitBtn.textContent || submitBtn.value;
-        submitBtn.setAttribute('data-original-text', originalText);
-        
-        if (submitBtn.tagName === 'BUTTON') {
-            submitBtn.innerHTML = `
-                <div class="vine-progress-inline">
-                    <div class="vine-growth"></div>
-                </div>
-                <span class="loading-text">${originalText}</span>
-            `;
-        }
-    }
-});
-
-// Fix for edit modal auto-population
-function attachModalEventListeners() {
-    const editDogModal = document.getElementById('editDogModal');
-    if (editDogModal && !editDogModal.hasAttribute('data-listeners-attached')) {
-        editDogModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            if (button && button.hasAttribute('data-dog-id')) {
-                fillEditDogModal(button);
-            }
-        });
-        editDogModal.setAttribute('data-listeners-attached', 'true');
-    }
-    
-    const editPersonalityModal = document.getElementById('editPersonalityModal');
-    if (editPersonalityModal && !editPersonalityModal.hasAttribute('data-listeners-attached')) {
-        editPersonalityModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            if (button && button.hasAttribute('data-dog-id')) {
-                fillEditPersonalityModal(button);
-            }
-        });
-        editPersonalityModal.setAttribute('data-listeners-attached', 'true');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', attachModalEventListeners);
-document.addEventListener('htmx:afterSwap', attachModalEventListeners);
-
-// Auto-blur buttons after click to prevent persistent focus states
-document.addEventListener('DOMContentLoaded', function() {
-    function attachAutoBlur() {
-        document.querySelectorAll('.btn, button').forEach(function(btn) {
-            if (!btn.hasAttribute('data-auto-blur-attached')) {
-                btn.addEventListener('click', function() {
-                    // Small delay to allow the action to complete before blurring
-                    setTimeout(() => {
-                        this.blur();
-                    }, 100);
-                });
-                btn.setAttribute('data-auto-blur-attached', 'true');
-            }
-        });
-    }
-    
-    attachAutoBlur();
-    
-    // Re-attach after HTMX swaps
-    document.addEventListener('htmx:afterSwap', attachAutoBlur);
+    console.log('Base template loaded - modular architecture active');
 });
 </script>
 </body>

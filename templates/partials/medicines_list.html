@@ -1,43 +1,104 @@
 <div id="medicines-list">
-<table class="table table-striped align-middle medicine-table">
-  <thead>
-    <tr>
-      <th>Medicine</th>
-      <th>Form</th>
-      <th>Dosage</th>
-      <th>Frequency</th>
-      <th>Status</th>
-      <th>Notes</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for med in dog.medicines %}
-    <tr>
-      <td>{{ med.preset.name if med.preset else med.custom_name }}</td>
-      <td>{{ med.form or '—' }}</td>
-      <td>{{ med.dosage }} {{ med.unit }}</td>
-      <td>{{ med.frequency }}</td>
-      <td>{{ med.status }}</td>
-      <td>{{ med.notes or '—' }}</td>
-      <td>
-        <button class="btn btn-sm btn-primary me-1 js-edit-trigger"
-                data-bs-toggle="modal" 
-                data-bs-target="#editMedicineModal" 
-                data-medicine-id="{{ med.id }}"
-                data-dog-id="{{ dog.id }}">Edit</button>
-        <button class="btn btn-sm btn-danger"
-                hx-post="{{ url_for('medicines.delete_medicine', dog_id=dog.id, medicine_id=med.id) }}"
-                hx-target="#medicines-list"
-                hx-swap="outerHTML"
-                hx-confirm="Are you sure you want to delete this medicine?">Delete</button>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="7" class="text-center">No medicines found.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% if dog.medicines %}
+  <div class="enhanced-table-container">
+    <table class="table enhanced-table align-middle medicine-table">
+      <thead class="enhanced-table-header">
+        <tr>
+          <th>
+            <i class="bi bi-capsule text-caring-accent me-2"></i>Medicine
+          </th>
+          <th>
+            <i class="bi bi-tablet text-caring-primary me-2"></i>Form
+          </th>
+          <th>
+            <i class="bi bi-prescription text-caring-secondary me-2"></i>Dosage
+          </th>
+          <th>
+            <i class="bi bi-clock text-caring-accent me-2"></i>Frequency
+          </th>
+          <th>
+            <i class="bi bi-check-circle text-caring-primary me-2"></i>Status
+          </th>
+          <th>
+            <i class="bi bi-journal-text text-caring-secondary me-2"></i>Notes
+          </th>
+          <th class="text-center action-column">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in dog.medicines %}
+        <tr class="enhanced-table-row">
+          <td>
+            <div class="medicine-name-display">
+              <div class="medicine-name">{{ med.preset.name if med.preset else med.custom_name }}</div>
+              {% if med.preset and med.preset.category %}
+                <div class="medicine-category">{{ med.preset.category }}</div>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% if med.form %}
+              <span class="medicine-form-badge">{{ med.form }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="dosage-display">
+              <span class="dosage-amount">{{ med.dosage }}</span>
+              {% if med.unit %}
+                <span class="dosage-unit">{{ med.unit }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <span class="frequency-badge">{{ med.frequency }}</span>
+          </td>
+          <td class="text-center">
+            {% set status_value=med.status %}
+            {% set status_type="medicine" %}
+            {% set additional_classes="medicine-status-badge" %}
+            {% include 'partials/status_badge.html' %}
+          </td>
+          <td class="medicine-notes">
+            {% if med.notes %}
+              <span class="notes-preview">{{ med.notes|truncate(40) }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <div class="action-buttons">
+              <button class="btn btn-caring-accent btn-sm breathe-hover js-edit-trigger"
+                      data-bs-toggle="modal" 
+                      data-bs-target="#editMedicineModal" 
+                      data-medicine-id="{{ med.id }}"
+                      data-dog-id="{{ dog.id }}">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </button>
+              <button class="btn btn-outline-caring-danger btn-sm breathe-hover"
+                      hx-post="{{ url_for('medicines.delete_medicine', dog_id=dog.id, medicine_id=med.id) }}"
+                      hx-target="#medicines-list"
+                      hx-swap="outerHTML"
+                      hx-confirm="Are you sure you want to delete this medicine?">
+                <i class="bi bi-trash3 me-1"></i>Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  {% set icon="bi bi-capsule" %}
+  {% set title="No medications prescribed yet" %}
+  {% set message="Add " ~ dog.name ~ "'s first medication to track their health care" %}
+  {% set action_text="Add First Medicine" %}
+  {% set action_modal="#addMedicineModal" %}
+  {% set action_class="btn-caring-accent" %}
+  {% include 'partials/empty_state.html' %}
+{% endif %}
 
 {# Remove the entire loop that generates individual modals for each medicine #}
 {# {% for med in dog.medicines %} ... {% endfor %} #}

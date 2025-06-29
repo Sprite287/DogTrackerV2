@@ -1,9 +1,45 @@
-from datetime import datetime, timedelta
+# Standard library imports
 from collections import defaultdict
-from flask import render_template
+from datetime import datetime, timedelta
+
+# Third-party imports
+from flask import abort, make_response, render_template
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
-from models import Dog, Appointment, DogMedicine, AppointmentType, MedicinePreset, Reminder, RescueMedicineActivation, DogNote, User
+
+# Local application imports
+from models import (Appointment, AppointmentType, Dog, DogMedicine, DogNote,
+                    MedicinePreset, Reminder, RescueMedicineActivation, User)
+
+
+def check_rescue_access(resource):
+    """
+    Check if the current user has access to a resource based on their role and rescue_id.
+    
+    Args:
+        resource: Any model instance that has a rescue_id attribute
+        
+    Raises:
+        403 Forbidden: If the user is not a superadmin and the resource belongs to a different rescue
+        
+    Returns:
+        None: If access is granted
+        
+    Usage:
+        check_rescue_access(dog)  # Will abort(403) if user doesn't have access
+        check_rescue_access(appointment)
+        check_rescue_access(medicine)
+    """
+    if not hasattr(resource, 'rescue_id'):
+        raise ValueError(f"Resource {type(resource).__name__} does not have a rescue_id attribute")
+    
+    # Superadmins have access to all resources
+    if current_user.role == 'superadmin':
+        return
+    
+    # Check if the resource belongs to the user's rescue
+    if resource.rescue_id != current_user.rescue_id:
+        abort(403)
 
 
 def get_rescue_dogs(rescue_id=None):
@@ -50,6 +86,59 @@ def get_rescue_reminders(rescue_id=None):
     """Get reminders for a specific rescue or current user's rescue."""
     rid = rescue_id if rescue_id is not None else current_user.rescue_id
     return Reminder.query.filter(Reminder.dog.has(rescue_id=rid))
+
+
+def get_effective_rescue_id(rescue_id=None):
+    """
+    Get the effective rescue_id to use for queries.
+    
+    For superadmins: 
+    - If rescue_id is provided, use it
+    - If not provided, return None (to show all rescues)
+    
+    For regular users:
+    - Always return their rescue_id
+    
+    Args:
+        rescue_id: Optional rescue_id parameter from request
+        
+    Returns:
+        int or None: The rescue_id to use for filtering
+    """
+    if current_user.role == 'superadmin':
+        return rescue_id
+    return current_user.rescue_id
+
+
+def filter_by_rescue(query, model_class, rescue_id=None):
+    """
+    Apply rescue filtering to a query based on user permissions.
+    
+    Args:
+        query: SQLAlchemy query object
+        model_class: The model class (Dog, Appointment, etc.)
+        rescue_id: Optional rescue_id to filter by
+        
+    Returns:
+        Filtered query
+    """
+    effective_rescue_id = get_effective_rescue_id(rescue_id)
+    
+    if effective_rescue_id is None:
+        # Superadmin viewing all rescues
+        return query
+    
+    # Filter by specific rescue
+    if hasattr(model_class, 'rescue_id'):
+        # Direct rescue_id field
+        return query.filter_by(rescue_id=effective_rescue_id)
+    elif hasattr(model_class, 'dog'):
+        # Through dog relationship
+        return query.join(model_class.dog).filter(
+            model_class.dog.has(rescue_id=effective_rescue_id)
+        )
+    else:
+        raise ValueError(f"Model {model_class.__name__} does not have rescue_id field or dog relationship")
 
 
 def get_dog_history_events(dog_id):
@@ -212,6 +301,25 @@ def render_dog_cards():
     return render_template('dog_cards.html', dogs=dogs)
 
 
+def htmx_error_response(message, target_id, status_code=400):
+    """
+    Create a standardized HTMX error response.
+    
+    Args:
+        message (str): The error message to display
+        target_id (str): The target element ID (without the # prefix)
+        status_code (int): HTTP status code to return (default: 400)
+        
+    Returns:
+        Flask Response object with HTMX headers configured
+    """
+    response = make_response(render_template('partials/modal_form_error.html', message=message))
+    response.status_code = status_code
+    response.headers['HX-Retarget'] = f'#{target_id}Error'
+    response.headers['HX-Reswap'] = 'innerHTML'
+    return response
+
+
 # Phase R4C-3: Medicine Frequency Interpretation Engine
 
 def parse_medicine_frequency(frequency_text):
@@ -229,6 +337,8 @@ def parse_medicine_frequency(frequency_text):
             'display_name': str
         }
     """
+    import re
+    
     if not frequency_text:
         return {'times_per_day': 1, 'is_as_needed': False, 'parsed_from': 'default', 'display_name': 'Once daily'}
     
@@ -272,8 +382,6 @@ def parse_medicine_frequency(frequency_text):
         return result
     
     # Pattern matching for "Nx daily", "X times daily", etc.
-    import re
-    
     # Pattern: "2x daily", "3x a day", etc.
     pattern1 = re.search(r'(\d+)x?\s*(?:times?\s*)?(?:per\s+day|daily|a\s+day)', freq_lower)
     if pattern1:
@@ -317,8 +425,7 @@ def generate_daily_medicine_reminders(dog_medicine, user_id):
     Returns:
         list: Created Reminder instances
     """
-    from models import Reminder
-    from datetime import datetime, timedelta, time
+    from datetime import time
     
     if not dog_medicine.start_date:
         return []
@@ -361,7 +468,6 @@ def generate_daily_medicine_reminders(dog_medicine, user_id):
     # Get medicine name for reminder message
     medicine_name = 'Medicine'
     if dog_medicine.medicine_id:
-        from models import MedicinePreset
         preset = MedicinePreset.query.get(dog_medicine.medicine_id)
         if preset:
             medicine_name = preset.name
@@ -400,3 +506,122 @@ def generate_daily_medicine_reminders(dog_medicine, user_id):
         current_date += timedelta(days=1)
     
     return created_reminders
+
+
+def htmx_error_response(message, target_id=None, status_code=400):
+    """
+    Create a standardized HTMX error response.
+    
+    Args:
+        message (str): The error message to display
+        target_id (str): The HX-Retarget ID (optional)
+        status_code (int): HTTP status code (default: 400)
+        
+    Returns:
+        Flask Response object with HTMX headers
+    """
+    response = make_response(render_template('partials/modal_form_error.html', message=message))
+    response.status_code = status_code
+    if target_id:
+        response.headers['HX-Retarget'] = target_id
+        response.headers['HX-Reswap'] = 'innerHTML'
+    return response
+
+
+def check_rescue_access(resource, resource_type='dog'):
+    """
+    Check if the current user has access to a rescue resource.
+    
+    Args:
+        resource: The resource object (Dog, Appointment, etc.)
+        resource_type: Type of resource for error messaging (default: 'dog')
+        
+    Returns:
+        None if access is allowed, aborts with 403 if not
+    """
+    if current_user.role != 'superadmin' and resource.rescue_id != current_user.rescue_id:
+        abort(403)
+
+
+def get_filtered_reminders(filter_type, rescue_id=None, offset=0, limit=None):
+    """
+    Get filtered reminders based on filter type (overdue, today, upcoming).
+    
+    Args:
+        filter_type (str): One of 'overdue', 'today', or 'upcoming'
+        rescue_id (int): Optional rescue ID to filter by (for superadmins)
+        offset (int): Pagination offset (default: 0)
+        limit (int): Pagination limit (default: None)
+        
+    Returns:
+        SQLAlchemy query object with filtered reminders
+    """
+    now = datetime.now()
+    
+    # Build the base query based on user permissions
+    base_query = Reminder.query.filter(Reminder.status == 'pending')
+    reminders_query = filter_by_rescue(base_query, Reminder, rescue_id)
+    
+    # Apply filter based on type
+    if filter_type == 'overdue':
+        reminders_query = reminders_query.filter(Reminder.due_datetime < now)
+    elif filter_type == 'today':
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+        reminders_query = reminders_query.filter(
+            Reminder.due_datetime >= today_start,
+            Reminder.due_datetime <= today_end
+        )
+    elif filter_type == 'upcoming':
+        tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = now + timedelta(days=7)
+        reminders_query = reminders_query.filter(
+            Reminder.due_datetime >= tomorrow_start,
+            Reminder.due_datetime <= week_end
+        )
+    else:
+        raise ValueError(f"Invalid filter_type: {filter_type}. Must be one of 'overdue', 'today', or 'upcoming'.")
+    
+    # Order by due date (ascending)
+    reminders_query = reminders_query.order_by(Reminder.due_datetime.asc())
+    
+    # Apply pagination if requested
+    if limit is not None:
+        reminders_query = reminders_query.offset(offset).limit(limit)
+    
+    return reminders_query
+
+
+def export_to_csv(data, headers, filename):
+    """
+    Generic CSV export helper function.
+    
+    Args:
+        data (list): List of rows to export. Each row should be a list/tuple of values.
+        headers (list): List of column headers for the CSV.
+        filename (str): The filename for the export (without extension).
+        
+    Returns:
+        Response: Flask response object with CSV content and appropriate headers.
+    """
+    import csv
+    import io
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write headers
+    writer.writerow(headers)
+    
+    # Write data rows
+    for row in data:
+        writer.writerow(row)
+    
+    csv_content = output.getvalue()
+    
+    # Create response with proper headers
+    response = make_response(csv_content)
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    
+    return response

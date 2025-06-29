@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from models import Appointment, DogMedicine, AppointmentType, Dog
 from datetime import datetime, timedelta
 from extensions import db
+import re
 
 api_bp = Blueprint('api', __name__, url_prefix='')
 
@@ -43,14 +44,57 @@ def calendar_events_api():
             # This assumes your dog_details page can handle an anchor like #appointment-ID
             event_url = url_for('dogs.dog_details', dog_id=appt.dog_id, _anchor=f"appointment-{appt.id}") if appt.dog_id else '#'
             
-            event_title_parts = []
-            if appt.dog: event_title_parts.append(appt.dog.name)
-            else: event_title_parts.append("Unknown Dog")
+            # Format: "DogName: AppointmentType" (pet name first)
+            # Sophisticated data cleaning for complex database structure
+            raw_dog_name = appt.dog.name if appt.dog else "Unknown Dog"
+            raw_appt_type = appt.type.name if appt.type else (appt.title if appt.title else "Appointment")
             
-            main_title_part = appt.title
-            if not main_title_part and appt.type: main_title_part = appt.type.name
-            if not main_title_part: main_title_part = "Appointment"
-            event_title_str = " - ".join(filter(None, event_title_parts))
+            # Enhanced dog name cleaning - remove various prefixes and codes
+            clean_dog_name = raw_dog_name
+            # Remove patterns like "9-C ", "10-O ", "123-A ", etc.
+            clean_dog_name = re.sub(r'^\d+-[A-Z]+\s+', '', clean_dog_name)
+            # Remove standalone numbers and letters at start
+            clean_dog_name = re.sub(r'^\d+[A-Z]?\s+', '', clean_dog_name)
+            
+            # Enhanced appointment type cleaning and mapping
+            clean_appt_type = raw_appt_type
+            
+            # Map complex product names to simple appointment types
+            appt_type_lower = clean_appt_type.lower()
+            if any(med in appt_type_lower for med in ['rescue', 'nsaid', 'medication', 'medicine', 'drug', 'pill', 'tablet', 'dose']):
+                if any(word in appt_type_lower for word in ['comfort', 'nsaid', 'pain', 'anti-inflammatory']):
+                    clean_appt_type = "Pain Medication"
+                elif any(word in appt_type_lower for word in ['digest', 'probiotic', 'stomach', 'gastro']):
+                    clean_appt_type = "Digestive Medication"
+                elif any(word in appt_type_lower for word in ['vitamin', 'supplement', 'nutrition']):
+                    clean_appt_type = "Vitamin/Supplement"
+                elif any(word in appt_type_lower for word in ['oil', 'omega', 'fatty']):
+                    clean_appt_type = "Nutritional Oil"
+                elif any(word in appt_type_lower for word in ['benadryl', 'diphenhydramine', 'allergy', 'antihistamine']):
+                    clean_appt_type = "Allergy Medication"
+                else:
+                    clean_appt_type = "Medication"
+            elif any(word in appt_type_lower for word in ['vet', 'visit', 'checkup', 'exam', 'doctor']):
+                clean_appt_type = "Vet Visit"
+            elif any(word in appt_type_lower for word in ['groom', 'bath', 'nail', 'trim']):
+                clean_appt_type = "Grooming"
+            elif any(word in appt_type_lower for word in ['adoption', 'adopt', 'home']):
+                clean_appt_type = "Adoption"
+            elif any(word in appt_type_lower for word in ['surgery', 'operation', 'procedure']):
+                clean_appt_type = "Surgery"
+            else:
+                # Clean any remaining rescue/product prefixes
+                clean_appt_type = re.sub(r'^Rescue\w*\s*', '', clean_appt_type, flags=re.IGNORECASE)
+                clean_appt_type = re.sub(r'\s*(NSAID|Probiotic|Multivitamin|Supplement)\s*$', '', clean_appt_type, flags=re.IGNORECASE)
+                if not clean_appt_type.strip():
+                    clean_appt_type = "Appointment"
+            
+            event_title_str = f"{clean_dog_name}: {clean_appt_type}"
+            
+            # Debug logging
+            print(f"[CALENDAR API] Raw dog name: '{raw_dog_name}' -> Clean: '{clean_dog_name}'")
+            print(f"[CALENDAR API] Raw appt type: '{raw_appt_type}' -> Clean: '{clean_appt_type}'")
+            print(f"[CALENDAR API] Final event title: '{event_title_str}'")
 
             event_data = {
                 'id': f'appt-{appt.id}', # Prefix ID to ensure uniqueness across types
@@ -58,16 +102,24 @@ def calendar_events_api():
                 'start': appt.start_datetime.isoformat(),
                 'color': event_color,
                 'url': event_url,
+                'allDay': False,  # Explicitly set for time-based views
                 'extendedProps': {
                     'eventType': 'appointment',
                     'dog_name': appt.dog.name if appt.dog else 'N/A',
+                    'dog_id': appt.dog_id,
                     'appointment_type': appt.type.name if appt.type else 'N/A',
                     'status': appt.status if appt.status else 'N/A',
-                    'description': appt.description if appt.description else ''
+                    'description': appt.description if appt.description else '',
+                    'location': appt.location if hasattr(appt, 'location') and appt.location else '',
+                    'notes': appt.notes if hasattr(appt, 'notes') and appt.notes else appt.description if appt.description else ''
                 }
             }
             if appt.end_datetime:
                 event_data['end'] = appt.end_datetime.isoformat()
+            else:
+                # Provide default duration of 1 hour for time views
+                end_time = appt.start_datetime + timedelta(hours=1)
+                event_data['end'] = end_time.isoformat()
             events.append(event_data)
 
         # Process medicine start dates (already fetched above with rescue filtering)
@@ -81,9 +133,42 @@ def calendar_events_api():
             if not med.start_date: 
                 continue
             
-            # Corrected access to medicine_preset
-            med_name = med.custom_name or (med.preset.name if med.preset else "Medicine")
-            event_title = f"{med.dog.name if med.dog else 'Unknown Dog'} - {med_name} (Meds Start)"
+            # Format: "DogName: MedicineName" (pet name first)
+            # Sophisticated cleaning for medicine events
+            raw_dog_name = med.dog.name if med.dog else 'Unknown Dog'
+            raw_med_name = med.custom_name or (med.preset.name if med.preset else "Medicine")
+            
+            # Enhanced dog name cleaning (same as appointments)
+            clean_dog_name = raw_dog_name
+            clean_dog_name = re.sub(r'^\d+-[A-Z]+\s+', '', clean_dog_name)
+            clean_dog_name = re.sub(r'^\d+[A-Z]?\s+', '', clean_dog_name)
+            
+            # Enhanced medicine name cleaning and mapping
+            clean_med_name = raw_med_name
+            med_name_lower = clean_med_name.lower()
+            
+            # Map complex medicine names to user-friendly types
+            if any(med in med_name_lower for med in ['rescue', 'nsaid', 'comfort']):
+                if any(word in med_name_lower for word in ['comfort', 'nsaid', 'pain']):
+                    clean_med_name = "Pain Medication"
+                elif any(word in med_name_lower for word in ['digest', 'probiotic']):
+                    clean_med_name = "Digestive Medication"
+                elif any(word in med_name_lower for word in ['oil', 'omega']):
+                    clean_med_name = "Nutritional Oil"
+                elif any(word in med_name_lower for word in ['vitamin', 'multivitamin']):
+                    clean_med_name = "Vitamin/Supplement"
+                else:
+                    clean_med_name = "Medication"
+            elif any(word in med_name_lower for word in ['benadryl', 'diphenhydramine']):
+                clean_med_name = "Allergy Medication"
+            else:
+                # Clean any remaining rescue/product prefixes
+                clean_med_name = re.sub(r'^Rescue\w*\s*', '', clean_med_name, flags=re.IGNORECASE)
+                clean_med_name = re.sub(r'\s*(NSAID|Probiotic|Multivitamin|Supplement)\s*$', '', clean_med_name, flags=re.IGNORECASE)
+                if not clean_med_name.strip():
+                    clean_med_name = "Medication"
+            
+            event_title = f"{clean_dog_name}: {clean_med_name}"
             event_start_datetime = datetime.combine(med.start_date, datetime.min.time()) + timedelta(hours=9)
             event_end_datetime = event_start_datetime + timedelta(hours=1)
 
@@ -96,12 +181,14 @@ def calendar_events_api():
                 'title': event_title,
                 'start': event_start_datetime.isoformat(),
                 'end': event_end_datetime.isoformat(),
+                'allDay': False,  # Explicitly set for time-based views
                 'color': medicine_event_color, 
                 'url': event_url,
                 'extendedProps': {
                     'eventType': 'medicine_start',
                     'dog_name': med.dog.name if med.dog else 'N/A',
-                    'medicine_name': med_name,
+                    'dog_id': med.dog_id,
+                    'medicine_name': clean_med_name,
                     'dosage': med.dosage,
                     'unit': med.unit,
                     'status': med.status,

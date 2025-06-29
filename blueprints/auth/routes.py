@@ -110,7 +110,9 @@ def register():
         flash('Please register your rescue organization first.', 'info')
         return redirect(url_for('auth.register_rescue'))
     
-    return render_template('auth/register.html', form=form)
+    # Note: auth/register.html template does not exist yet
+    # For now, redirect to rescue registration
+    return redirect(url_for('auth.register_rescue'))
 
 @auth_bp.route('/register-rescue', methods=['GET', 'POST'])
 def register_rescue():
@@ -259,7 +261,10 @@ def password_reset(token):
         flash('Your password has been reset successfully. You can now log in.', 'success')
         return redirect(url_for('auth.login'))
     
-    return render_template('auth/password_reset.html', form=form)
+    # Note: auth/password_reset.html template does not exist yet
+    # TODO: Create password reset template
+    flash('Password reset functionality is not yet available.', 'warning')
+    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/verify-email/<token>')
 def verify_email(token):

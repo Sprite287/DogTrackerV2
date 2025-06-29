@@ -50,6 +50,54 @@
     {% else %}
         <span class="{{ badge_class }} bg-secondary">Not Given</span>
     {% endif %}
+{% elif status_type == "adoption" %}
+    {% if status_value == 'Available' %}
+        <span class="{{ badge_class }} status-available"><i class="bi bi-heart me-1"></i>Available</span>
+    {% elif status_value == 'Adopted' %}
+        <span class="{{ badge_class }} status-adopted"><i class="bi bi-house-heart me-1"></i>Adopted</span>
+    {% elif status_value == 'Hold' %}
+        <span class="{{ badge_class }} status-hold"><i class="bi bi-pause-circle me-1"></i>Hold</span>
+    {% elif status_value == 'Pending' %}
+        <span class="{{ badge_class }} status-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>
+    {% elif status_value == 'Returned' %}
+        <span class="{{ badge_class }} status-returned"><i class="bi bi-arrow-return-left me-1"></i>Returned</span>
+    {% elif status_value == 'Deceased' %}
+        <span class="{{ badge_class }} status-deceased"><i class="bi bi-heart-break me-1"></i>Deceased</span>
+    {% elif status_value == 'Not Adopted' %}
+        <span class="{{ badge_class }} status-not-adopted"><i class="bi bi-x-circle me-1"></i>Not Adopted</span>
+    {% elif status_value == 'Transferred' %}
+        <span class="{{ badge_class }} status-transferred"><i class="bi bi-arrow-right-circle me-1"></i>Transferred</span>
+    {% else %}
+        <span class="{{ badge_class }} status-unknown"><i class="bi bi-question-circle me-1"></i>{{ status_value }}</span>
+    {% endif %}
+{% elif status_type == "energy" %}
+    {% if status_value == 'Low' %}
+        <span class="{{ badge_class }} energy-badge-low"><i class="bi bi-lightning-fill me-1"></i>{{ status_value }}</span>
+    {% elif status_value == 'Medium' %}
+        <span class="{{ badge_class }} energy-badge-medium"><i class="bi bi-lightning-fill me-1"></i>{{ status_value }}</span>
+    {% elif status_value == 'High' %}
+        <span class="{{ badge_class }} energy-badge-high"><i class="bi bi-lightning-fill me-1"></i>{{ status_value }}</span>
+    {% elif status_value == 'Very High' %}
+        <span class="{{ badge_class }} energy-badge-very-high"><i class="bi bi-lightning-fill me-1"></i>{{ status_value }}</span>
+    {% else %}
+        <span class="{{ badge_class }} energy-badge-default"><i class="bi bi-lightning-fill me-1"></i>{{ status_value }}</span>
+    {% endif %}
+{% elif status_type == "event_type" %}
+    {% if status_value == 'Health Care' %}
+        <span class="{{ badge_class }} badge-health-care">Health Care</span>
+    {% elif status_value == 'Behavior' %}
+        <span class="{{ badge_class }} badge-behavior">Behavior</span>
+    {% elif status_value == 'Learning' %}
+        <span class="{{ badge_class }} badge-learning">Learning</span>
+    {% elif status_value == 'Care Visit' %}
+        <span class="{{ badge_class }} badge-care-visit">Care Visit</span>
+    {% elif status_value == 'Treatment' %}
+        <span class="{{ badge_class }} badge-treatment">Treatment</span>
+    {% elif status_value == 'Character' %}
+        <span class="{{ badge_class }} badge-character">Character</span>
+    {% else %}
+        <span class="{{ badge_class }} bg-secondary">{{ status_value }}</span>
+    {% endif %}
 {% else %}
     {# Fallback for custom status #}
     <span class="{{ badge_class }} bg-secondary">{{ status_value }}</span>

@@ -2,6 +2,10 @@
 
 {% block title %}{{ dog.name }}'s Journey - Care History{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/timeline.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <!-- Simplified Navigation Section -->
@@ -26,7 +30,7 @@
         </button>
         
         <!-- Phase 5C: Export Options -->
-        <div class="btn-group ms-3" role="group">
+        <div class="ms-3">
             <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-download"></i> Export Data
             </button>
@@ -248,7 +252,10 @@
                         {% set active_meds = dog.medicines|selectattr('status', 'equalto', 'Active')|list %}
                         <p class="mb-1">
                             <strong>Active Medications:</strong> 
-                            <span class="badge bg-{{ 'success' if active_meds|length > 0 else 'secondary' }}">{{ active_meds|length }}</span>
+                            {% set status_value=active_meds|length %}
+                            {% set status_type="count" %}
+                            {% set count=active_meds|length %}
+                            {% include 'partials/status_badge.html' %}
                         </p>
                         {% if active_meds %}
                             <ul class="list-unstyled small mb-2">
@@ -264,7 +271,10 @@
                         {% set upcoming_appointments = dog.appointments|selectattr('status', 'equalto', 'Scheduled')|list %}
                         <p class="mb-1">
                             <strong>Upcoming Appointments:</strong> 
-                            <span class="badge bg-{{ 'warning' if upcoming_appointments|length > 0 else 'secondary' }}">{{ upcoming_appointments|length }}</span>
+                            {% set status_value=upcoming_appointments|length %}
+                            {% set status_type="count" %}
+                            {% set count=upcoming_appointments|length %}
+                            {% include 'partials/status_badge.html' %}
                         </p>
                     </div>
                     
@@ -292,7 +302,7 @@
                         <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-arrow-left-circle"></i> Back to Dog Details
                         </a>
-                        <div class="btn-group" role="group">
+                        <div>
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                 <i class="bi bi-plus"></i> Quick Add
                             </button>

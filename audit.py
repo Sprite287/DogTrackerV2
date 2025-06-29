@@ -5,7 +5,6 @@ from extensions import db
 from models import AuditLog
 from datetime import datetime, timedelta
 from contextlib import contextmanager
-import time as _time
 
 # Flask app instance, to be set by init_app
 _flask_app = None
@@ -50,7 +49,7 @@ class AuditBatcher:
 
     def _flush(self, batch):
         with self.app.app_context():
-            start = _time.time()
+            start = time.time()
             compressed_batch = compress_audit_events(batch)
             with db.session.no_autoflush:
                 try:
@@ -58,7 +57,7 @@ class AuditBatcher:
                         log = AuditLog(**event_dict)
                         db.session.add(log)
                     db.session.commit()
-                    duration = _time.time() - start
+                    duration = time.time() - start
                     self.last_flush_time = datetime.utcnow()
                     self.last_batch_size = len(batch)
                     self.last_flush_duration = duration
@@ -226,48 +225,6 @@ def init_audit(app_instance, start_cleanup_thread=True, cleanup_interval_hours=2
     if start_cleanup_thread:
         _audit_cleanup_thread = AuditCleanupThread(app=_flask_app, interval_hours=cleanup_interval_hours, retention_days=audit_retention_days)
         _audit_cleanup_thread.start()
-
-class AuditContext:
-    """
-    Context manager for bulk or grouped audit logging.
-    Usage:
-        with AuditContext(user_id=..., action='bulk_delete', resource_type='Dog', details={...}) as ctx:
-            ctx.log_sub_event(action='delete', resource_id=dog_id, ...)
-    At exit, logs a parent event with summary and all sub-events as children.
-    """
-    def __init__(self, user_id=None, rescue_id=None, action=None, resource_type=None, resource_id=None, details=None, **kwargs):
-        self.parent_event = dict(
-            user_id=user_id,
-            rescue_id=rescue_id,
-            action=action,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details or {},
-            **kwargs
-        )
-        self.sub_events = []
-
-    def log_sub_event(self, **event):
-        self.sub_events.append(event)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # Log all sub-events
-        for event in self.sub_events:
-            log_audit_event(**event)
-        # Log parent event with summary of sub-events
-        self.parent_event['details']['sub_event_count'] = len(self.sub_events)
-        self.parent_event['details']['sub_events'] = [
-            {
-                'action': e.get('action'),
-                'resource_id': e.get('resource_id'),
-                'success': e.get('success', True),
-                'error_message': e.get('error_message'),
-            } for e in self.sub_events
-        ]
-        log_audit_event(**self.parent_event)
 
 def get_audit_system_stats():
     if _audit_batcher:

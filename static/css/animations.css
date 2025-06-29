@@ -1,0 +1,80 @@
+/* Minimal Caring Animations */
+
+/* Simple hover animations - always available */
+.caring-hover:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Gentle grow-in for new elements */
+.grow-in {
+    animation: gentleGrowIn 0.3s ease-out;
+}
+
+/* Only load complex animations if motion is preferred */
+@media (prefers-reduced-motion: no-preference) {
+    .breathing-gentle {
+        animation: subtleBreathing 4s ease-in-out infinite;
+    }
+}
+
+/* Keyframes */
+@keyframes gentleGrowIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes subtleBreathing {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.01);
+    }
+}
+
+/* Focus states for accessibility */
+.caring-focus:focus {
+    outline: 2px solid var(--caring-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(107, 143, 82, 0.2);
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Loading state */
+.btn-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: loading-spin 0.8s linear infinite;
+}
+
+@keyframes loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

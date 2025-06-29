@@ -1,87 +1,121 @@
 <div class="row" id="dogCards">
 {% if dogs|length == 0 %}
   <div class="col-12">
-    <div class="empty-state-natural text-center py-5 breathing-container">
-      <div class="mb-4">
-        <i class="bi bi-heart text-success mb-3 grow-in icon-earth-primary large-icon"></i>
-      </div>
-      <h4 class="mb-3 icon-earth-secondary">Every rescue story begins with hope</h4>
-      <p class="text-muted mb-4 lead">Add your first resident to start their journey with love</p>
-      <button data-bs-toggle="modal" data-bs-target="#addDogModal" class="btn btn-primary btn-lg breathe-hover grow-in">
-        Welcome First Dog
-      </button>
-    </div>
+    {% set icon="bi bi-heart" %}
+    {% set title="Every rescue story begins with hope" %}
+    {% set message="Add your first resident to start their journey with love" %}
+    {% set action_text="Welcome First Dog" %}
+    {% set action_modal="#addDogModal" %}
+    {% set action_class="btn-primary btn-lg grow-in" %}
+    {% include 'partials/empty_state.html' %}
   </div>
 {% endif %}
 {% for dog in dogs %}
-<div class="col-md-4 mb-4" id="dog-card-{{ dog.id }}">
-    <div class="card h-100">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h5 class="card-title mb-0">{{ dog.name }}</h5>
-              {% if dog.energy_level %}
-                <span class="badge 
-                        {% if dog.energy_level == 'Low' %}energy-badge-low
-                        {% elif dog.energy_level == 'Medium' %}energy-badge-medium
-                        {% elif dog.energy_level == 'High' %}energy-badge-high
-                        {% elif dog.energy_level == 'Very High' %}energy-badge-very-high
-                        {% else %}energy-badge-default
-                        {% endif %} small-font">
-                  <i class="bi bi-lightning-fill me-1"></i>{{ dog.energy_level }}
-                </span>
-              {% endif %}
+<div class="col-lg-4 col-md-6 mb-4" id="dog-card-{{ dog.id }}">
+    <div class="card h-100 dog-care-card">
+        <div class="card-body d-flex flex-column">
+            <!-- Header Section -->
+            <div class="dog-card-header mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title mb-1 text-caring-secondary">{{ dog.name }}</h5>
+                    {% if dog.energy_level %}
+                        {% set status_value=dog.energy_level %}
+                    {% set status_type="energy" %}
+                    {% set additional_classes="energy-level-badge" %}
+                    {% include 'partials/status_badge.html' %}
+                    {% endif %}
+                </div>
+                
+                <!-- Status Badge with Icon -->
+                <div class="status-badge-container mb-2">
+                    {% set status = dog.adoption_status or 'Unknown' %}
+                    {% set status_value=status %}
+                    {% set status_type="adoption" %}
+                    {% set additional_classes="status-badge" %}
+                    {% include 'partials/status_badge.html' %}
+                </div>
             </div>
             
-            <p class="card-text mb-1"><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
-            <p class="card-text mb-1"><strong>Age:</strong> {{ dog.age or 'N/A' }}</p>
-            
-            <!-- Phase 7C: Personality hints -->
-            {% if dog.temperament_tags %}
-              <div class="mb-2">
-                {% for tag in dog.temperament_tags.split(',')[:3] %}
-                  {% if tag.strip() %}
-                    <span class="badge me-1 mb-1 temperament-tag tiny-font">
-                      {{ tag.strip() }}
-                    </span>
-                  {% endif %}
-                {% endfor %}
-                {% if dog.temperament_tags.split(',')|length > 3 %}
-                  <span class="badge temperament-tag tiny-font">
-                    +{{ dog.temperament_tags.split(',')|length - 3 }} more
-                  </span>
+            <!-- Info Section -->
+            <div class="dog-card-info flex-grow-1 mb-3">
+                <div class="row g-2 text-sm">
+                    <div class="col-6">
+                        <div class="info-item">
+                            <i class="bi bi-calendar3 text-caring-accent me-1"></i>
+                            <span class="text-muted">Age:</span>
+                            <div class="fw-medium">{{ dog.age or 'Unknown' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-item">
+                            <i class="bi bi-award text-caring-accent me-1"></i>
+                            <span class="text-muted">Breed:</span>
+                            <div class="fw-medium">{{ dog.breed or 'Mixed' }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Temperament Tags -->
+                {% if dog.temperament_tags %}
+                    <div class="temperament-section mt-3">
+                        <div class="temperament-tags">
+                            {% for tag in dog.temperament_tags.split(',')[:4] %}
+                                {% if tag.strip() %}
+                                    <span class="badge temperament-tag me-1 mb-1">
+                                        {{ tag.strip() }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                            {% if dog.temperament_tags.split(',')|length > 4 %}
+                                <span class="badge temperament-tag-more me-1 mb-1">
+                                    +{{ dog.temperament_tags.split(',')|length - 4 }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% endif %}
-              </div>
-            {% endif %}
-            
-            {% if dog.personality_notes %}
-              <p class="card-text small text-muted mb-1">
-                <i class="bi bi-journal-heart me-1 icon-trust-accent"></i>
-                {{ dog.personality_notes|truncate(60) }}
-              </p>
-            {% endif %}
+                
+                <!-- Personality Preview -->
+                {% if dog.personality_notes %}
+                    <div class="personality-preview mt-2">
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-journal-heart text-caring-accent me-1"></i>
+                            {{ dog.personality_notes|truncate(80) }}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-        <div class="card-footer d-flex justify-content-between">
-            <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" class="btn btn-outline-primary btn-sm"
-              data-dog-id="{{ dog.id }}"
-              data-dog-name="{{ dog.name }}"
-              data-dog-status="{{ dog.adoption_status or '' }}"
-              data-dog-age="{{ dog.age or '' }}"
-              data-dog-breed="{{ dog.breed or '' }}"
-              data-dog-intake-date="{{ dog.intake_date or '' }}"
-              data-dog-microchip-id="{{ dog.microchip_id or '' }}"
-              data-dog-notes="{{ dog.notes or '' }}"
-              data-dog-medical-info="{{ dog.medical_info or '' }}"
-              data-dog-energy-level="{{ dog.energy_level or '' }}"
-              data-dog-temperament-tags="{{ dog.temperament_tags or '' }}"
-              data-dog-personality-notes="{{ dog.personality_notes or '' }}"
-              data-dog-social-notes="{{ dog.social_notes or '' }}"
-              data-dog-special-story="{{ dog.special_story or '' }}"
-            >View</a>
-            <button class="btn btn-outline-danger btn-sm breathe-hover"
-                    onclick="confirmDeleteDog(this)"
-                    data-dog-id="{{ dog.id }}"
-                    data-dog-name="{{ dog.name }}"
-                    data-rescue-id="{{ selected_rescue_id if selected_rescue_id is not none else '' }}">Remove</button>
+        
+        <!-- Footer with Actions -->
+        <div class="card-footer bg-transparent border-top-0 pt-0">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{{ url_for('dogs.dog_details', dog_id=dog.id) }}" 
+                   class="btn btn-outline-caring-primary btn-sm flex-md-fill"
+                   data-dog-id="{{ dog.id }}"
+                   data-dog-name="{{ dog.name }}"
+                   data-dog-status="{{ dog.adoption_status or '' }}"
+                   data-dog-age="{{ dog.age or '' }}"
+                   data-dog-breed="{{ dog.breed or '' }}"
+                   data-dog-intake-date="{{ dog.intake_date or '' }}"
+                   data-dog-microchip-id="{{ dog.microchip_id or '' }}"
+                   data-dog-notes="{{ dog.notes or '' }}"
+                   data-dog-medical-info="{{ dog.medical_info or '' }}"
+                   data-dog-energy-level="{{ dog.energy_level or '' }}"
+                   data-dog-temperament-tags="{{ dog.temperament_tags or '' }}"
+                   data-dog-personality-notes="{{ dog.personality_notes or '' }}"
+                   data-dog-social-notes="{{ dog.social_notes or '' }}"
+                   data-dog-special-story="{{ dog.special_story or '' }}">
+                    <i class="bi bi-eye me-1"></i>View Details
+                </a>
+                <button class="btn btn-outline-caring-danger btn-sm flex-md-fill"
+                        onclick="confirmDeleteDog(this)"
+                        data-dog-id="{{ dog.id }}"
+                        data-dog-name="{{ dog.name }}"
+                        data-rescue-id="{{ selected_rescue_id if selected_rescue_id is not none else '' }}">
+                    <i class="bi bi-trash3 me-1"></i>Remove
+                </button>
+            </div>
         </div>
     </div>
 </div>

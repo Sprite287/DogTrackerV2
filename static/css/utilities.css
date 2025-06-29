@@ -1,0 +1,94 @@
+/* Simplified Caring Utilities */
+
+/* Icon Colors */
+.icon-caring-primary {
+    color: var(--caring-primary) !important;
+}
+
+.icon-caring-accent {
+    color: var(--caring-accent) !important;
+}
+
+.icon-caring-warning {
+    color: var(--caring-warning) !important;
+}
+
+.icon-caring-secondary {
+    color: var(--caring-secondary) !important;
+}
+
+/* Bootstrap Icons Fix */
+.bi {
+    font-family: "bootstrap-icons" !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    text-decoration: none !important;
+}
+
+/* Text Utilities */
+.text-caring-primary {
+    color: var(--caring-primary) !important;
+}
+
+.text-caring-secondary {
+    color: var(--caring-secondary) !important;
+}
+
+.text-caring-accent {
+    color: var(--caring-accent) !important;
+}
+
+/* Background Utilities */
+.bg-caring-primary {
+    background-color: var(--caring-primary) !important;
+}
+
+.bg-caring-light {
+    background-color: var(--caring-bg-light) !important;
+}
+
+/* Spacing Utilities */
+.p-gentle {
+    padding: var(--space-gentle) !important;
+}
+
+.m-gentle {
+    margin: var(--space-gentle) !important;
+}
+
+.mb-gentle {
+    margin-bottom: var(--space-gentle) !important;
+}
+
+.mt-gentle {
+    margin-top: var(--space-gentle) !important;
+}
+
+/* Border Utilities */
+.border-caring {
+    border: 1px solid rgba(107, 143, 82, 0.2) !important;
+}
+
+.border-radius-caring {
+    border-radius: var(--radius-soft) !important;
+}
+
+/* Shadow Utilities */
+.shadow-caring {
+    box-shadow: var(--shadow-gentle) !important;
+}
+
+/* Dark Mode Overrides - Moved to base.css */
+
+/* Screen reader utilities */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}

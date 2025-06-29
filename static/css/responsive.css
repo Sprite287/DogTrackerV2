@@ -1,0 +1,127 @@
+/* Simplified Mobile Optimizations */
+
+/* Mobile-first optimizations */
+@media (max-width: 768px) {
+    /* Touch-friendly buttons */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.75rem 1.25rem;
+        touch-action: manipulation;
+    }
+    
+    /* Mobile navigation */
+    .nav-link {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Mobile cards */
+    .card {
+        margin-bottom: var(--space-gentle);
+    }
+    
+    /* Mobile modals */
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+    }
+    
+    /* Mobile forms */
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Mobile tables */
+    .table-responsive {
+        border-radius: var(--radius-soft);
+    }
+    
+    /* Mobile spacing */
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Remove animations on mobile to save battery */
+    .caring-hover:hover {
+        transform: none;
+    }
+    
+    .grow-in {
+        animation: none;
+    }
+}
+
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .btn {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .card {
+        margin-bottom: var(--space-gentle);
+    }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+    
+    .card {
+        margin-bottom: var(--space-lg);
+    }
+}
+
+/* Print styles */
+@media print {
+    .btn,
+    .navbar,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* Accessibility - motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .caring-hover:hover {
+        transform: none;
+    }
+    
+    .grow-in {
+        animation: none;
+    }
+    
+    * {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Accessibility - high contrast */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid var(--caring-primary);
+    }
+    
+    .btn {
+        border: 2px solid;
+    }
+}

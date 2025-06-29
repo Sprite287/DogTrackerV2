@@ -1,39 +1,125 @@
 <div id="appointments-list">
-<table class="table table-striped align-middle" style="table-layout: fixed; width: 100%;">
-  <thead>
-    <tr>
-      <th style="min-width:140px;">Type</th>
-      <th style="min-width:180px;">Title</th>
-      <th style="min-width:150px;">Date/Time</th>
-      <th style="width:110px; text-align:center;">Status</th>
-      <th style="min-width:120px;">Notes</th>
-      <th style="width:140px; text-align:center;">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
+{% if dog.appointments %}
+  <div class="appointment-list-modern">
+    {% set appointments_by_date = {} %}
     {% for appt in dog.appointments %}
-    <tr>
-      <td>{{ appt.type.name }}</td>
-      <td>{{ appt.title }}</td>
-      <td>{{ appt.start_datetime.strftime('%Y-%m-%d %H:%M') if appt.start_datetime else '' }}</td>
-      <td style="text-align:center;">{{ appt.status }}</td>
-      <td>{{ appt.description or '—' }}</td>
-      <td style="text-align:center;">
-        <button class="btn btn-sm btn-primary me-1 js-edit-trigger" 
-                data-bs-target="#editAppointmentModal"
-                data-appointment-id="{{ appt.id }}"
-                data-dog-id="{{ dog.id }}">Edit</button>
-        <button class="btn btn-sm btn-danger"
-                hx-post="{{ url_for('appointments.delete_appointment', dog_id=dog.id, appointment_id=appt.id) }}"
-                hx-target="#appointments-list"
-                hx-swap="outerHTML"
-                hx-confirm="Are you sure you want to delete this appointment?">Delete</button>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="6" class="text-center">No appointments found.</td></tr>
+      {% set date_key = appt.start_datetime.strftime('%Y-%m-%d') if appt.start_datetime else 'unscheduled' %}
+      {% if date_key not in appointments_by_date %}
+        {% set _ = appointments_by_date.update({date_key: []}) %}
+      {% endif %}
+      {% set _ = appointments_by_date[date_key].append(appt) %}
     {% endfor %}
-  </tbody>
-</table>
-
+    
+    {% for date_key, appointments in appointments_by_date.items() | sort %}
+      <div class="date-group">
+        <div class="date-header">
+          <h6 class="mb-0">
+            {% if date_key == 'unscheduled' %}
+              Unscheduled
+            {% else %}
+              {% set date_obj = appointments[0].start_datetime %}
+              {% if date_obj.date() == now.date() %}
+                Today
+              {% elif date_obj.date() == (now + timedelta(days=1)).date() %}
+                Tomorrow
+              {% else %}
+                {{ date_obj.strftime('%A, %B %d, %Y') }}
+              {% endif %}
+            {% endif %}
+          </h6>
+          <span class="count">{{ appointments|length }}</span>
+        </div>
+        <div class="appointments">
+          {% for appt in appointments %}
+            {% set appt_type = appt.type.name.lower() %}
+            {% set is_overdue = appt.start_datetime and appt.start_datetime < now and appt.status != 'completed' %}
+            {% set is_today = appt.start_datetime and appt.start_datetime.date() == now.date() %}
+            
+            <div class="appointment-card {% if is_overdue %}overdue{% elif is_today %}due-today{% endif %}" data-appointment-id="{{ appt.id }}">
+              <div class="appointment-icon {% if 'vet' in appt_type %}vet{% elif 'grooming' in appt_type %}grooming{% elif 'medication' in appt_type or 'medicine' in appt_type %}medication{% else %}other{% endif %}">
+                {% if 'vet' in appt_type %}💉
+                {% elif 'grooming' in appt_type %}✂️
+                {% elif 'medication' in appt_type or 'medicine' in appt_type %}💊
+                {% else %}📅
+                {% endif %}
+              </div>
+              <div class="appointment-details">
+                <div class="appointment-title">
+                  {{ appt.title }}
+                  {% if is_overdue %}
+                    <span class="status-overdue">Overdue</span>
+                  {% elif is_today %}
+                    <span class="status-due-today">Due Today</span>
+                  {% elif appt.status == 'completed' %}
+                    <span class="status-upcoming text-success">✓ Completed</span>
+                  {% endif %}
+                </div>
+                <div class="appointment-meta">
+                  <span class="appointment-meta-item">
+                    <i class="bi bi-tag"></i> {{ appt.type.name }}
+                  </span>
+                  {% if appt.start_datetime %}
+                    <span class="appointment-meta-item time-display">
+                      <i class="bi bi-clock"></i> {{ appt.start_datetime.strftime('%I:%M %p') }}
+                    </span>
+                  {% endif %}
+                  {% if appt.description %}
+                    <span class="appointment-meta-item" title="{{ appt.description }}">
+                      <i class="bi bi-info-circle"></i> {{ appt.description|truncate(30) }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="appointment-action">
+                {% if appt.status == 'completed' %}
+                  <span class="text-muted">Completed</span>
+                {% elif is_overdue %}
+                  <button class="btn btn-warning btn-sm" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#editAppointmentModal"
+                          data-appointment-id="{{ appt.id }}"
+                          data-dog-id="{{ dog.id }}">
+                    Reschedule
+                  </button>
+                {% elif is_today %}
+                  <button class="btn btn-success btn-sm"
+                          hx-post="{{ url_for('appointments.complete_appointment', dog_id=dog.id, appointment_id=appt.id) }}"
+                          hx-target="#appointments-list"
+                          hx-swap="outerHTML">
+                    Complete
+                  </button>
+                {% else %}
+                  <div class="btn-group" role="group">
+                    <button class="btn btn-outline-secondary btn-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#editAppointmentModal"
+                            data-appointment-id="{{ appt.id }}"
+                            data-dog-id="{{ dog.id }}">
+                      Edit
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm"
+                            hx-post="{{ url_for('appointments.delete_appointment', dog_id=dog.id, appointment_id=appt.id) }}"
+                            hx-target="#appointments-list"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to delete this appointment?">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  {% set icon="bi bi-calendar-plus" %}
+  {% set title="No appointments scheduled yet" %}
+  {% set message="Schedule " ~ dog.name ~ "'s first appointment to begin their care journey" %}
+  {% set action_text="Schedule First Appointment" %}
+  {% set action_modal="#addAppointmentModal" %}
+  {% set action_class="btn-primary" %}
+  {% include 'partials/empty_state.html' %}
+{% endif %}
 </div> 

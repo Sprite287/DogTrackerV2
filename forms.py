@@ -106,5 +106,10 @@ class PasswordResetForm(FlaskForm):
     submit = SubmitField('Reset Password')
 
 class AuditForm(FlaskForm):
-    # This form is intentionally empty, as it only needs CSRF protection
+    """
+    Empty form used for CSRF protection on audit-related actions.
+    
+    This form is intentionally empty as it only provides CSRF token validation
+    without requiring any additional fields.
+    """
     pass 

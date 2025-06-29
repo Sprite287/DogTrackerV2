@@ -1,29 +1,49 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Dogs in Care</h2>
-    <button class="btn btn-primary breathe-hover" data-bs-toggle="modal" data-bs-target="#addDogModal">Welcome New Dog</button>
-</div>
+<!-- Enhanced Header Section -->
+<div class="dogs-care-header mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 text-caring-secondary mb-1">Dogs in Care</h1>
+            <p class="text-muted mb-0">Managing our rescue community with love and care</p>
+        </div>
+        <button class="btn btn-caring-primary btn-lg breathe-hover" data-bs-toggle="modal" data-bs-target="#addDogModal">
+            <i class="bi bi-heart me-2"></i>Welcome New Dog
+        </button>
+    </div>
 
-<!-- Quick Stats Row -->
-<!-- Quick Stats Row -->
-<div class="row mb-4" id="dogStatsRow">
-    <div class="col-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-4">
-                        <h5 class="mb-1">{{ dogs|length }}</h5>
-                        <small class="text-muted">Dogs in Care</small>
-                    </div>
-                    <div class="col-md-4">
-                        <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h5>
-                        <small class="text-muted">Adopted</small>
-                    </div>
-                    <div class="col-md-4">
-                        <h5 class="mb-1">{{ dogs|selectattr('adoption_status', 'equalto', 'Not Adopted')|list|length }}</h5>
-                        <small class="text-muted">Available</small>
-                    </div>
+    <!-- Enhanced Quick Stats Row -->
+    <div class="row g-4 mb-4" id="dogStatsRow">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-heart-fill text-caring-primary"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ dogs|length }}</h3>
+                    <p class="stat-label">Dogs in Care</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-house-heart-fill text-caring-accent"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ dogs|selectattr('adoption_status', 'equalto', 'Adopted')|list|length }}</h3>
+                    <p class="stat-label">Adopted</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-search-heart text-caring-warning"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ dogs|selectattr('adoption_status', 'equalto', 'Available')|list|length }}</h3>
+                    <p class="stat-label">Available</p>
                 </div>
             </div>
         </div>
@@ -45,10 +65,43 @@
   </div>
 {% endif %}
 <div id="alerts"></div>
-<div class="mb-3">
-    <input type="text" class="form-control" placeholder="Search by name..." id="dogSearch">
+
+<!-- Enhanced Search and Filter Section -->
+<div class="search-filter-section mb-4">
+    <div class="card">
+        <div class="card-body">
+            {% if current_user.role == 'superadmin' %}
+                <div class="row align-items-end">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label for="dogSearch" class="form-label text-caring-secondary fw-medium mb-2">Search Dogs:</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-caring-primary border-caring-primary">
+                                <i class="bi bi-search text-white"></i>
+                            </span>
+                            <input type="text" class="form-control border-caring-primary" 
+                                   placeholder="Search by name, breed, or personality..." 
+                                   id="dogSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'partials/rescue_filter.html' %}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Non-superadmin: Just search bar, full width -->
+                <label for="dogSearch" class="form-label text-caring-secondary fw-medium mb-2">Search Dogs:</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-caring-primary border-caring-primary">
+                        <i class="bi bi-search text-white"></i>
+                    </span>
+                    <input type="text" class="form-control border-caring-primary" 
+                           placeholder="Search by name, breed, or personality..." 
+                           id="dogSearch">
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% include 'partials/rescue_filter.html' %}
 {% include 'dog_cards.html' %}
 
 <script nonce="{{ g.csp_nonce }}">

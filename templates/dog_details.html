@@ -1,4 +1,10 @@
 {% extends 'base.html' %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/timeline.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar-refined.css') }}">
+{% endblock %}
+
 {% block content %}
 <style nonce="{{ g.csp_nonce }}">
 .table th, .table td {
@@ -14,51 +20,191 @@
   <div class="mb-3">
     <a href="{{ url_for('dogs.dog_list_page') }}" class="btn btn-secondary breathe-hover">&larr; Back to Dogs in Care</a>
   </div>
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h3 class="mb-0">Caring for {{ dog.name }}</h3>
-      <div class="ms-auto">
-        <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" class="btn btn-info btn-lg me-2 breathe-hover">{{ dog.name }}'s Journey</a>
-        
-        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#editDogModal"
-          data-dog-id="{{ dog.id }}"
-          data-dog-name="{{ dog.name }}"
-          data-dog-status="{{ dog.adoption_status or '' }}"
-          data-dog-age="{{ dog.age or '' }}"
-          data-dog-breed="{{ dog.breed or '' }}"
-          data-dog-intake-date="{{ dog.intake_date or '' }}"
-          data-dog-microchip-id="{{ dog.microchip_id or '' }}"
-          data-dog-notes="{{ dog.notes or '' }}"
-          data-dog-medical-info="{{ dog.medical_info or '' }}">Edit</button>
-      </div>
-    </div>
+  <!-- Enhanced Dog Profile Header -->
+  <div class="card mb-4 dog-care-card">
     <div class="card-body">
-      <p><strong>Status:</strong> {{ dog.adoption_status or 'N/A' }}</p>
-      <p><strong>Age:</strong> {{ dog.age or 'N/A' }}</p>
-      <p><strong>Breed:</strong> {{ dog.breed or 'N/A' }}</p>
-      <p><strong>Intake Date:</strong> {{ dog.intake_date or 'N/A' }}</p>
-      <p><strong>Microchip/ID:</strong> {{ dog.microchip_id or 'N/A' }}</p>
-      <p><strong>Notes:</strong> {{ dog.notes or 'N/A' }}</p>
-      <p><strong>Medical Info:</strong> {{ dog.medical_info or 'N/A' }}</p>
+      <!-- Dog Header Section -->
+      <div class="dog-profile-header mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="dog-name-section">
+            <h2 class="mb-2 text-caring-secondary">Caring for {{ dog.name }}</h2>
+            
+            <!-- Status Badge with Icon -->
+            <div class="mb-3">
+              {% set status = dog.adoption_status or 'Unknown' %}
+              {% set status_value=status %}
+              {% set status_type="adoption" %}
+              {% set size="lg" %}
+              {% set additional_classes="status-badge fs-6 px-3 py-2" %}
+              {% include 'partials/status_badge.html' %}
+            </div>
+            
+            <!-- Energy Level Badge -->
+            {% if dog.energy_level %}
+              <div class="mb-2">
+                {% set status_value=dog.energy_level %}
+                {% set status_type="energy" %}
+                {% set size="lg" %}
+                {% set additional_classes="energy-level-badge fs-6 px-3 py-2" %}
+                {% include 'partials/status_badge.html' %}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="dog-actions d-flex flex-column gap-2">
+            <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" 
+               class="btn btn-outline-caring-primary btn-lg breathe-hover d-flex align-items-center">
+              <i class="bi bi-map me-2"></i>{{ dog.name }}'s Journey
+            </a>
+            <button class="btn btn-caring-primary btn-lg breathe-hover d-flex align-items-center" 
+                    data-bs-toggle="modal" data-bs-target="#editDogModal"
+                    data-dog-id="{{ dog.id }}"
+                    data-dog-name="{{ dog.name }}"
+                    data-dog-status="{{ dog.adoption_status or '' }}"
+                    data-dog-age="{{ dog.age or '' }}"
+                    data-dog-breed="{{ dog.breed or '' }}"
+                    data-dog-intake-date="{{ dog.intake_date or '' }}"
+                    data-dog-microchip-id="{{ dog.microchip_id or '' }}"
+                    data-dog-notes="{{ dog.notes or '' }}"
+                    data-dog-medical-info="{{ dog.medical_info or '' }}">
+              <i class="bi bi-pencil me-2"></i>Edit Details
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Key Information Grid -->
+      <div class="dog-info-grid">
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-3">
+            <div class="info-card caring-info-card">
+              <div class="info-icon">
+                <i class="bi bi-calendar3 text-caring-accent"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Age</div>
+                <div class="info-value">{{ dog.age or 'Unknown' }}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6 col-lg-3">
+            <div class="info-card caring-info-card">
+              <div class="info-icon">
+                <i class="bi bi-award text-caring-accent"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Breed</div>
+                <div class="info-value">{{ dog.breed or 'Mixed' }}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6 col-lg-3">
+            <div class="info-card caring-info-card">
+              <div class="info-icon">
+                <i class="bi bi-house-door text-caring-accent"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Intake Date</div>
+                <div class="info-value">
+                  {% if dog.intake_date %}
+                    {{ dog.intake_date.strftime('%m/%d/%Y') }}
+                  {% else %}
+                    Not recorded
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6 col-lg-3">
+            <div class="info-card caring-info-card">
+              <div class="info-icon">
+                <i class="bi bi-credit-card text-caring-accent"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Microchip ID</div>
+                <div class="info-value">{{ dog.microchip_id or 'Not chipped' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Days in Care Calculation -->
+        {% if dog.intake_date %}
+          <div class="mt-3">
+            <div class="info-card caring-info-card special-highlight">
+              <div class="info-icon">
+                <i class="bi bi-heart-pulse text-caring-primary"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Days in Care</div>
+                <div class="info-value fs-5 fw-bold text-caring-primary">
+                  {{ (now.date() - dog.intake_date).days }} days
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        
+        <!-- Notes and Medical Info -->
+        {% if dog.notes or dog.medical_info %}
+          <div class="mt-4">
+            <div class="row g-3">
+              {% if dog.notes %}
+                <div class="col-md-6">
+                  <div class="notes-card caring-notes-card">
+                    <div class="notes-header">
+                      <i class="bi bi-journal-text text-caring-accent me-2"></i>
+                      <span class="fw-bold">Care Notes</span>
+                    </div>
+                    <div class="notes-content">
+                      {{ dog.notes }}
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              
+              {% if dog.medical_info %}
+                <div class="col-md-6">
+                  <div class="notes-card caring-notes-card medical-notes">
+                    <div class="notes-header">
+                      <i class="bi bi-shield-plus text-caring-warning me-2"></i>
+                      <span class="fw-bold">Medical Information</span>
+                    </div>
+                    <div class="notes-content">
+                      {{ dog.medical_info }}
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
-  <!-- Phase 7C: Personality Section -->
-  <div class="card mt-4">
+  <!-- Enhanced Personality Section -->
+  <div class="card mt-4 dog-care-card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h4 class="mb-0 d-flex align-items-center">
-        <i class="bi bi-heart-pulse me-2 icon-growth-highlight"></i>
+        <i class="bi bi-heart-pulse me-2 text-caring-primary"></i>
         {{ dog.name }}'s Personality
       </h4>
-      <div>
-        <button class="btn btn-outline-primary btn-sm breathe-hover me-2" 
-                data-bs-toggle="collapse" 
-                data-bs-target="#personalitySection" 
-                aria-expanded="false" 
-                aria-controls="personalitySection">
-          <i class="bi bi-chevron-down"></i> View Details
-        </button>
-        <button class="btn btn-primary btn-sm breathe-hover" 
+      <div class="d-flex align-items-center gap-2">
+        {% if dog.personality_notes or dog.energy_level or dog.social_notes or dog.special_story or dog.temperament_tags %}
+          <button class="btn btn-outline-caring-primary btn-sm breathe-hover" 
+                  data-bs-toggle="collapse" 
+                  data-bs-target="#personalitySection" 
+                  aria-expanded="true" 
+                  aria-controls="personalitySection">
+            <i class="bi bi-chevron-up"></i> Hide Details
+          </button>
+        {% endif %}
+        <button class="btn btn-caring-primary btn-sm breathe-hover" 
                 data-bs-toggle="modal" 
                 data-bs-target="#editPersonalityModal"
                 data-dog-id="{{ dog.id }}"
@@ -68,114 +214,160 @@
                 data-dog-personality-notes="{{ dog.personality_notes or '' }}"
                 data-dog-social-notes="{{ dog.social_notes or '' }}"
                 data-dog-special-story="{{ dog.special_story or '' }}">
-          <i class="bi bi-heart-pulse"></i> Edit Personality
+          <i class="bi bi-heart-pulse me-1"></i>Edit Personality
         </button>
       </div>
     </div>
-    <div class="collapse" id="personalitySection">
-      <div class="card-body organic-flow">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="form-label fw-bold d-flex align-items-center">
-                <i class="bi bi-lightning me-2 icon-earth-primary"></i>
-                Energy Level
-              </label>
-              {% if dog.energy_level %}
-                <span class="badge fs-6 fw-bold px-3 py-2 
-                        {% if dog.energy_level == 'Low' %}energy-badge-low
-                        {% elif dog.energy_level == 'Medium' %}energy-badge-medium
-                        {% elif dog.energy_level == 'High' %}energy-badge-high
-                        {% elif dog.energy_level == 'Very High' %}energy-badge-very-high
-                        {% else %}energy-badge-default
-                        {% endif %}">
-                  <i class="bi bi-lightning-fill me-1"></i>{{ dog.energy_level }}
-                </span>
-              {% else %}
-                <span class="text-muted small">Not yet observed</span>
-              {% endif %}
+    
+    <!-- Personality Quick Summary (Always Visible) -->
+    <div class="card-body pb-2">
+      <div class="personality-summary">
+        <div class="row g-3">
+          <!-- Energy Level -->
+          <div class="col-auto">
+            <div class="personality-quick-card">
+              <div class="quick-card-icon">
+                <i class="bi bi-lightning text-caring-accent"></i>
+              </div>
+              <div class="quick-card-content">
+                <div class="quick-card-label">Energy</div>
+                <div class="quick-card-value">
+                  {% if dog.energy_level %}
+                    {% set status_value=dog.energy_level %}
+                    {% set status_type="energy" %}
+                    {% set additional_classes="energy-level-badge" %}
+                    {% include 'partials/status_badge.html' %}
+                  {% else %}
+                    <span class="text-muted small">Unknown</span>
+                  {% endif %}
+                </div>
+              </div>
             </div>
-            
-            <div class="mb-3">
-              <label class="form-label fw-bold d-flex align-items-center">
-                <i class="bi bi-tags me-2 icon-growth-highlight"></i>
-                Temperament Traits
-              </label>
-              {% if dog.temperament_tags %}
-                <div class="mt-2">
+          </div>
+          
+          <!-- Temperament Count -->
+          <div class="col-auto">
+            <div class="personality-quick-card">
+              <div class="quick-card-icon">
+                <i class="bi bi-tags text-caring-accent"></i>
+              </div>
+              <div class="quick-card-content">
+                <div class="quick-card-label">Traits</div>
+                <div class="quick-card-value">
+                  {% if dog.temperament_tags %}
+                    <span class="badge temperament-count-badge">
+                      {{ dog.temperament_tags.split(',')|length }} traits
+                    </span>
+                  {% else %}
+                    <span class="text-muted small">None yet</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Social Status -->
+          <div class="col-auto">
+            <div class="personality-quick-card">
+              <div class="quick-card-icon">
+                <i class="bi bi-people text-caring-accent"></i>
+              </div>
+              <div class="quick-card-content">
+                <div class="quick-card-label">Social</div>
+                <div class="quick-card-value">
+                  {% if dog.social_notes %}
+                    <i class="bi bi-check-circle text-success"></i>
+                    <span class="text-success small">Noted</span>
+                  {% else %}
+                    <span class="text-muted small">TBD</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Detailed Personality Section -->
+    <div class="collapse{% if dog.personality_notes or dog.energy_level or dog.social_notes or dog.special_story or dog.temperament_tags %} show{% endif %}" id="personalitySection">
+      <div class="card-body pt-2">
+        {% if dog.personality_notes or dog.energy_level or dog.social_notes or dog.special_story or dog.temperament_tags %}
+          <div class="personality-details">
+            <!-- Temperament Tags -->
+            {% if dog.temperament_tags %}
+              <div class="mb-4">
+                <h6 class="personality-section-title">
+                  <i class="bi bi-tags me-2 text-caring-accent"></i>
+                  Temperament Traits
+                </h6>
+                <div class="temperament-tags-display">
                   {% for tag in dog.temperament_tags.split(',') %}
                     {% if tag.strip() %}
-                      <span class="badge me-2 mb-2 px-3 py-2 temperament-tag">
+                      <span class="badge temperament-tag me-2 mb-2">
                         {{ tag.strip() }}
                       </span>
                     {% endif %}
                   {% endfor %}
                 </div>
-              {% else %}
-                <span class="text-muted small">Traits to be discovered</span>
+              </div>
+            {% endif %}
+            
+            <!-- Personality Notes and Social Notes -->
+            <div class="row g-4">
+              {% if dog.personality_notes %}
+                <div class="col-md-6">
+                  <div class="personality-detail-card">
+                    <h6 class="personality-section-title">
+                      <i class="bi bi-journal-heart me-2 text-caring-primary"></i>
+                      Personality Notes
+                    </h6>
+                    <div class="personality-content">
+                      {{ dog.personality_notes }}
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              
+              {% if dog.social_notes %}
+                <div class="col-md-6">
+                  <div class="personality-detail-card">
+                    <h6 class="personality-section-title">
+                      <i class="bi bi-people-fill me-2 text-caring-accent"></i>
+                      Social Preferences
+                    </h6>
+                    <div class="personality-content">
+                      {{ dog.social_notes }}
+                    </div>
+                  </div>
+                </div>
               {% endif %}
             </div>
-          </div>
-          
-          <div class="col-md-6">
+            
+            <!-- Special Story -->
             {% if dog.special_story %}
-              <div class="mb-3">
-                <label class="form-label fw-bold d-flex align-items-center">
-                  <i class="bi bi-book-heart me-2 icon-gentle-warning"></i>
-                  Special Story
-                </label>
-                <div class="breathing-container p-3 personality-bg-growth">
-                  <p class="mb-0">{{ dog.special_story }}</p>
+              <div class="mt-4">
+                <div class="personality-detail-card special-story-card">
+                  <h6 class="personality-section-title">
+                    <i class="bi bi-book-heart me-2 text-caring-warning"></i>
+                    Special Story
+                  </h6>
+                  <div class="personality-content">
+                    {{ dog.special_story }}
+                  </div>
                 </div>
               </div>
             {% endif %}
           </div>
-        </div>
-        
-        <div class="row mt-3">
-          {% if dog.personality_notes %}
-            <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center">
-                <i class="bi bi-journal-heart me-2 icon-trust-accent"></i>
-                Personality Notes
-              </label>
-              <div class="breathing-container p-3 personality-bg-trust">
-                <p class="mb-0">{{ dog.personality_notes }}</p>
-              </div>
-            </div>
-          {% endif %}
-          
-          {% if dog.social_notes %}
-            <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center">
-                <i class="bi bi-people-fill me-2 icon-earth-primary"></i>
-                Social Preferences
-              </label>
-              <div class="breathing-container p-3 personality-bg-earth">
-                <p class="mb-0">{{ dog.social_notes }}</p>
-              </div>
-            </div>
-          {% endif %}
-        </div>
-        
-        {% if not dog.personality_notes and not dog.energy_level and not dog.social_notes and not dog.special_story and not dog.temperament_tags %}
-          <div class="empty-state-natural text-center py-4 breathing-container">
-            <i class="bi bi-heart text-success mb-3 grow-in icon-earth-primary large-icon"></i>
-            <h5 class="icon-earth-secondary">{{ dog.name }}'s unique personality awaits discovery</h5>
-            <p class="text-muted mb-3">Every dog has their own special character - help us learn about {{ dog.name }}</p>
-            <button class="btn btn-primary breathe-hover grow-in" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#editPersonalityModal"
-                    data-dog-id="{{ dog.id }}"
-                    data-dog-name="{{ dog.name }}"
-                    data-dog-energy-level="{{ dog.energy_level or '' }}"
-                    data-dog-temperament-tags="{{ dog.temperament_tags or '' }}"
-                    data-dog-personality-notes="{{ dog.personality_notes or '' }}"
-                    data-dog-social-notes="{{ dog.social_notes or '' }}"
-                    data-dog-special-story="{{ dog.special_story or '' }}">
-              Add Personality Details
-            </button>
-          </div>
+        {% else %}
+          <!-- Empty State -->
+          {% set icon="bi bi-heart" %}
+          {% set title=dog.name ~ "'s unique personality awaits discovery" %}
+          {% set message="Every dog has their own special character - help us learn about " ~ dog.name %}
+          {% set action_text="Add Personality Details" %}
+          {% set action_modal="#editPersonalityModal" %}
+          {% set action_class="btn-caring-primary" %}
+          {% include 'partials/empty_state.html' %}
         {% endif %}
       </div>
     </div>
@@ -183,107 +375,346 @@
 
   <!-- Phase 5B: Recent Activity Widget -->
   <div class="row">
-    <!-- Dog Basic Info (keep existing) -->
+    <!-- Enhanced Recent Activity Timeline -->
     <div class="col-lg-8">
       {% if recent_history_events %}
-        <div class="card mt-4">
+        <div class="card mt-4 dog-care-card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">
-              {% set icon_type = "history" %}
-              {% set text = " Recent Activity" %}
-              {% include 'partials/icon_with_text.html' %}
+            <h4 class="mb-0 d-flex align-items-center">
+              <i class="bi bi-clock-history text-caring-primary me-2"></i>
+              Recent Activity
             </h4>
             <div>
-              <span class="badge bg-secondary">{{ recent_history_events|length }} of latest events</span>
+              <span class="badge activity-count-badge">{{ recent_history_events|length }} recent events</span>
             </div>
           </div>
           <div class="card-body">
-            <div class="timeline-compact">
-              {% for event in recent_history_events %}
-                <div class="timeline-item-compact mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
-                  <div class="d-flex">
-                    <div class="flex-shrink-0 me-3">
+            <div class="enhanced-timeline">
+              <!-- Always Show First 2 Events -->
+              {% for event in recent_history_events[:2] %}
+                <div class="timeline-event {% if not loop.last and loop.index < 2 %}has-next{% endif %}{% if loop.index == 2 and recent_history_events|length > 2 %} has-next{% endif %}">
+                  <div class="event-indicator">
+                    <div class="event-icon 
+                            {% if event.source_model == 'DogNote' %}event-note
+                            {% elif event.source_model == 'Appointment' %}event-appointment
+                            {% elif event.source_model == 'DogMedicine' %}event-medicine
+                            {% elif event.source_model == 'Reminder' %}event-reminder
+                            {% else %}event-default
+                            {% endif %}">
                       {% if event.source_model == 'DogNote' %}
-                        <i class="bi bi-chat-square-text text-primary"></i>
+                        <i class="bi bi-chat-square-text"></i>
                       {% elif event.source_model == 'Appointment' %}
-                        <i class="bi bi-calendar-event text-success"></i>
+                        <i class="bi bi-calendar-event"></i>
                       {% elif event.source_model == 'DogMedicine' %}
-                        <i class="bi bi-capsule text-warning"></i>
+                        <i class="bi bi-capsule"></i>
                       {% elif event.source_model == 'Reminder' %}
-                        <i class="bi bi-bell text-info"></i>
+                        <i class="bi bi-bell"></i>
                       {% else %}
-                        <i class="bi bi-circle text-secondary"></i>
+                        <i class="bi bi-circle"></i>
                       {% endif %}
                     </div>
-                    <div class="flex-grow-1">
-                      <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="mb-1">{{ event.event_type }}</h6>
-                        <small class="text-muted">{{ event.timestamp.strftime('%m/%d %I:%M %p') }}</small>
+                  </div>
+                  
+                  <div class="event-content">
+                    <div class="event-header">
+                      <div class="event-title">{{ event.event_type }}</div>
+                      <div class="event-time">{{ event.timestamp.strftime('%m/%d %I:%M %p') }}</div>
+                    </div>
+                    
+                    <div class="event-description">
+                      {{ event.description|truncate(150) }}
+                    </div>
+                    
+                    {% if event.author %}
+                      <div class="event-author">
+                        <i class="bi bi-person text-caring-accent me-1"></i>
+                        {{ event.author }}
                       </div>
-                      <p class="mb-1 small">{{ event.description|truncate(120) }}</p>
-                      {% if event.author %}
-                        <small class="text-muted">by {{ event.author }}</small>
-                      {% endif %}
+                    {% endif %}
+                    
+                    <!-- Event Type Badge -->
+                    <div class="event-meta">
+                      <span class="badge event-type-badge 
+                              {% if event.source_model == 'DogNote' %}badge-note
+                              {% elif event.source_model == 'Appointment' %}badge-appointment
+                              {% elif event.source_model == 'DogMedicine' %}badge-medicine
+                              {% elif event.source_model == 'Reminder' %}badge-reminder
+                              {% else %}badge-default
+                              {% endif %}">
+                        {% if event.source_model == 'DogNote' %}
+                          <i class="bi bi-chat-square-text me-1"></i>Note
+                        {% elif event.source_model == 'Appointment' %}
+                          <i class="bi bi-calendar-event me-1"></i>Appointment
+                        {% elif event.source_model == 'DogMedicine' %}
+                          <i class="bi bi-capsule me-1"></i>Medicine
+                        {% elif event.source_model == 'Reminder' %}
+                          <i class="bi bi-bell me-1"></i>Reminder
+                        {% else %}
+                          <i class="bi bi-circle me-1"></i>Activity
+                        {% endif %}
+                      </span>
                     </div>
                   </div>
                 </div>
               {% endfor %}
+              
+              <!-- Collapsible Additional Events -->
+              {% if recent_history_events|length > 2 %}
+                <div class="collapse" id="additionalEvents">
+                  {% for event in recent_history_events[2:] %}
+                    <div class="timeline-event {% if not loop.last %}has-next{% endif %}">
+                      <div class="event-indicator">
+                        <div class="event-icon 
+                                {% if event.source_model == 'DogNote' %}event-note
+                                {% elif event.source_model == 'Appointment' %}event-appointment
+                                {% elif event.source_model == 'DogMedicine' %}event-medicine
+                                {% elif event.source_model == 'Reminder' %}event-reminder
+                                {% else %}event-default
+                                {% endif %}">
+                          {% if event.source_model == 'DogNote' %}
+                            <i class="bi bi-chat-square-text"></i>
+                          {% elif event.source_model == 'Appointment' %}
+                            <i class="bi bi-calendar-event"></i>
+                          {% elif event.source_model == 'DogMedicine' %}
+                            <i class="bi bi-capsule"></i>
+                          {% elif event.source_model == 'Reminder' %}
+                            <i class="bi bi-bell"></i>
+                          {% else %}
+                            <i class="bi bi-circle"></i>
+                          {% endif %}
+                        </div>
+                      </div>
+                      
+                      <div class="event-content">
+                        <div class="event-header">
+                          <div class="event-title">{{ event.event_type }}</div>
+                          <div class="event-time">{{ event.timestamp.strftime('%m/%d %I:%M %p') }}</div>
+                        </div>
+                        
+                        <div class="event-description">
+                          {{ event.description|truncate(150) }}
+                        </div>
+                        
+                        {% if event.author %}
+                          <div class="event-author">
+                            <i class="bi bi-person text-caring-accent me-1"></i>
+                            {{ event.author }}
+                          </div>
+                        {% endif %}
+                        
+                        <!-- Event Type Badge -->
+                        <div class="event-meta">
+                          <span class="badge event-type-badge 
+                                  {% if event.source_model == 'DogNote' %}badge-note
+                                  {% elif event.source_model == 'Appointment' %}badge-appointment
+                                  {% elif event.source_model == 'DogMedicine' %}badge-medicine
+                                  {% elif event.source_model == 'Reminder' %}badge-reminder
+                                  {% else %}badge-default
+                                  {% endif %}">
+                            {% if event.source_model == 'DogNote' %}
+                              <i class="bi bi-chat-square-text me-1"></i>Note
+                            {% elif event.source_model == 'Appointment' %}
+                              <i class="bi bi-calendar-event me-1"></i>Appointment
+                            {% elif event.source_model == 'DogMedicine' %}
+                              <i class="bi bi-capsule me-1"></i>Medicine
+                            {% elif event.source_model == 'Reminder' %}
+                              <i class="bi bi-bell me-1"></i>Reminder
+                            {% else %}
+                              <i class="bi bi-circle me-1"></i>Activity
+                            {% endif %}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Activity Action Buttons -->
+            <div class="activity-actions mt-4">
+              {% if recent_history_events|length > 2 %}
+                <div class="text-center mb-3">
+                  <button class="btn btn-outline-caring-secondary btn-sm breathe-hover" 
+                          data-bs-toggle="collapse" 
+                          data-bs-target="#additionalEvents" 
+                          aria-expanded="false" 
+                          aria-controls="additionalEvents"
+                          id="toggleMoreEvents">
+                    <span class="show-more-text">
+                      <i class="bi bi-chevron-down me-1"></i>Show {{ recent_history_events|length - 2 }} More Events
+                    </span>
+                    <span class="show-less-text d-none">
+                      <i class="bi bi-chevron-up me-1"></i>Show Less
+                    </span>
+                  </button>
+                </div>
+              {% endif %}
+              
+              <div class="text-center">
+                <a href="{{ url_for('dogs.dog_history', dog_id=dog.id) }}" 
+                   class="btn btn-outline-caring-primary breathe-hover">
+                  <i class="bi bi-clock-history me-2"></i>View Complete History
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <!-- No Activity State -->
+        <div class="card mt-4 dog-care-card">
+          <div class="card-header">
+            <h4 class="mb-0 d-flex align-items-center">
+              <i class="bi bi-clock-history text-caring-primary me-2"></i>
+              Recent Activity
+            </h4>
+          </div>
+          <div class="card-body text-center py-5">
+            <i class="bi bi-clock text-caring-secondary mb-3 large-icon"></i>
+            <h5 class="text-caring-secondary">{{ dog.name }}'s care journey is just beginning</h5>
+            <p class="text-muted mb-3">Activity will appear here as {{ dog.name }} receives care and attention</p>
+            <div class="d-flex gap-2 justify-content-center">
+              <button class="btn btn-caring-primary btn-sm breathe-hover" 
+                      data-bs-toggle="modal" data-bs-target="#addAppointmentModal" data-dog-id="{{ dog.id }}">
+                <i class="bi bi-calendar-plus me-1"></i>Schedule Appointment
+              </button>
+              <button class="btn btn-outline-caring-primary btn-sm breathe-hover" 
+                      data-bs-toggle="modal" data-bs-target="#addMedicineModal" data-dog-id="{{ dog.id }}">
+                <i class="bi bi-capsule me-1"></i>Add Medicine
+              </button>
             </div>
           </div>
         </div>
       {% endif %}
     </div>
     
-    <!-- Quick Stats Sidebar -->
+    <!-- Enhanced Quick Stats Sidebar -->
     <div class="col-lg-4">
-      <div class="card mt-4">
+      <div class="card mt-4 dog-care-card">
         <div class="card-header">
-          <h5 class="mb-0">
-            {% set custom_icon = "bi-graph-up" %}
-            {% set text = " Quick Statistics" %}
-            {% include 'partials/icon_with_text.html' %}
+          <h5 class="mb-0 d-flex align-items-center">
+            <i class="bi bi-graph-up text-caring-primary me-2"></i>
+            Care Statistics
           </h5>
         </div>
         <div class="card-body">
-          <div class="row text-center">
-            <div class="col-6 mb-3">
-              <h5 class="mb-1 text-primary">{{ dog.appointments|length }}</h5>
-              <small class="text-muted">Total Appointments</small>
+          <div class="stats-grid">
+            <!-- Appointments Stat -->
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="bi bi-calendar-check text-caring-primary"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-number">{{ dog.appointments|length }}</div>
+                <div class="stat-label">Total Appointments</div>
+                {% if dog.appointments|length > 0 %}
+                  <div class="stat-extra">
+                    {% set upcoming = dog.appointments|selectattr('status', 'equalto', 'scheduled')|list|length %}
+                    {% if upcoming > 0 %}
+                      <span class="badge stat-badge-upcoming">{{ upcoming }} upcoming</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
-            <div class="col-6 mb-3">
-              <h5 class="mb-1 text-warning">{{ dog.medicines|length }}</h5>
-              <small class="text-muted">Active Medications</small>
+            
+            <!-- Medications Stat -->
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="bi bi-capsule text-caring-accent"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-number">{{ dog.medicines|length }}</div>
+                <div class="stat-label">Active Medications</div>
+                {% if dog.medicines|length > 0 %}
+                  <div class="stat-extra">
+                    {% set active = dog.medicines|selectattr('status', 'equalto', 'active')|list|length %}
+                    <span class="badge stat-badge-active">{{ active }} active</span>
+                  </div>
+                {% endif %}
+              </div>
             </div>
-            <div class="col-6">
-              {% if dog.intake_date %}
-                <h5 class="mb-1 text-info">{{ dog.intake_date.strftime('%m/%d/%Y') }}</h5>
-                <small class="text-muted">Intake Date</small>
-              {% else %}
-                <h5 class="mb-1 text-muted">N/A</h5>
-                <small class="text-muted">Intake Date</small>
-              {% endif %}
-            </div>
-            <div class="col-6">
-              {% if recent_history_events %}
-                {% set last_event = recent_history_events[0] %}
-                <h5 class="mb-1 text-success">{{ last_event.timestamp.strftime('%m/%d') }}</h5>
-                <small class="text-muted">Last Update</small>
-              {% else %}
-                <h5 class="mb-1 text-muted">None</h5>
-                <small class="text-muted">Last Update</small>
-              {% endif %}
+            
+            <!-- Days in Care -->
+            {% if dog.intake_date %}
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="bi bi-heart-pulse text-caring-warning"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-number">{{ (now.date() - dog.intake_date).days }}</div>
+                  <div class="stat-label">Days in Care</div>
+                  <div class="stat-extra">
+                    <span class="text-muted small">Since {{ dog.intake_date.strftime('%m/%d/%y') }}</span>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+            <!-- Last Activity -->
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="bi bi-clock-history text-caring-secondary"></i>
+              </div>
+              <div class="stat-content">
+                {% if recent_history_events %}
+                  {% set last_event = recent_history_events[0] %}
+                  <div class="stat-number">{{ last_event.timestamp.strftime('%m/%d') }}</div>
+                  <div class="stat-label">Last Update</div>
+                  <div class="stat-extra">
+                    <span class="text-muted small">{{ last_event.event_type }}</span>
+                  </div>
+                {% else %}
+                  <div class="stat-number text-muted">—</div>
+                  <div class="stat-label">Last Update</div>
+                  <div class="stat-extra">
+                    <span class="text-muted small">No activity yet</span>
+                  </div>
+                {% endif %}
+              </div>
             </div>
           </div>
+          
+          <!-- Care Progress Indicator -->
+          {% if dog.intake_date %}
+            <div class="care-progress mt-4">
+              <div class="progress-header">
+                <div class="progress-label">
+                  <i class="bi bi-heart text-caring-primary me-2"></i>
+                  Care Journey Progress
+                </div>
+              </div>
+              <div class="progress-indicators mt-2">
+                <div class="progress-step {% if dog.intake_date %}completed{% endif %}">
+                  <i class="bi bi-check-circle-fill"></i>
+                  <span>Intake</span>
+                </div>
+                <div class="progress-step {% if dog.medicines|length > 0 or dog.appointments|length > 0 %}completed{% endif %}">
+                  <i class="bi bi-check-circle-fill"></i>
+                  <span>Care Started</span>
+                </div>
+                <div class="progress-step {% if dog.adoption_status == 'Adopted' %}completed{% endif %}">
+                  <i class="bi bi-{% if dog.adoption_status == 'Adopted' %}check-circle-fill{% else %}circle{% endif %}"></i>
+                  <span>{% if dog.adoption_status == 'Adopted' %}Adopted{% else %}Finding Home{% endif %}</span>
+                </div>
+              </div>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Appointments Section -->
-  <div class="card mt-4">
+  <!-- Enhanced Appointments Section -->
+  <div class="card mt-4 dog-care-card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">Appointments</h4>
-      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAppointmentModal" data-dog-id="{{ dog.id }}">Add Appointment</button>
+      <h4 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-calendar-check text-caring-primary me-2"></i>
+        Appointments
+      </h4>
+      <button class="btn btn-caring-primary breathe-hover" data-bs-toggle="modal" data-bs-target="#addAppointmentModal" data-dog-id="{{ dog.id }}">
+        <i class="bi bi-plus-circle me-2"></i>Schedule Appointment
+      </button>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -292,11 +723,16 @@
     </div>
   </div>
 
-  <!-- Medicines Section -->
-  <div class="card mt-4">
+  <!-- Enhanced Medicines Section -->
+  <div class="card mt-4 dog-care-card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">Medicines</h4>
-      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMedicineModal" data-dog-id="{{ dog.id }}">Add Medicine</button>
+      <h4 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-capsule text-caring-accent me-2"></i>
+        Medications
+      </h4>
+      <button class="btn btn-caring-accent breathe-hover" data-bs-toggle="modal" data-bs-target="#addMedicineModal" data-dog-id="{{ dog.id }}">
+        <i class="bi bi-plus-circle me-2"></i>Add Medicine
+      </button>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive" id="medicines-list">
@@ -539,6 +975,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ----- END OF NEW JAVASCRIPT -----
+
+// Toggle button text for show more/less events
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleMoreEvents');
+    if (toggleButton) {
+        const additionalEvents = document.getElementById('additionalEvents');
+        const showMoreText = toggleButton.querySelector('.show-more-text');
+        const showLessText = toggleButton.querySelector('.show-less-text');
+        
+        // Listen for Bootstrap collapse events
+        if (additionalEvents) {
+            additionalEvents.addEventListener('shown.bs.collapse', function() {
+                showMoreText.classList.add('d-none');
+                showLessText.classList.remove('d-none');
+            });
+            
+            additionalEvents.addEventListener('hidden.bs.collapse', function() {
+                showMoreText.classList.remove('d-none');
+                showLessText.classList.add('d-none');
+            });
+        }
+    }
+});
 
 </script>
 {% endblock %} 
